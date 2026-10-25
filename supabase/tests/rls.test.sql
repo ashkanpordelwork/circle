@@ -95,7 +95,7 @@ select public.t_check((select count(*) = 0 from public.students), 'stranger sees
 select public.t_check((select count(*) = 0 from public.routines), 'stranger sees no routines');
 select public.t_check((select count(*) = 0 from public.workouts), 'stranger sees no workouts');
 select public.t_check((select count(*) = 0 from public.coaches), 'stranger is no coach');
-select public.t_check((select count(*) = 0 from public.coach_emails), 'nobody reads the coach list');
+select public.t_fails($$select * from public.coach_emails$$, 'nobody reads the coach list');
 select public.t_fails($$insert into public.students (full_name, email) values ('من', 'me@gmail.com')$$, 'stranger registering a student');
 commit;
 
