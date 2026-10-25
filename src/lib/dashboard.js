@@ -11,19 +11,25 @@ export const isoMinus = (iso, n) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// The Persian week runs Saturday to Friday; this is the Saturday on or before `iso`.
+export const weekStart = iso => isoMinus(iso, (toDate(iso).getDay() + 1) % 7)
+
 export function overview({ students, workouts, routines, today }) {
   const live = students.filter(s => s.active && s.user_id)
   const liveIds = new Set(live.map(s => s.id))
-  const last7 = Array.from({ length: 7 }, (_, i) => isoMinus(today, 6 - i))   // oldest → today
-  const week = workouts.filter(w => daysBetween(w.date, today) >= 0 && daysBetween(w.date, today) < 7)
+  // This calendar week, Saturday → Friday; days after today are still to come.
+  const sat = weekStart(today)
+  const weekDays = Array.from({ length: 7 }, (_, i) => isoMinus(sat, -i))
+  const soFar = weekDays.filter(d => d <= today)
+  const week = workouts.filter(w => w.date >= sat && w.date <= today)
   const month = workouts.filter(w => daysBetween(w.date, today) >= 0 && daysBetween(w.date, today) < 30)
-  const perDay = last7.map(d => ({ date: d, count: week.filter(w => w.date === d).length }))
+  const perDay = weekDays.map(d => ({ date: d, count: week.filter(w => w.date === d).length, future: d > today }))
 
-  // Planned sessions in the last 7 days for students who can train, against the ones done.
+  // Planned sessions so far this week for students who can train, against the ones done.
   let planned = 0
   for (const s of live) {
     const rs = routines.filter(r => r.student_id === s.id)
-    for (const d of last7) planned += rs.filter(r => (r.days || []).includes(toDate(d).getDay())).length
+    for (const d of soFar) planned += rs.filter(r => (r.days || []).includes(toDate(d).getDay())).length
   }
   const doneLive = week.filter(w => liveIds.has(w.student_id)).length
   const adherence = planned ? Math.min(1, doneLive / planned) : null

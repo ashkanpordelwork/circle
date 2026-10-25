@@ -54,14 +54,14 @@ export default function Dashboard() {
     <section className="card hero" aria-label="این هفته">
       <div className="hstack between" style={{ alignItems: 'flex-start' }}>
         <div>
-          <div className="caption kicker">۷ روز اخیر</div>
+          <div className="caption kicker">این هفته</div>
           <div className="hero-number tnum">{fa(o.week)}</div>
           <div className="footnote">تمرین ثبت‌شده توسط {fa(o.activeThisWeek)} شاگرد</div>
         </div>
         <div style={{ textAlign: 'center' }}><Ring value={o.adherence} /><div className="caption">پایبندی به برنامه</div></div>
       </div>
-      <div className="bars" role="img" aria-label={'تمرین‌های هر روز: ' + o.perDay.map(d => fa(d.count)).join('، ')}>
-        {o.perDay.map(d => <div key={d.date} className={'bar-col' + (d.date === today ? ' today' : '')}>
+      <div className="bars" role="img" aria-label={'تمرین‌های هر روز: ' + o.perDay.filter(d => !d.future).map(d => DAY_SHORT[new Date(d.date + 'T12:00:00').getDay()] + ' ' + fa(d.count)).join('، ')}>
+        {o.perDay.map(d => <div key={d.date} className={'bar-col' + (d.date === today ? ' today' : '') + (d.future ? ' future' : '')}>
           <div className="bar-track"><div className="bar-fill" style={{ height: `${(d.count / peak) * 100}%` }} /></div>
           <div className="bar-n tnum">{d.count ? fa(d.count) : ''}</div>
           <div className="bar-d">{DAY_SHORT[new Date(d.date + 'T12:00:00').getDay()]}</div>

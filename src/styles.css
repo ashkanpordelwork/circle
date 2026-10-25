@@ -828,7 +828,8 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 .ring-stat .track { stroke: rgba(255, 255, 255, 0.1); }
 .ring-stat .bar { stroke: var(--lime); stroke-linecap: round; transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.9, 0.25, 1); }
 .ring-stat .v { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; }
-.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1.25rem; direction: ltr; }
+/* Saturday first, on the right like the rest of the page. */
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1.25rem; }
 .bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 .bar-track { width: 100%; max-width: 1.75rem; height: 4.5rem; border-radius: var(--radius-xs); background: rgba(255, 255, 255, 0.06); display: flex; align-items: flex-end; overflow: hidden; }
 .bar-fill { width: 100%; min-height: 0; border-radius: var(--radius-xs); background: rgba(182, 242, 76, 0.45); transition: height 700ms cubic-bezier(0.2, 0.9, 0.25, 1); }
@@ -836,6 +837,8 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 .bar-n { font-size: 0.75rem; color: #fff; min-height: 1rem; line-height: 1rem; }
 .bar-d { font-size: 0.75rem; color: rgba(255, 255, 255, 0.55); }
 .bar-col.today .bar-d { color: var(--lime); font-weight: 700; }
+.bar-col.future .bar-track { background: rgba(255, 255, 255, 0.03); }
+.bar-col.future .bar-d { color: rgba(255, 255, 255, 0.3); }
 button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; font: inherit; }
 .stat-icon { width: 2rem; height: 2rem; border-radius: var(--radius-xs); display: grid; place-items: center; margin-bottom: 0.5rem;
   color: var(--tile, var(--accent)); background: color-mix(in srgb, var(--tile, var(--accent)) 13%, var(--surface-2)); }
