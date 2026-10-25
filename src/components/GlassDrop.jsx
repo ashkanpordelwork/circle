@@ -11,7 +11,10 @@ export default function GlassDrop({ container, selector, index, className }) {
   const st = useRef({ x: null, w: 0, anim: null })
 
   useLayoutEffect(() => {
-    const box = container.current, el = drop.current
+    // The drop sits inside its container. On first mount the parent's ref is not attached yet
+    // (children commit first), so fall back to the parent element.
+    const el = drop.current
+    const box = container?.current || el?.parentElement
     if (!box || !el) return
     const place = (animate) => {
       const items = box.querySelectorAll(selector)

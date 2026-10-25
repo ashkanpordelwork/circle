@@ -2,7 +2,7 @@
 // device; index.html applies it before first paint with the same rules as resolveTheme.
 export const THEMES = ['dark', 'light', 'auto']
 const KEY = 'theme'
-const COLORS = { dark: '#05070a', light: '#eef1f4' }
+const COLORS = { dark: '#0a0a0b', light: '#f1f2ef' }
 
 export const resolveTheme = (pref, systemLight) =>
   pref === 'light' || (pref === 'auto' && systemLight) ? 'light' : 'dark'

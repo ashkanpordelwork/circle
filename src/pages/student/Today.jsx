@@ -44,19 +44,21 @@ export default function Today() {
       </div>
       : todays.map(r => <section key={r.id} className="card hero" aria-label={r.name}>
         <div className="hstack between">
-          <div><div className="caption">تمرین امروز</div><h2 className="title">{r.name}</h2></div>
+          <div><div className="caption kicker">تمرین امروز</div><h2 className="title">{r.name}</h2></div>
           {done.has(r.id) && <span className="pill on-hero"><Icon name="check" />انجام شد</span>}
         </div>
         <div className="footnote" style={{ margin: '0.25rem 0 1rem' }}>{r.items.length.toLocaleString('fa-IR')} حرکت · حدود {Math.max(15, Math.round(r.items.reduce((m, i) => m + i.sets * 2.2, 0))).toLocaleString('fa-IR')} دقیقه</div>
-        <div className="group" style={{ background: 'rgba(255,255,255,0.16)', boxShadow: 'inset 0 1px 0.5px rgba(255,255,255,0.4)' }}>
+        <div className="group hero-list">
           {r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
             <Thumb id={it.exercise_id} />
             <div className="content"><ExName id={it.exercise_id} />
               <div className="sub">{fmtTarget(it)}</div></div>
           </div>)}
         </div>
-        <button className="btn glass interactive block mt" style={{ '--glass-tint': 'rgba(255,255,255,0.92)', color: '#15803d' }} onClick={() => nav('/log/' + r.id)}>
-          <Icon name="fitness_center" />{done.has(r.id) ? 'ثبت دوباره' : 'شروع تمرین'}</button>
+        <div className="hero-actions">
+          <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{done.has(r.id) ? 'ثبت دوباره' : 'شروع تمرین'}</button>
+          <button className="hero-go pressable" aria-hidden="true" tabIndex={-1} onClick={() => nav('/log/' + r.id)}><Icon name="arrow_outward" mirror /></button>
+        </div>
       </section>)}
   </Page>
 }
