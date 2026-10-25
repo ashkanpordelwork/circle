@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { exerciseName, loadExercises } from '../../lib/exercises.js'
-import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, isEmail, summarize, setText, fmtDate, fmtNum } from '../../lib/plan.js'
+import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtDate, fmtNum } from '../../lib/plan.js'
 import { Loading, Confirm, useToast, errorText } from '../../components/ui.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
 import ExerciseInfo, { Frames } from '../../components/ExerciseInfo.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
+import InviteCard from '../../components/InviteCard.jsx'
+import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
 
 /* ---------- plan editor ---------- */
 
@@ -156,32 +158,35 @@ function ProgressTab({ student }) {
 function SettingsTab({ student, onSaved, onRemoved }) {
   const toast = useToast()
   const [name, setName] = useState(student.full_name)
-  const [email, setEmail] = useState(student.email)
+  const [phone, setPhone] = useState(student.phone || '')
   const [confirm, setConfirm] = useState(false)
-  const save = async () => {
-    if (!name.trim() || !isEmail(email)) return toast('نام و جیمیل معتبر لازم است.')
-    try {
-      const s = await must(supabase.from('students').update({ full_name: name.trim(), email: email.trim().toLowerCase() }).eq('id', student.id).select().single())
-      onSaved(s); toast('ذخیره شد')
-    } catch (e) { toast(errorText(e)) }
-  }
-  const setActive = async active => {
-    try { const s = await must(supabase.from('students').update({ active }).eq('id', student.id).select().single()); onSaved(s); toast(active ? 'فعال شد' : 'غیرفعال شد') }
+  const patch = async (fields, done) => {
+    try { const s = await must(supabase.from('students').update(fields).eq('id', student.id).select().single()); onSaved(s); if (done) toast(done) }
     catch (e) { toast(errorText(e)) }
+  }
+  const save = () => {
+    if (!name.trim() || !isPhone(phone)) return toast('نام و شماره موبایل معتبر لازم است.')
+    patch({ full_name: name.trim(), phone: normPhone(phone) }, 'ذخیره شد')
   }
   const remove = async () => {
     try { await must(supabase.from('students').delete().eq('id', student.id)); toast('شاگرد حذف شد'); onRemoved() }
     catch (e) { toast(errorText(e)) }
   }
   return <>
+    <InviteCard student={student} onNewCode={async () => {
+      const { data, error } = await supabase.rpc('new_invite_code')
+      if (error) return toast(errorText(error))
+      patch({ invite_code: data }, 'کد جدید ساخته شد؛ کد قبلی دیگر کار نمی‌کند')
+    }} />
     <div className="card">
       <div className="field"><label>نام</label><input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} /></div>
-      <div className="field"><label>جیمیل</label><input className="input ltr" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} /></div>
+      <div className="field"><label>شماره موبایل</label><input className="input ltr" dir="ltr" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+      {student.user_id && <p className="small muted">شاگرد با شماره‌ای که ثبت‌نام کرده وارد می‌شود؛ تغییر شماره اینجا روی ورودش اثری ندارد.</p>}
       <button className="btn primary block" onClick={save}>ذخیره</button>
     </div>
     <div className="card">
       <p className="small muted" style={{ marginTop: 0 }}>{student.active ? 'غیرفعال کردن، دسترسی شاگرد را می‌بندد ولی اطلاعاتش می‌ماند.' : 'این شاگرد غیرفعال است و نمی‌تواند برنامه‌اش را ببیند.'}</p>
-      <button className="btn block" onClick={() => setActive(!student.active)}>{student.active ? 'غیرفعال کردن' : 'فعال کردن'}</button>
+      <button className="btn block" onClick={() => patch({ active: !student.active }, student.active ? 'غیرفعال شد' : 'فعال شد')}>{student.active ? 'غیرفعال کردن' : 'فعال کردن'}</button>
       <div style={{ height: 8 }} />
       <button className="btn danger block" onClick={() => setConfirm(true)}>حذف شاگرد</button>
     </div>
@@ -205,12 +210,12 @@ export default function StudentPage() {
     <div className="hdr">
       <div className="grow">
         <h1>{student.full_name}</h1>
-        <div className="sub ltr">{student.email}</div>
+        <div className="sub ltr">{student.phone ? fmtPhone(student.phone) : student.email}</div>
       </div>
       <button className="icon-btn" onClick={() => nav('/')} aria-label="بازگشت">›</button>
     </div>
     <div style={{ marginBottom: 12 }}>
-      {!student.active ? <span className="pill bad">غیرفعال</span> : student.user_id ? <span className="pill ok">وارد شده</span> : <span className="pill">هنوز وارد نشده</span>}
+      {!student.active ? <span className="pill bad">غیرفعال</span> : student.user_id ? <span className="pill ok">ثبت‌نام کرده</span> : <span className="pill">هنوز ثبت‌نام نکرده — کد دعوت در «تنظیمات»</span>}
     </div>
     <div className="tabs" role="tablist">
       {[['plan', 'برنامه'], ['progress', 'پیشرفت'], ['settings', 'تنظیمات']].map(([k, v]) =>

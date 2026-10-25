@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
+import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
 
 export default function Account() {
   const me = useMe()
@@ -8,7 +9,7 @@ export default function Account() {
     <div className="hdr"><h1>حساب</h1></div>
     <div className="card">
       <div className="t" style={{ fontWeight: 700 }}>{name || 'بدون نام'}</div>
-      <div className="muted small ltr">{me.session.user.email}</div>
+      <div className="muted small ltr">{phoneOfEmail(me.session.user.email) ? fmtPhone(phoneOfEmail(me.session.user.email)) : me.session.user.email}</div>
       <div style={{ marginTop: 8 }}><span className="pill ok">{me.role === 'coach' ? 'مربی' : 'شاگرد'}</span></div>
     </div>
     <div className="card small muted">

@@ -37,7 +37,12 @@ export const Loading = () => <div className="empty"><div className="big">⏳</di
 // Supabase / Postgres errors in words a coach or student can act on.
 export function errorText(e) {
   const m = String(e?.message || e || '')
-  if (e?.code === '23505' || /duplicate key/.test(m)) return 'این جیمیل قبلاً ثبت شده است.'
+  if (e?.code === '23505' || /duplicate key/.test(m)) return 'این شماره قبلاً ثبت شده است.'
+  if (/Invalid login credentials/i.test(m)) return 'شماره یا رمز عبور اشتباه است.'
+  if (/already registered|already exists/i.test(m)) return 'با این شماره قبلاً ثبت‌نام شده؛ از بخش «ورود» وارد شو.'
+  if (/Password should be|weak.?password/i.test(m)) return 'رمز ضعیف است؛ حداقل ۶ کاراکتر و ترکیبی از حرف و عدد.'
+  if (/rate limit|too many/i.test(m)) return 'تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کن.'
+  if (/Signups not allowed/i.test(m)) return 'ثبت‌نام در Supabase بسته است (Allow new users to sign up).'
   if (e?.code === '42501' || /row-level security|permission denied/.test(m)) return 'اجازه این کار را ندارید.'
   if (/Failed to fetch|NetworkError/.test(m)) return 'اتصال به اینترنت برقرار نیست.'
   return m || 'خطایی رخ داد.'
