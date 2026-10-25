@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, must } from '../../lib/supabase.js'
-import { fmtDate, fmtNum, todayISO } from '../../lib/plan.js'
-import { Loading, useToast, errorText } from '../../components/ui.jsx'
+import { fmtDate, fmtNum, todayISO, toNumber, showNum, readNum } from '../../lib/plan.js'
+import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
+import Icon from '../../components/Icon.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import { useMe } from '../../App.jsx'
 
@@ -11,33 +12,37 @@ export default function Weight() {
   const [list, setList] = useState(null)
   const [w, setW] = useState('')
   const load = () => supabase.from('body_weights').select('*').order('date', { ascending: false }).limit(90)
-    .then(({ data, error }) => { if (error) toast(errorText(error)); setList(data || []) })
+    .then(({ data, error }) => { if (error) toast(errorText(error), 'error'); setList(data || []) })
   useEffect(() => { load() }, [])
   const save = async e => {
     e.preventDefault()
-    const v = Number(String(w).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace('/', '.'))
-    if (!(v >= 20 && v <= 400)) return toast('یک وزن معتبر وارد کن.')
+    const v = toNumber(w)
+    if (!(v >= 20 && v <= 400)) return toast('یک وزن معتبر وارد کن.', 'warning')
     try {
       await must(supabase.from('body_weights').upsert({ student_id: me.student.id, date: todayISO(), weight: v }, { onConflict: 'student_id,date' }))
-      setW(''); toast('وزن امروز ثبت شد'); load()
-    } catch (err) { toast(errorText(err)) }
+      setW(''); toast('وزن امروز ثبت شد', 'success'); load()
+    } catch (err) { toast(errorText(err), 'error') }
   }
-  if (!list) return <Loading />
-  const delta = list.length > 1 ? Number(list[0].weight) - Number(list[1].weight) : null
-  return <>
-    <div className="hdr"><h1>وزن بدن</h1></div>
-    <form className="card row" onSubmit={save}>
-      <input className="input grow" inputMode="decimal" placeholder="وزن امروز (kg)" value={w} onChange={e => setW(e.target.value)} />
-      <button className="btn primary">ثبت</button>
+  const delta = list && list.length > 1 ? Number(list[0].weight) - Number(list[1].weight) : null
+  return <Page title="وزن بدن">
+    <form className="hstack" onSubmit={save} style={{ marginBottom: '1.25rem' }}>
+      <input className="input grow" style={{ background: 'var(--bg-elevated)' }} inputMode="decimal" placeholder="وزن امروز (کیلو)" value={showNum(w)} onChange={e => setW(readNum(e.target.value))} aria-label="وزن امروز به کیلوگرم" />
+      <button className="btn primary pressable"><Icon name="add" />ثبت</button>
     </form>
-    {list[0] && <div className="card">
-      <div className="row between"><div><div className="muted small">آخرین وزن</div><div style={{ fontSize: 28, fontWeight: 800 }}>{fmtNum(list[0].weight)} <span className="small muted">kg</span></div></div>
-        {delta != null && delta !== 0 && <span className={'pill ' + (delta < 0 ? 'ok' : '')}>{delta > 0 ? '▲' : '▼'} {fmtNum(Math.abs(delta))}</span>}</div>
-      <WeightChart points={[...list].reverse()} />
-    </div>}
-    <div className="list">{list.map(b => <div key={b.id} className="item" style={{ cursor: 'default' }}>
-      <div className="grow">{fmtDate(b.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div><b>{fmtNum(b.weight)} kg</b>
-    </div>)}</div>
-    {!list.length && <div className="empty">هنوز وزنی ثبت نکرده‌ای.</div>}
-  </>
+    {!list ? <Loading /> : !list.length ? <Empty icon="monitor_weight" title="هنوز وزنی ثبت نکرده‌ای">هر چند روز یک بار وزنت را ثبت کن تا روند را ببینی.</Empty> : <>
+      <div className="card">
+        <div className="hstack between">
+          <div><div className="caption">آخرین وزن · {fmtDate(list[0].date, { day: 'numeric', month: 'long' })}</div>
+            <div className="title-lg tnum">{fmtNum(list[0].weight)} <span className="subhead secondary">کیلو</span></div></div>
+          {delta != null && delta !== 0 && <span className={'pill ' + (delta < 0 ? 'ok' : '')}><Icon name={delta > 0 ? 'trending_up' : 'trending_down'} />{fmtNum(Math.abs(delta))}</span>}
+        </div>
+        <WeightChart points={[...list].reverse()} />
+      </div>
+      <div className="section-title">همه ثبت‌ها</div>
+      <div className="group">{list.map(b => <div key={b.id} className="row">
+        <div className="content">{fmtDate(b.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        <div className="tnum" style={{ fontWeight: 650 }}>{fmtNum(b.weight)} کیلو</div>
+      </div>)}</div>
+    </>}
+  </Page>
 }

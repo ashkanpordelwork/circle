@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { routinesForDay, DAY_NAMES, WEEK, fmtDate, todayISO } from '../../lib/plan.js'
+import { routinesForDay, DAY_NAMES, WEEK, fmtDate, todayISO, fmtTarget } from '../../lib/plan.js'
 import { exerciseName } from '../../lib/exercises.js'
-import { Loading, useToast, errorText } from '../../components/ui.jsx'
-import { Frames } from '../../components/ExerciseInfo.jsx'
+import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
+import Icon from '../../components/Icon.jsx'
+import { Thumb } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
 import { loadPlan } from './data.js'
 
@@ -19,38 +20,44 @@ export default function Today() {
       try {
         setPlan(await loadPlan())
         setDoneToday(await must(supabase.from('workouts').select('routine_id').eq('date', todayISO())))
-      } catch (e) { toast(errorText(e)); setPlan([]) }
+      } catch (e) { toast(errorText(e), 'error'); setPlan([]) }
     })()
   }, [])
-  if (!plan) return <Loading />
   const today = new Date().getDay()
+  const title = `سلام ${me.student.full_name}`
+  if (!plan) return <Page title={title} subtitle={fmtDate(todayISO())}><Loading /></Page>
   const todays = routinesForDay(plan, today)
-  // The next day with something on it, for a rest day.
-  const next = !todays.length && WEEK.map((_, k) => (today + k + 1) % 7).find(d => routinesForDay(plan, d).length)
+  const next = !todays.length ? WEEK.map((_, k) => (today + k + 1) % 7).find(d => routinesForDay(plan, d).length) : undefined
   const done = new Set(doneToday.map(w => w.routine_id))
 
-  return <>
-    <div className="hdr"><div>
-      <h1>سلام {me.student.full_name} 👋</h1>
-      <div className="sub">{fmtDate(todayISO())}</div>
-    </div></div>
-    {me.student.note?.trim() && <div className="card" style={{ borderColor: 'var(--acc)' }}>
-      <h2>📌 از طرف مربی</h2>
-      <div style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
+  return <Page title={title} subtitle={fmtDate(todayISO())}>
+    {me.student.note?.trim() && <div className="card">
+      <div className="card-head"><div className="tile-icon orange"><Icon name="sticky_note_2" filled /></div><div className="headline">از طرف مربی</div></div>
+      <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
-    {!plan.length ? <div className="empty"><div className="big">⏳</div>مربی هنوز برنامه‌ات را نفرستاده. به محض آماده شدن، اینجا نمایش داده می‌شود.</div>
-      : !todays.length ? <div className="card"><h2>😌 امروز استراحت است</h2>
-        {next !== undefined && <div className="muted">جلسه بعد: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}
-        <button className="btn block" style={{ marginTop: 12 }} onClick={() => nav('/week')}>دیدن برنامه هفته</button>
+
+    {!plan.length ? <Empty icon="hourglass_top" title="برنامه‌ات در راه است">مربی هنوز برنامه را نفرستاده. به محض آماده شدن همین‌جا می‌بینی.</Empty>
+      : !todays.length ? <div className="card">
+        <div className="card-head"><div className="tile-icon blue"><Icon name="bedtime" filled /></div>
+          <div><div className="headline">امروز روز استراحت است</div>
+            {next !== undefined && <div className="footnote">جلسه بعد: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}</div></div>
+        <button className="btn block pressable" onClick={() => nav('/week')}><Icon name="calendar_month" />برنامه هفته</button>
       </div>
-      : todays.map(r => <div key={r.id} className="card">
-        <div className="row between"><h2 style={{ margin: 0 }}>🏋️ {r.name}</h2>{done.has(r.id) && <span className="pill ok">✓ انجام شد</span>}</div>
-        <div className="list" style={{ margin: '12px 0' }}>{r.items.map((it, i) => <div key={i} className="row">
-          <Frames id={it.exercise_id} small />
-          <div className="grow"><div className="ltr" style={{ fontWeight: 600 }}>{exerciseName(it.exercise_id)}</div>
-            <div className="small muted">{it.sets.toLocaleString('fa-IR')} ست × {it.reps} تکرار{it.weight !== '' ? ` · ${it.weight} kg` : ''}</div></div>
-        </div>)}</div>
-        <button className="btn primary block" onClick={() => nav('/log/' + r.id)}>{done.has(r.id) ? 'ثبت دوباره' : 'شروع و ثبت تمرین'}</button>
-      </div>)}
-  </>
+      : todays.map(r => <section key={r.id} className="card accent" aria-label={r.name}>
+        <div className="hstack between">
+          <div><div className="caption">تمرین امروز</div><h2 className="title">{r.name}</h2></div>
+          {done.has(r.id) && <span className="pill" style={{ background: 'rgba(255,255,255,.22)', color: 'inherit' }}><Icon name="check" />انجام شد</span>}
+        </div>
+        <div className="footnote" style={{ margin: '0.25rem 0 1rem' }}>{r.items.length.toLocaleString('fa-IR')} حرکت · حدود {Math.max(15, Math.round(r.items.reduce((m, i) => m + i.sets * 2.2, 0))).toLocaleString('fa-IR')} دقیقه</div>
+        <div className="group" style={{ background: 'var(--bg-elevated)', color: 'var(--label)' }}>
+          {r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
+            <Thumb id={it.exercise_id} />
+            <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
+              <div className="sub">{fmtTarget(it)}</div></div>
+          </div>)}
+        </div>
+        <button className="btn block pressable mt" style={{ background: 'var(--bg-elevated)', color: 'var(--accent)' }} onClick={() => nav('/log/' + r.id)}>
+          <Icon name="fitness_center" />{done.has(r.id) ? 'ثبت دوباره' : 'شروع تمرین'}</button>
+      </section>)}
+  </Page>
 }

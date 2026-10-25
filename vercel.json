@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "rewrites": [{ "source": "/((?!assets/|exercises.json|icon.svg|manifest.webmanifest|EXERCISES_LICENSE.txt).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/|fonts/|exercises.json|icon.svg|manifest.webmanifest|EXERCISES_LICENSE.txt).*)", "destination": "/index.html" }],
   "headers": [
     { "source": "/(.*)", "headers": [
       { "key": "X-Content-Type-Options", "value": "nosniff" },

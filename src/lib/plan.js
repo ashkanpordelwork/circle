@@ -1,4 +1,12 @@
 // Pure helpers for plans and logs. Kept free of React and Supabase so they can be unit-tested.
+import { toLatinDigits } from './phone.js'
+
+// Numbers as people type them on a Persian keyboard: "۶۰" and "۷۸٫۵" are 60 and 78.5.
+export const toNumber = v => {
+  if (v === '' || v == null) return null
+  const n = Number(toLatinDigits(v).replace(/[٫,]/g, '.').trim())
+  return Number.isFinite(n) ? n : null
+}
 
 // Persian week: Saturday first. Values are JavaScript getDay() numbers (0 = Sunday).
 export const WEEK = [6, 0, 1, 2, 3, 4, 5]
@@ -23,7 +31,7 @@ export function toDraft(routines, items) {
 
 // The editor's draft → the save_plan payload, with numbers that are numbers and blanks that are null.
 export function toPayload(draft) {
-  const num = v => (v === '' || v == null || Number.isNaN(Number(v)) ? null : Number(v))
+  const num = toNumber
   return draft.map(r => ({
     id: r.id,
     name: r.name.trim() || 'روتین',
@@ -31,7 +39,7 @@ export function toPayload(draft) {
     items: r.items.map(i => ({
       exercise_id: i.exercise_id,
       sets: Math.min(20, Math.max(1, Math.round(num(i.sets) || 3))),
-      reps: String(i.reps || '10').slice(0, 20),
+      reps: toLatinDigits(i.reps || '10').trim().slice(0, 20),
       weight: num(i.weight),
       rest_sec: num(i.rest_sec),
       note: (i.note || '').slice(0, 500)
@@ -67,8 +75,8 @@ export function logToRows(workoutId, log) {
       n++
       rows.push({
         workout_id: workoutId, exercise_id: ex.exercise_id, set_index: n,
-        reps: s.reps === '' ? null : Math.round(Number(s.reps)),
-        weight: s.weight === '' || s.weight == null ? null : Number(s.weight)
+        reps: toNumber(s.reps) == null ? null : Math.round(toNumber(s.reps)),
+        weight: toNumber(s.weight)
       })
     }
   }
@@ -96,5 +104,18 @@ export const todayISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// One logged set as the coach and the student read it: "60kg × 10", or "× 10" for bodyweight.
-export const setText = s => (s.weight != null ? `${Number(s.weight)}kg × ` : '× ') + (s.reps ?? '—')
+// Display text is all Persian digits: a Latin number or unit inside a Persian line gets reordered
+// by the bidi algorithm and reads backwards ("kg 60").
+export const faDigits = v => String(v ?? '').replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]).replace(/\./g, '٫')
+export const kg = w => `${faDigits(toNumber(w) ?? '—')} کیلو`
+
+// What a number field shows (Persian digits) and what it stores (the same number, Latin digits).
+export const showNum = v => faDigits(v)
+export const readNum = s => toLatinDigits(s).replace(/٫/g, '.')
+
+// A planned exercise: "۳ × ۸-۱۲ · ۶۰ کیلو".
+export const fmtTarget = it =>
+  `${faDigits(it.sets)} × ${faDigits(it.reps || '—')}` + (it.weight !== '' && it.weight != null ? ` · ${kg(it.weight)}` : '')
+
+// One logged set: "۶۰ کیلو × ۱۰", or "۱۰ تکرار" with no weight (bodyweight).
+export const setText = s => (s.weight != null ? `${kg(s.weight)} × ${faDigits(s.reps ?? '—')}` : `${faDigits(s.reps ?? '—')} تکرار`)

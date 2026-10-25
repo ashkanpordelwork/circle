@@ -2,64 +2,86 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { exerciseName, loadExercises } from '../../lib/exercises.js'
-import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtDate, fmtNum } from '../../lib/plan.js'
-import { Loading, Confirm, useToast, errorText } from '../../components/ui.jsx'
+import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum, showNum, readNum } from '../../lib/plan.js'
+import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
+import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
+import Sheet, { useSheet } from '../../components/Sheet.jsx'
+import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
-import ExerciseInfo, { Frames } from '../../components/ExerciseInfo.jsx'
+import ExerciseInfo, { Thumb } from '../../components/ExerciseInfo.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
-import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
 
-/* ---------- plan editor ---------- */
 
-function ItemRow({ item, index, count, onChange, onMove, onRemove }) {
+/* ---------- one exercise, edited in a sheet ---------- */
+
+function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
+  const { close } = useSheet()
   const [info, setInfo] = useState(false)
   const set = (k, v) => onChange({ ...item, [k]: v })
-  return <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, marginTop: 10 }}>
-    <div className="ex-head">
-      <button className="btn ghost" style={{ padding: 0 }} onClick={() => setInfo(true)} aria-label="نمایش حرکت"><Frames id={item.exercise_id} small /></button>
-      <div className="grow"><div className="ltr" style={{ fontWeight: 600 }}>{exerciseName(item.exercise_id)}</div></div>
-      <button className="icon-btn" disabled={index === 0} onClick={() => onMove(-1)} aria-label="بالا">↑</button>
-      <button className="icon-btn" disabled={index === count - 1} onClick={() => onMove(1)} aria-label="پایین">↓</button>
-      <button className="icon-btn" onClick={onRemove} aria-label="حذف" style={{ color: 'var(--danger)' }}>✕</button>
-    </div>
-    <div className="row" style={{ gap: 8 }}>
-      <div className="field grow"><label>ست</label><input className="input" inputMode="numeric" value={item.sets} onChange={e => set('sets', e.target.value)} /></div>
-      <div className="field grow"><label>تکرار</label><input className="input" placeholder="مثلاً 8-12" value={item.reps} onChange={e => set('reps', e.target.value)} /></div>
-      <div className="field grow"><label>وزن (kg)</label><input className="input" inputMode="decimal" value={item.weight} onChange={e => set('weight', e.target.value)} /></div>
-      <div className="field grow"><label>استراحت (ث)</label><input className="input" inputMode="numeric" value={item.rest_sec} onChange={e => set('rest_sec', e.target.value)} /></div>
-    </div>
-    <input className="input" placeholder="نکته (اختیاری)" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} />
-    {info && <ExerciseInfo id={item.exercise_id} onClose={() => setInfo(false)} />}
+  const field = (k, label, mode = 'numeric', placeholder) => <div className="field">
+    <label>{label}</label>
+    <input className="input num" inputMode={mode} placeholder={placeholder} value={showNum(item[k] ?? '')} onChange={e => set(k, readNum(e.target.value))} />
   </div>
+  return <>
+    <button className="row pressable" style={{ padding: 0, marginBottom: '1rem' }} onClick={() => setInfo(true)}>
+      <Thumb id={item.exercise_id} />
+      <div className="content"><div className="title-text latin" style={{ textAlign: 'right' }}>{exerciseName(item.exercise_id)}</div><div className="sub">نمایش حرکت و روش اجرا</div></div>
+      <Disclosure />
+    </button>
+    <div className="inline-fields">
+      {field('sets', 'ست')}
+      {field('reps', 'تکرار', 'text', '8-12')}
+      {field('weight', 'وزن (کیلو)', 'decimal')}
+      {field('rest_sec', 'استراحت (ث)')}
+    </div>
+    <div className="field mt"><label>نکته برای شاگرد</label>
+      <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
+    <div className="hstack">
+      <button className="btn grow pressable" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالا</button>
+      <button className="btn grow pressable" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین</button>
+    </div>
+    <div className="stack mt">
+      <button className="btn primary block pressable" onClick={() => close()}>تمام</button>
+      <button className="btn danger block pressable" onClick={() => { onRemove(); close() }}><Icon name="delete" />حذف از روتین</button>
+    </div>
+    {info && <ExerciseInfo id={item.exercise_id} onClose={() => setInfo(false)} />}
+  </>
 }
 
+/* ---------- a routine ---------- */
+
 function RoutineCard({ r, onChange, onRemove }) {
-  const [open, setOpen] = useState(!r.items.length)
   const [picking, setPicking] = useState(false)
+  const [editing, setEditing] = useState(null)
   const update = fn => onChange(cur => ({ ...cur, ...fn(cur) }))
   const toggleDay = d => update(cur => ({ days: cur.days.includes(d) ? cur.days.filter(x => x !== d) : [...cur.days, d] }))
   const setItem = (i, next) => update(cur => ({ items: cur.items.map((x, k) => (k === i ? next : x)) }))
-  const move = (i, dir) => update(cur => {
-    const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items }
-  })
+  const move = (i, dir) => { update(cur => { const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items } }); setEditing(i + dir) }
   const add = id => update(cur => ({ items: [...cur.items, { exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', note: '' }] }))
   return <div className="card">
-    <div className="row" style={{ marginBottom: 10 }}>
-      <input className="input grow" style={{ fontWeight: 700 }} value={r.name} maxLength={80} onChange={e => { const v = e.target.value; update(() => ({ name: v })) }} aria-label="نام روتین" />
-      <button className="icon-btn" onClick={() => setOpen(!open)} aria-label={open ? 'بستن' : 'باز کردن'}>{open ? '▴' : '▾'}</button>
+    <div className="card-head">
+      <div className="tile-icon"><Icon name="fitness_center" /></div>
+      <input className="input grow headline" style={{ background: 'transparent', paddingInline: '0.25rem', minHeight: '2.5rem' }} value={r.name} maxLength={80}
+        onChange={e => { const v = e.target.value; update(() => ({ name: v })) }} aria-label="نام روتین" />
+      <button className="icon-btn bare danger pressable" onClick={onRemove} aria-label="حذف روتین"><Icon name="delete" /></button>
     </div>
-    <div className="days">{WEEK.map(d => <button key={d} className={'day' + (r.days.includes(d) ? ' on' : '')} onClick={() => toggleDay(d)}>{DAY_SHORT[d]}</button>)}</div>
-    <div className="small muted" style={{ marginTop: 6 }}>{r.items.length.toLocaleString('fa-IR')} حرکت{r.days.length ? ' · ' + WEEK.filter(d => r.days.includes(d)).map(d => DAY_NAMES[d]).join('، ') : ' · بدون روز'}</div>
-    {open && <>
-      {r.items.map((it, i) => <ItemRow key={i + it.exercise_id} item={it} index={i} count={r.items.length}
-        onChange={next => setItem(i, next)} onMove={dir => move(i, dir)} onRemove={() => update(cur => ({ items: cur.items.filter((_, k) => k !== i) }))} />)}
-      <div className="row" style={{ marginTop: 12 }}>
-        <button className="btn primary grow" onClick={() => setPicking(true)}>+ افزودن حرکت</button>
-        <button className="btn danger" onClick={onRemove}>حذف روتین</button>
-      </div>
-    </>}
+    <div className="days" role="group" aria-label="روزهای این روتین">{WEEK.map(d => <button key={d} className={'day pressable' + (r.days.includes(d) ? ' on' : '')}
+      aria-pressed={r.days.includes(d)} aria-label={DAY_NAMES[d]} onClick={() => toggleDay(d)}>{DAY_SHORT[d]}</button>)}</div>
+    {r.items.length > 0 && <div className="group mt" style={{ background: 'var(--fill)', boxShadow: 'none' }}>
+      {r.items.map((it, i) => <button key={i + it.exercise_id} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setEditing(i)}>
+        <Thumb id={it.exercise_id} />
+        <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
+          <div className="sub">{fmtTarget(it)}{it.note ? ' · ' + it.note : ''}</div></div>
+        <Disclosure />
+      </button>)}
+    </div>}
+    <button className="btn block pressable mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
     {picking && <ExercisePicker added={r.items.map(i => i.exercise_id)} onPick={add} onClose={() => setPicking(false)} />}
+    {editing != null && r.items[editing] && <Sheet title="تنظیم حرکت" onClose={() => setEditing(null)}>
+      <ItemEditor item={r.items[editing]} index={editing} count={r.items.length} onChange={next => setItem(editing, next)}
+        onMove={dir => move(editing, dir)} onRemove={() => update(cur => ({ items: cur.items.filter((_, k) => k !== editing) }))} />
+    </Sheet>}
   </div>
 }
 
@@ -78,7 +100,7 @@ function PlanTab({ student, onSaved }) {
         const items = rs.length ? await must(supabase.from('routine_items').select('*').in('routine_id', rs.map(r => r.id))) : []
         const d = toDraft(rs, items)
         setDraft(d); setSaved(draftKey(d, student.note || ''))
-      } catch (e) { toast(errorText(e)) }
+      } catch (e) { toast(errorText(e), 'error') }
     })()
   }, [student.id])
   if (!draft) return <Loading />
@@ -90,20 +112,23 @@ function PlanTab({ student, onSaved }) {
       await must(supabase.rpc('save_plan', { p_student: student.id, p_routines: toPayload(draft) }))
       if (note !== (student.note || '')) await must(supabase.from('students').update({ note }).eq('id', student.id))
       setSaved(draftKey(draft, note)); onSaved({ ...student, note })
-      toast(`برنامه برای ${student.full_name} ذخیره شد ✓`)
-    } catch (e) { toast(errorText(e)) } finally { setBusy(false) }
+      toast(`برنامه ${student.full_name} ذخیره شد`, 'success')
+    } catch (e) { toast(errorText(e), 'error') } finally { setBusy(false) }
   }
   return <>
-    <div className="card">
-      <h2>یادداشت برای شاگرد</h2>
-      <textarea className="input" placeholder="در صفحه اصلی شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…" value={note} onChange={e => setNote(e.target.value)} maxLength={2000} />
+    <div className="section">
+      <div className="section-title">یادداشت برای شاگرد</div>
+      <textarea className="input" style={{ background: 'var(--bg-elevated)' }} placeholder="در صفحه «امروز» شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…"
+        value={note} onChange={e => setNote(e.target.value)} maxLength={2000} />
     </div>
+    <div className="section-title">روتین‌ها</div>
     {draft.map(r => <RoutineCard key={r.id} r={r} onChange={fn => setRoutine(r.id, fn)} onRemove={() => setRemoving(r)} />)}
-    {!draft.length && <div className="empty"><div className="big">📋</div>هنوز روتینی ندارد. یک روتین بسازید و روزهایش را انتخاب کنید.</div>}
-    <button className="btn block" onClick={() => setDraft(d => [...d, { id: newId(), name: 'روتین ' + (d.length + 1).toLocaleString('fa-IR'), days: [], items: [] }])}>+ روتین جدید</button>
-    {dirty && <div style={{ height: 64 }} />}
-    {dirty && <div className="sticky-save"><button className="btn primary block" disabled={busy} onClick={save}>{busy ? 'در حال ذخیره…' : 'ذخیره و ارسال برنامه'}</button></div>}
-    {removing && <Confirm title={`«${removing.name}» حذف شود؟`} text="بعد از ذخیره، از برنامه شاگرد حذف می‌شود. تمرین‌های ثبت‌شده باقی می‌مانند." okText="حذف" danger
+    {!draft.length && <Empty icon="calendar_month" title="هنوز روتینی ندارد">یک روتین بسازید، روزهایش را انتخاب کنید و حرکت اضافه کنید.</Empty>}
+    <button className="btn block pressable" onClick={() => setDraft(d => [...d, { id: newId(), name: 'روتین ' + (d.length + 1).toLocaleString('fa-IR'), days: [], items: [] }])}>
+      <Icon name="add" />روتین جدید</button>
+    {dirty && <div className="float-bar"><button className="btn primary block pressable" disabled={busy} onClick={save}>
+      <Icon name="check" />{busy ? 'در حال ذخیره…' : 'ذخیره و ارسال برای شاگرد'}</button></div>}
+    {removing && <Confirm title={`«${removing.name}» حذف شود؟`} text="بعد از ذخیره از برنامه شاگرد برداشته می‌شود. تمرین‌های ثبت‌شده‌اش باقی می‌ماند." okText="حذف روتین" danger
       onOk={() => setDraft(d => d.filter(r => r.id !== removing.id))} onClose={() => setRemoving(null)} />}
   </>
 }
@@ -122,34 +147,40 @@ function ProgressTab({ student }) {
         const sets = workouts.length ? await must(supabase.from('workout_sets').select('*').in('workout_id', workouts.map(w => w.id))) : []
         const weights = await must(supabase.from('body_weights').select('*').eq('student_id', student.id).order('date', { ascending: false }).limit(60))
         setData({ workouts, sets, weights })
-      } catch (e) { toast(errorText(e)) }
+      } catch (e) { toast(errorText(e), 'error') }
     })()
   }, [student.id])
   if (!data) return <Loading />
   const monthAgo = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)
   return <>
-    <div className="stat" style={{ marginBottom: 12 }}>
-      <div><div className="v">{data.workouts.length.toLocaleString('fa-IR')}</div><div className="l">تمرین ثبت‌شده</div></div>
-      <div><div className="v">{data.workouts.filter(w => w.date >= monthAgo).length.toLocaleString('fa-IR')}</div><div className="l">۳۰ روز اخیر</div></div>
-      <div><div className="v">{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'short' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
-      <div><div className="v">{data.weights[0] ? fmtNum(data.weights[0].weight) : '—'}</div><div className="l">وزن فعلی (kg)</div></div>
+    <div className="stats">
+      <div className="stat"><div className="v">{data.workouts.length.toLocaleString('fa-IR')}</div><div className="l">تمرین ثبت‌شده</div></div>
+      <div className="stat"><div className="v">{data.workouts.filter(w => w.date >= monthAgo).length.toLocaleString('fa-IR')}</div><div className="l">در ۳۰ روز اخیر</div></div>
+      <div className="stat"><div className="v" style={{ fontSize: '1.125rem' }}>{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'long' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
+      <div className="stat"><div className="v">{data.weights[0] ? fmtNum(data.weights[0].weight) : '—'}</div><div className="l">وزن فعلی (کیلو)</div></div>
     </div>
-    {data.weights.length > 1 && <div className="card"><h2>وزن بدن</h2><WeightChart points={[...data.weights].reverse()} /></div>}
-    <h2 style={{ fontSize: 16 }}>تمرین‌ها</h2>
-    {!data.workouts.length ? <div className="empty">هنوز تمرینی ثبت نشده.</div> : <div className="list">{data.workouts.map(w => {
-      const sets = data.sets.filter(s => s.workout_id === w.id)
-      const sum = summarize(sets)
-      return <div key={w.id} className="card" style={{ marginBottom: 0, cursor: 'pointer' }} onClick={() => setOpen(open === w.id ? null : w.id)}>
-        <div className="row between"><div><b>{w.routine_name || 'تمرین'}</b><div className="small muted">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div><span className="muted">{open === w.id ? '▴' : '▾'}</span></div>
-        {open === w.id && <div style={{ marginTop: 8 }}>
-          {[...sum.keys()].map(id => <div key={id} className="small" style={{ borderTop: '1px solid var(--line)', padding: '6px 0' }}>
-            <div className="ltr" style={{ fontWeight: 600 }}>{exerciseName(id)}</div>
-            <div className="muted ltr" dir="ltr">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
-          </div>)}
-          {w.note && <div className="small muted" style={{ marginTop: 6 }}>📝 {w.note}</div>}
-        </div>}
-      </div>
-    })}</div>}
+    {data.weights.length > 1 && <div className="card"><div className="headline">وزن بدن</div><WeightChart points={[...data.weights].reverse()} /></div>}
+    <div className="section-title">تمرین‌ها</div>
+    {!data.workouts.length ? <Empty icon="history" title="هنوز تمرینی ثبت نشده">وقتی شاگرد تمرینی ثبت کند، اینجا می‌بینید.</Empty>
+      : <div className="group">{data.workouts.map(w => {
+        const sets = data.sets.filter(s => s.workout_id === w.id)
+        const sum = summarize(sets)
+        const isOpen = open === w.id
+        return <div key={w.id}>
+          <button className="row pressable" onClick={() => setOpen(isOpen ? null : w.id)} aria-expanded={isOpen}>
+            <div className="content"><div className="title-text">{w.routine_name || 'تمرین'}</div>
+              <div className="sub">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div>
+            <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
+          </button>
+          {isOpen && <div style={{ padding: '0 1rem 0.75rem' }}>
+            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
+              <div className="subhead latin" style={{ fontWeight: 600, textAlign: 'right' }}>{exerciseName(id)}</div>
+              <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
+            </div>)}
+            {w.note && <div className="footnote" style={{ marginTop: '0.375rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}
+          </div>}
+        </div>
+      })}</div>}
   </>
 }
 
@@ -161,36 +192,44 @@ function SettingsTab({ student, onSaved, onRemoved }) {
   const [phone, setPhone] = useState(student.phone || '')
   const [confirm, setConfirm] = useState(false)
   const patch = async (fields, done) => {
-    try { const s = await must(supabase.from('students').update(fields).eq('id', student.id).select().single()); onSaved(s); if (done) toast(done) }
-    catch (e) { toast(errorText(e)) }
+    try { const s = await must(supabase.from('students').update(fields).eq('id', student.id).select().single()); onSaved(s); if (done) toast(done, 'success') }
+    catch (e) { toast(errorText(e), 'error') }
   }
-  const save = () => {
-    if (!name.trim() || !isPhone(phone)) return toast('نام و شماره موبایل معتبر لازم است.')
-    patch({ full_name: name.trim(), phone: normPhone(phone) }, 'ذخیره شد')
-  }
-  const remove = async () => {
-    try { await must(supabase.from('students').delete().eq('id', student.id)); toast('شاگرد حذف شد'); onRemoved() }
-    catch (e) { toast(errorText(e)) }
-  }
+  const dirty = name.trim() !== student.full_name || normPhone(phone) !== (student.phone || '')
   return <>
     <InviteCard student={student} onNewCode={async () => {
       const { data, error } = await supabase.rpc('new_invite_code')
-      if (error) return toast(errorText(error))
+      if (error) return toast(errorText(error), 'error')
       patch({ invite_code: data }, 'کد جدید ساخته شد؛ کد قبلی دیگر کار نمی‌کند')
     }} />
-    <div className="card">
-      <div className="field"><label>نام</label><input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} /></div>
-      <div className="field"><label>شماره موبایل</label><input className="input ltr" dir="ltr" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-      {student.user_id && <p className="small muted">شاگرد با شماره‌ای که ثبت‌نام کرده وارد می‌شود؛ تغییر شماره اینجا روی ورودش اثری ندارد.</p>}
-      <button className="btn primary block" onClick={save}>ذخیره</button>
+    <div className="section">
+      <div className="section-title">مشخصات</div>
+      <div className="card" style={{ marginBottom: 0 }}>
+        <div className="field"><label>نام</label><input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} /></div>
+        <div className="field"><label>شماره موبایل</label><input className="input ltr" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+        <button className="btn primary block pressable" disabled={!dirty} onClick={() => {
+          if (!name.trim() || !isPhone(phone)) return toast('نام و شماره موبایل معتبر لازم است.', 'warning')
+          patch({ full_name: name.trim(), phone: normPhone(phone) }, 'ذخیره شد')
+        }}>ذخیره</button>
+      </div>
+      {student.user_id && <div className="section-footer">شاگرد با شماره‌ای که ثبت‌نام کرده وارد می‌شود؛ تغییر شماره اینجا روی ورودش اثری ندارد.</div>}
     </div>
-    <div className="card">
-      <p className="small muted" style={{ marginTop: 0 }}>{student.active ? 'غیرفعال کردن، دسترسی شاگرد را می‌بندد ولی اطلاعاتش می‌ماند.' : 'این شاگرد غیرفعال است و نمی‌تواند برنامه‌اش را ببیند.'}</p>
-      <button className="btn block" onClick={() => patch({ active: !student.active }, student.active ? 'غیرفعال شد' : 'فعال شد')}>{student.active ? 'غیرفعال کردن' : 'فعال کردن'}</button>
-      <div style={{ height: 8 }} />
-      <button className="btn danger block" onClick={() => setConfirm(true)}>حذف شاگرد</button>
+    <div className="section">
+      <div className="group">
+        <button className="row pressable" onClick={() => patch({ active: !student.active }, student.active ? 'دسترسی بسته شد' : 'دسترسی باز شد')}>
+          <Icon name="lock" style={{ color: 'var(--accent)' }} /><div className="content"><div className="title-text" style={{ color: 'var(--accent)' }}>{student.active ? 'بستن دسترسی' : 'باز کردن دسترسی'}</div></div>
+        </button>
+        <button className="row pressable" onClick={() => setConfirm(true)}>
+          <Icon name="delete" style={{ color: 'var(--red)' }} /><div className="content"><div className="title-text" style={{ color: 'var(--red)' }}>حذف شاگرد</div></div>
+        </button>
+      </div>
+      <div className="section-footer">بستن دسترسی برگشت‌پذیر است و اطلاعات می‌ماند؛ حذف، همه چیز را برای همیشه پاک می‌کند.</div>
     </div>
-    {confirm && <Confirm title={`${student.full_name} حذف شود؟`} text="برنامه و همه تمرین‌های ثبت‌شده‌اش برای همیشه پاک می‌شود." okText="حذف" danger onOk={remove} onClose={() => setConfirm(false)} />}
+    {confirm && <Confirm title={`${student.full_name} حذف شود؟`} text="برنامه و همه تمرین‌های ثبت‌شده‌اش برای همیشه پاک می‌شود. این کار برگشت ندارد."
+      okText="حذف برای همیشه" danger onOk={async () => {
+        try { await must(supabase.from('students').delete().eq('id', student.id)); toast('شاگرد حذف شد', 'success'); onRemoved() }
+        catch (e) { toast(errorText(e), 'error') }
+      }} onClose={() => setConfirm(false)} />}
   </>
 }
 
@@ -202,27 +241,16 @@ export default function StudentPage() {
   const [tab, setTab] = useState('plan')
   useEffect(() => {
     supabase.from('students').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
-      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد'); nav('/') } else setStudent(data)
+      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav('/') } else setStudent(data)
     })
   }, [id])
   if (!student) return <Loading />
-  return <>
-    <div className="hdr">
-      <div className="grow">
-        <h1>{student.full_name}</h1>
-        <div className="sub ltr">{student.phone ? fmtPhone(student.phone) : student.email}</div>
-      </div>
-      <button className="icon-btn" onClick={() => nav('/')} aria-label="بازگشت">›</button>
-    </div>
-    <div style={{ marginBottom: 12 }}>
-      {!student.active ? <span className="pill bad">غیرفعال</span> : student.user_id ? <span className="pill ok">ثبت‌نام کرده</span> : <span className="pill">هنوز ثبت‌نام نکرده — کد دعوت در «تنظیمات»</span>}
-    </div>
-    <div className="tabs" role="tablist">
-      {[['plan', 'برنامه'], ['progress', 'پیشرفت'], ['settings', 'تنظیمات']].map(([k, v]) =>
-        <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{v}</button>)}
-    </div>
+  const status = !student.active ? 'دسترسی بسته' : student.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'
+  return <Page title={student.full_name} back="/" subtitle={<><span className="latin">{student.phone ? fmtPhone(student.phone) : ''}</span> · {status}</>}>
+    <Segmented label="بخش‌ها" value={tab} onChange={setTab}
+      options={[{ value: 'plan', label: 'برنامه' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت و تنظیمات' }]} />
     {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} />}
     {tab === 'progress' && <ProgressTab student={student} />}
     {tab === 'settings' && <SettingsTab student={student} onSaved={setStudent} onRemoved={() => nav('/')} />}
-  </>
+  </Page>
 }

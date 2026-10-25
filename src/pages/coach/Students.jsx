@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate } from '../../lib/plan.js'
 import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
+import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
+import Sheet from '../../components/Sheet.jsx'
+import Icon, { Disclosure } from '../../components/Icon.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
-import { Modal, Loading, useToast, errorText } from '../../components/ui.jsx'
 import { useMe } from '../../App.jsx'
 
 function AddStudent({ onClose, onAdded }) {
@@ -13,31 +15,27 @@ function AddStudent({ onClose, onAdded }) {
   const [phone, setPhone] = useState('')
   const [busy, setBusy] = useState(false)
   const [added, setAdded] = useState(null)
+  const phoneBad = phone.length >= 4 && !isPhone(phone)
   const add = async e => {
     e.preventDefault()
-    if (!name.trim()) return toast('نام را وارد کنید.')
-    if (!isPhone(phone)) return toast('شماره موبایل معتبر وارد کنید، مثلاً 09121234567')
+    if (!name.trim()) return toast('نام را وارد کنید.', 'warning')
+    if (!isPhone(phone)) return toast('شماره موبایل معتبر وارد کنید.', 'warning')
     setBusy(true)
     try {
       const s = await must(supabase.from('students').insert({ full_name: name.trim(), phone: normPhone(phone) }).select().single())
-      onAdded(s); setAdded(s)
-    } catch (err) { toast(errorText(err)) } finally { setBusy(false) }
+      onAdded(s); setAdded(s); toast(`${s.full_name} اضافه شد`, 'success')
+    } catch (err) { toast(errorText(err), 'error') } finally { setBusy(false) }
   }
-  return <Modal onClose={onClose} label="شاگرد جدید">
-    {added ? <>
-      <h2 style={{ marginTop: 0 }}>✓ {added.full_name} اضافه شد</h2>
-      <InviteCard student={added} />
-      <button className="btn block" onClick={onClose}>بستن</button>
-    </> : <>
-      <h2 style={{ marginTop: 0 }}>شاگرد جدید</h2>
-      <p className="muted small">شاگرد با همین شماره و کد دعوتی که در مرحله بعد می‌بینید ثبت‌نام می‌کند.</p>
-      <form onSubmit={add}>
-        <div className="field"><label htmlFor="n">نام</label><input id="n" className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} autoFocus /></div>
-        <div className="field"><label htmlFor="p">شماره موبایل</label><input id="p" className="input ltr" dir="ltr" type="tel" inputMode="tel" placeholder="0912 123 4567" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-        <button className="btn primary block" disabled={busy}>افزودن شاگرد</button>
-      </form>
-    </>}
-  </Modal>
+  return <Sheet title={added ? 'دعوت شاگرد' : 'شاگرد جدید'} onClose={onClose}>
+    {added ? <InviteCard student={added} /> : <form onSubmit={add}>
+      <p className="subhead secondary" style={{ marginTop: 0 }}>بعد از افزودن، یک کد دعوت می‌گیرید که برای شاگرد می‌فرستید.</p>
+      <div className="field"><label htmlFor="n">نام</label><input id="n" className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} autoFocus /></div>
+      <div className="field"><label htmlFor="p">شماره موبایل</label>
+        <input id="p" className="input ltr" type="tel" inputMode="tel" placeholder="0912 123 4567" value={phone} onChange={e => setPhone(e.target.value)} aria-invalid={phoneBad} />
+        {phoneBad && <div className="caption" style={{ color: 'var(--red)' }}>شماره ۱۱ رقمی با ۰۹ شروع می‌شود.</div>}</div>
+      <button className="btn primary block pressable" disabled={busy}><Icon name="person_add" />افزودن شاگرد</button>
+    </form>}
+  </Sheet>
 }
 
 export default function Students() {
@@ -51,36 +49,34 @@ export default function Students() {
   useEffect(() => {
     (async () => {
       try {
-        const students = await must(supabase.from('students').select('*').order('full_name'))
-        setList(students)
+        setList(await must(supabase.from('students').select('*').order('full_name')))
         const ws = await must(supabase.from('workouts').select('student_id, date').order('date', { ascending: false }).limit(1000))
         const m = {}
         for (const w of ws) if (!m[w.student_id]) m[w.student_id] = w.date
         setLast(m)
-      } catch (e) { toast(errorText(e)); setList([]) }
+      } catch (e) { toast(errorText(e), 'error'); setList([]) }
     })()
   }, [])
-  const shown = (list || []).filter(s => !q || (s.full_name + (s.phone || '') + (s.email || '')).toLowerCase().includes(q.toLowerCase()))
+  const shown = (list || []).filter(s => !q || (s.full_name + (s.phone || '')).toLowerCase().includes(q.toLowerCase()))
+  const addBtn = <button className="icon-btn pressable" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
 
-  return <>
-    <div className="hdr">
-      <div><h1>شاگردان</h1><div className="sub">سلام {me.coach.full_name || 'مربی'} 👋</div></div>
-      <button className="btn primary" onClick={() => setAdding(true)}>+ شاگرد جدید</button>
-    </div>
-    {list && list.length > 5 && <input className="input" style={{ marginBottom: 12 }} placeholder="جستجوی شاگرد" value={q} onChange={e => setQ(e.target.value)} />}
-    {!list ? <Loading /> : !list.length ? <div className="empty"><div className="big">👥</div>
-      هنوز شاگردی ندارید. اولین شاگرد را با شماره موبایلش اضافه کنید.
-      <div style={{ marginTop: 14 }}><button className="btn primary" onClick={() => setAdding(true)}>+ شاگرد جدید</button></div>
-    </div> : <div className="list">{shown.map(s => <button key={s.id} className="item" onClick={() => nav('/s/' + s.id)}>
-      <div style={{ fontSize: 28 }}>🧑</div>
-      <div className="grow">
-        <div className="t">{s.full_name}</div>
-        <div className="s ltr">{s.phone ? fmtPhone(s.phone) : s.email}</div>
-        <div className="s">{last[s.id] ? 'آخرین تمرین: ' + fmtDate(last[s.id], { day: 'numeric', month: 'long' }) : 'هنوز تمرینی ثبت نکرده'}</div>
-      </div>
-      {!s.active ? <span className="pill bad">غیرفعال</span> : !s.user_id ? <span className="pill">هنوز ثبت‌نام نکرده</span> : <span className="pill ok">فعال</span>}
-      <span className="muted">‹</span>
-    </button>)}</div>}
+  return <Page title="شاگردان" subtitle={`سلام ${me.coach.full_name || 'مربی'}`} actions={addBtn}>
+    {list && list.length > 5 && <div className="field">
+      <input className="input" placeholder="جستجوی نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" /></div>}
+    {!list ? <Loading /> : !list.length ? <>
+      <Empty icon="group" title="هنوز شاگردی ندارید">اولین شاگرد را با شماره موبایلش اضافه کنید.</Empty>
+      <button className="btn primary block pressable" onClick={() => setAdding(true)}><Icon name="person_add" />شاگرد جدید</button>
+    </> : <div className="section">
+      <div className="section-title">{list.length.toLocaleString('fa-IR')} شاگرد</div>
+      <div className="group">{shown.map(s => <button key={s.id} className="row with-leading pressable" onClick={() => nav('/s/' + s.id)}>
+        <div className={'tile-icon' + (s.user_id && s.active ? '' : ' gray')}><Icon name="person" filled /></div>
+        <div className="content">
+          <div className="title-text">{s.full_name}</div>
+          <div className="sub">{!s.active ? 'غیرفعال' : !s.user_id ? 'هنوز ثبت‌نام نکرده' : last[s.id] ? 'آخرین تمرین ' + fmtDate(last[s.id], { day: 'numeric', month: 'long' }) : 'هنوز تمرینی ثبت نکرده'}</div>
+        </div>
+        <div className="trailing"><span className="latin caption">{s.phone ? fmtPhone(s.phone) : ''}</span><Disclosure /></div>
+      </button>)}</div>
+    </div>}
     {adding && <AddStudent onClose={() => setAdding(false)} onAdded={s => setList(l => [...(l || []), s].sort((a, b) => a.full_name.localeCompare(b.full_name, 'fa')))} />}
-  </>
+  </Page>
 }

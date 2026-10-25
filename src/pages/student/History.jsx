@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate, summarize, setText } from '../../lib/plan.js'
 import { exerciseName, loadExercises } from '../../lib/exercises.js'
-import { Loading, useToast, errorText } from '../../components/ui.jsx'
+import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
+import Icon from '../../components/Icon.jsx'
 
 export default function History() {
   const toast = useToast()
@@ -15,23 +16,29 @@ export default function History() {
         const workouts = await must(supabase.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(60))
         const sets = workouts.length ? await must(supabase.from('workout_sets').select('*').in('workout_id', workouts.map(w => w.id))) : []
         setData({ workouts, sets })
-      } catch (e) { toast(errorText(e)); setData({ workouts: [], sets: [] }) }
+      } catch (e) { toast(errorText(e), 'error'); setData({ workouts: [], sets: [] }) }
     })()
   }, [])
-  if (!data) return <Loading />
-  return <>
-    <div className="hdr"><h1>سابقه تمرین</h1><span className="pill">{data.workouts.length.toLocaleString('fa-IR')} جلسه</span></div>
-    {!data.workouts.length ? <div className="empty"><div className="big">📈</div>هنوز تمرینی ثبت نکرده‌ای.</div>
-      : <div className="list">{data.workouts.map(w => {
+  return <Page title="سابقه تمرین" subtitle={data ? `${data.workouts.length.toLocaleString('fa-IR')} جلسه` : null}>
+    {!data ? <Loading /> : !data.workouts.length ? <Empty icon="history" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، اینجا می‌بینی چه زدی.</Empty>
+      : <div className="group">{data.workouts.map(w => {
         const sets = data.sets.filter(s => s.workout_id === w.id)
         const sum = summarize(sets)
-        return <div key={w.id} className="card" style={{ marginBottom: 0, cursor: 'pointer' }} onClick={() => setOpen(open === w.id ? null : w.id)}>
-          <div className="row between"><div><b>{w.routine_name || 'تمرین'}</b><div className="small muted">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div><span className="muted">{open === w.id ? '▴' : '▾'}</span></div>
-          {open === w.id && [...sum.keys()].map(id => <div key={id} className="small" style={{ borderTop: '1px solid var(--line)', padding: '6px 0' }}>
-            <div className="ltr" style={{ fontWeight: 600 }}>{exerciseName(id)}</div>
-            <div className="muted ltr" dir="ltr">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
-          </div>)}
+        const isOpen = open === w.id
+        return <div key={w.id}>
+          <button className="row with-leading pressable" onClick={() => setOpen(isOpen ? null : w.id)} aria-expanded={isOpen}>
+            <div className="tile-icon"><Icon name="check" /></div>
+            <div className="content"><div className="title-text">{w.routine_name || 'تمرین'}</div>
+              <div className="sub">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div>
+            <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
+          </button>
+          {isOpen && <div style={{ padding: '0 1rem 0.75rem 1rem', paddingInlineStart: '4rem' }}>
+            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
+              <div className="subhead latin" style={{ fontWeight: 600, textAlign: 'right' }}>{exerciseName(id)}</div>
+              <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
+            </div>)}
+          </div>}
         </div>
       })}</div>}
-  </>
+  </Page>
 }

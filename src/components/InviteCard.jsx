@@ -1,5 +1,6 @@
 import { fmtPhone } from '../lib/phone.js'
 import { useToast } from './ui.jsx'
+import Icon from './Icon.jsx'
 
 export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
 
@@ -9,25 +10,29 @@ export const inviteText = s =>
   `۲. «ثبت‌نام» را بزن، شماره ${fmtPhone(s.phone)} و یک رمز دلخواه وارد کن.\n` +
   `۳. کد دعوت: ${s.invite_code}`
 
-// What the coach sends a new student: the link, their number and their code, in one message.
+// What the coach sends a new student: link, number and code in one message.
 export default function InviteCard({ student, onNewCode }) {
   const toast = useToast()
   const text = inviteText(student)
   const copy = async () => {
-    try { await navigator.clipboard.writeText(text); toast('متن دعوت کپی شد') } catch { toast('کپی نشد؛ متن را دستی انتخاب کن') }
+    try { await navigator.clipboard.writeText(text); toast('متن دعوت کپی شد', 'success') }
+    catch { toast('کپی نشد؛ متن را دستی انتخاب کن', 'warning') }
   }
   const share = () => navigator.share({ text }).catch(() => {})
-  if (student.user_id) return <div className="card"><h2>ورود شاگرد</h2>
-    <p className="small muted" style={{ margin: 0 }}>این شاگرد ثبت‌نام کرده و به شما وصل است. با شماره {fmtPhone(student.phone || '')} و رمز خودش وارد می‌شود.</p></div>
-  return <div className="card" style={{ borderColor: 'var(--acc)' }}>
-    <h2>کد دعوت</h2>
-    <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '.25em', textAlign: 'center', direction: 'ltr', margin: '4px 0 10px' }}>{student.invite_code}</div>
-    <p className="small muted">این پیام را برای شاگرد بفرستید. او با شماره خودش ثبت‌نام می‌کند و این کد را وارد می‌کند.</p>
-    <pre className="small" style={{ whiteSpace: 'pre-wrap', background: 'var(--bg)', padding: 10, borderRadius: 10, fontFamily: 'inherit' }}>{text}</pre>
-    <div className="row wrap">
-      {navigator.share && <button className="btn primary grow" onClick={share}>ارسال (تلگرام، واتساپ…)</button>}
-      <button className="btn grow" onClick={copy}>کپی متن</button>
-      {onNewCode && <button className="btn ghost" onClick={onNewCode}>کد جدید</button>}
+  if (student.user_id) return <div className="section"><div className="group">
+    <div className="row with-leading"><div className="tile-icon"><Icon name="check" /></div>
+      <div className="content"><div className="title-text">ثبت‌نام کرده</div>
+        <div className="sub">با شماره <span className="latin">{fmtPhone(student.phone || '')}</span> و رمز خودش وارد می‌شود.</div></div></div>
+  </div></div>
+  return <div className="card">
+    <div className="card-head"><div className="tile-icon orange"><Icon name="key" /></div>
+      <div className="grow"><div className="headline">کد دعوت</div><div className="caption">شاگرد با این کد به شما وصل می‌شود</div></div></div>
+    <div className="latin tnum" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.3em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
+    <div className="subhead" style={{ whiteSpace: 'pre-wrap', background: 'var(--fill)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '0.75rem' }}>{text}</div>
+    <div className="hstack wrap">
+      {navigator.share && <button className="btn primary grow pressable" onClick={share}><Icon name="share" />ارسال</button>}
+      <button className="btn grow pressable" onClick={copy}><Icon name="content_copy" />کپی متن</button>
+      {onNewCode && <button className="btn plain pressable" onClick={onNewCode}><Icon name="refresh" />کد جدید</button>}
     </div>
   </div>
 }

@@ -1,0 +1,48 @@
+// Downloads the two fonts the app uses into public/fonts, so they are served from the site itself
+// (Google Fonts is slow or filtered for many users in Iran).
+//   node scripts/fetch-fonts.mjs
+// Material Symbols is subset to the icons in ICONS — add a name there when you use a new icon,
+// then run this again. Names must stay in alphabetical order (Google Fonts requires it).
+import fs from 'node:fs'
+
+export const ICONS = [
+  'add', 'arrow_downward', 'arrow_upward', 'bedtime', 'calendar_month', 'check', 'check_circle',
+  'chevron_left', 'chevron_right', 'close', 'content_copy', 'delete', 'edit_note', 'error',
+  'exercise', 'expand_less', 'expand_more', 'fitness_center', 'group', 'history', 'hourglass_top',
+  'info', 'key', 'lock', 'logout', 'monitor_weight', 'person', 'person_add', 'refresh', 'search',
+  'settings', 'share', 'smartphone', 'sticky_note_2', 'timer', 'today', 'trending_down',
+  'trending_up', 'visibility', 'visibility_off'
+]
+const sorted = [...ICONS].sort()
+if (sorted.join() !== ICONS.join()) throw new Error('ICONS must be sorted: ' + sorted.join(', '))
+
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+const out = new URL('../public/fonts/', import.meta.url)
+
+async function grab(cssUrl, file) {
+  const css = await (await fetch(cssUrl, { headers: { 'User-Agent': UA } })).text()
+  const src = /src:\s*url\((https:[^)]+)\)\s*format\('woff2'\)/.exec(css)?.[1]
+  if (!src) throw new Error('no woff2 in ' + cssUrl + '\n' + css.slice(0, 300))
+  const buf = Buffer.from(await (await fetch(src)).arrayBuffer())
+  fs.writeFileSync(new URL(file, out), buf)
+  console.log(file, (buf.length / 1024).toFixed(0) + ' KB')
+}
+
+await grab(`https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&icon_names=${ICONS.join(',')}&display=block`, 'material-symbols-rounded.woff2')
+// Vazirmatn: every subset Google serves (Arabic, Latin, Latin-ext), each with its unicode-range,
+// written out as public/fonts/vazirmatn.css so the browser only downloads the parts a page uses.
+{
+  const css = await (await fetch('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300..800&display=swap', { headers: { 'User-Agent': UA } })).text()
+  const faces = [...css.matchAll(/\/\*\s*([\w-]+)\s*\*\/\s*@font-face\s*{([^}]+)}/g)]
+  let outCss = ''
+  for (const [, subset, body] of faces) {
+    const src = /url\((https:[^)]+)\)/.exec(body)[1]
+    const range = /unicode-range:\s*([^;]+);/.exec(body)[1]
+    const file = `vazirmatn-${subset}.woff2`
+    const buf = Buffer.from(await (await fetch(src)).arrayBuffer())
+    fs.writeFileSync(new URL(file, out), buf)
+    console.log(file, (buf.length / 1024).toFixed(0) + ' KB')
+    outCss += `@font-face{font-family:Vazirmatn;font-style:normal;font-weight:300 800;font-display:swap;src:url(${file}) format('woff2');unicode-range:${range}}\n`
+  }
+  fs.writeFileSync(new URL('vazirmatn.css', out), outCss)
+}

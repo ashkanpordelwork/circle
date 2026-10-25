@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { supabase, configured } from './lib/supabase.js'
 import { loadExercises } from './lib/exercises.js'
 import { Loading } from './components/ui.jsx'
+import Icon from './components/Icon.jsx'
 import Login, { NotRegistered, NotConfigured } from './pages/Login.jsx'
 import Students from './pages/coach/Students.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
@@ -29,6 +30,7 @@ async function resolveRole(session) {
 }
 
 export default function App() {
+  const loc = useLocation()
   const [me, setMe] = useState(undefined)   // undefined = still finding out, null = signed out
   const reload = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -46,38 +48,40 @@ export default function App() {
   }, [])
 
   if (!configured) return <NotConfigured />
-  if (me === undefined) return <div className="app"><Loading /></div>
+  if (me === undefined) return <Loading />
   if (me === null) return <Login />
   if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
 
+  const tab = (to, icon, label, end) => <NavLink to={to} end={end} className="pressable">
+    {({ isActive }) => <><Icon name={icon} filled={isActive} /><span>{label}</span></>}
+  </NavLink>
   return <Me.Provider value={{ ...me, reload }}>
-    <div className="app">
-      {me.role === 'coach' ? <Routes>
-        <Route path="/" element={<Students />} />
-        <Route path="/s/:id" element={<StudentPage />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes> : <Routes>
-        <Route path="/" element={<Today />} />
-        <Route path="/week" element={<Week />} />
-        <Route path="/log/:routineId" element={<LogWorkout />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/weight" element={<Weight />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>}
-    </div>
-    <nav className="nav">
+    {me.role === 'coach' ? <Routes>
+      <Route path="/" element={<Students />} />
+      <Route path="/s/:id" element={<StudentPage />} />
+      <Route path="/account" element={<Account />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes> : <Routes>
+      <Route path="/" element={<Today />} />
+      <Route path="/week" element={<Week />} />
+      <Route path="/log/:routineId" element={<LogWorkout />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/weight" element={<Weight />} />
+      <Route path="/account" element={<Account />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>}
+    {/* A workout in progress owns the screen: no tabs to wander off into. */}
+    {!loc.pathname.startsWith('/log/') && <nav className="tabbar" aria-label="بخش‌ها">
       {me.role === 'coach' ? <>
-        <NavLink to="/" end><span className="i">👥</span>شاگردان</NavLink>
-        <NavLink to="/account"><span className="i">⚙️</span>حساب</NavLink>
+        {tab('/', 'group', 'شاگردان', true)}
+        {tab('/account', 'person', 'حساب')}
       </> : <>
-        <NavLink to="/" end><span className="i">🏠</span>امروز</NavLink>
-        <NavLink to="/week"><span className="i">📅</span>برنامه</NavLink>
-        <NavLink to="/history"><span className="i">📈</span>سابقه</NavLink>
-        <NavLink to="/weight"><span className="i">⚖️</span>وزن</NavLink>
-        <NavLink to="/account"><span className="i">⚙️</span>حساب</NavLink>
+        {tab('/', 'today', 'امروز', true)}
+        {tab('/week', 'calendar_month', 'برنامه هفته')}
+        {tab('/history', 'history', 'سابقه')}
+        {tab('/weight', 'monitor_weight', 'وزن')}
+        {tab('/account', 'person', 'حساب')}
       </>}
-    </nav>
+    </nav>}
   </Me.Provider>
 }

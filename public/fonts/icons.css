@@ -1,0 +1,8 @@
+/* Material Symbols Rounded, subset to the icons the app uses (scripts/fetch-fonts.mjs). */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: block;
+  src: url(material-symbols-rounded.woff2) format('woff2');
+}
