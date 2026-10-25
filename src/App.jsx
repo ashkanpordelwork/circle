@@ -65,7 +65,8 @@ export default function App() {
     return <Intake student={me.student} initial={me.intake?.answers} onDone={setIntake} />
   }
 
-  return <Me.Provider value={{ ...me, reload, setIntake }}>
+  const setCoach = coach => setMe(m => ({ ...m, coach }))
+  return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/students" element={<Students />} />

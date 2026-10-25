@@ -1,11 +1,12 @@
 import { fmtPhone, normPhone } from '../lib/phone.js'
 import { useToast } from './ui.jsx'
 import Icon from './Icon.jsx'
+import { useMe } from '../App.jsx'
 
 export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
 
-export const inviteText = s =>
-  `سلام ${s.full_name}! برنامه تمرینی‌ات آماده است.\n` +
+export const inviteText = (s, coach = '') =>
+  `سلام ${s.full_name}! ${coach ? `من ${coach} هستم، مربی‌ات. ` : ''}برنامه تمرینی‌ات آماده است.\n` +
   `۱. اپ Circle را باز کن: ${appUrl()}\n` +
   // The number in one piece: with spaces, its groups get reordered inside Persian text.
   `۲. «ثبت‌نام» را بزن، شماره ${normPhone(s.phone)} و یک رمز دلخواه وارد کن.\n` +
@@ -14,7 +15,8 @@ export const inviteText = s =>
 // What the coach sends a new student: link, number and code in one message.
 export default function InviteCard({ student, onNewCode }) {
   const toast = useToast()
-  const text = inviteText(student)
+  const me = useMe()
+  const text = inviteText(student, me?.coach?.full_name?.trim())
   // The phone's share sheet (WhatsApp, Telegram, SMS…). Where there is none (a desktop browser),
   // the text goes to the clipboard instead, ready to paste.
   const share = async () => {

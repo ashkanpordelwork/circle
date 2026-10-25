@@ -4,22 +4,23 @@ import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
 import { Page } from '../components/ui.jsx'
 import Icon, { Disclosure } from '../components/Icon.jsx'
 import { Link } from 'react-router-dom'
+import CoachAccount from './CoachAccount.jsx'
 
 export default function Account() {
   const me = useMe()
   const name = me.role === 'coach' ? me.coach.full_name : me.student.full_name
   const phone = phoneOfEmail(me.session.user.email)
   return <Page fill>
-    <div className="section"><div className="group glass-lite">
+    {me.role === 'coach' ? <CoachAccount /> : <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
         <div className="tile-icon"><Icon name="person" filled /></div>
         <div className="content">
           <div className="title-text">{name || (me.role === 'coach' ? 'مربی' : 'شاگرد')}</div>
           <div className="sub latin" style={{ textAlign: 'right' }}>{phone ? fmtPhone(phone) : me.session.user.email}</div>
         </div>
-        <span className="pill ok">{me.role === 'coach' ? 'مربی' : 'شاگرد'}</span>
+        <span className="pill ok">شاگرد</span>
       </div>
-    </div></div>
+    </div></div>}
     {me.role === 'student' && !me.intake?.skipped && <div className="section"><div className="group glass-lite">
       <Link to="/intake" className="row pressable with-leading">
         <div className="tile-icon blue"><Icon name="assignment" /></div>

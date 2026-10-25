@@ -8,7 +8,7 @@ import fs from 'node:fs'
 
 export const ICONS = [
   'add', 'arrow_downward', 'arrow_outward', 'arrow_upward', 'assignment', 'bedtime', 'calendar_month',
-  'check', 'check_circle', 'chevron_left', 'chevron_right', 'close', 'content_copy', 'dashboard', 'delete',
+  'check', 'check_circle', 'chevron_left', 'chevron_right', 'close', 'content_copy', 'dashboard', 'delete', 'download',
   'edit_note', 'error', 'exercise', 'expand_less', 'expand_more', 'fitness_center', 'flag', 'group',
   'healing', 'history', 'hourglass_top', 'info', 'key', 'lock', 'logout', 'medical_information',
   'monitor_weight', 'person', 'person_add', 'refresh', 'restaurant', 'search', 'settings', 'share',

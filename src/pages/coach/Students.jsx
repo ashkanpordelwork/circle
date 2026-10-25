@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate } from '../../lib/plan.js'
 import { isPhone, normPhone } from '../../lib/phone.js'
@@ -42,7 +42,9 @@ export default function Students() {
   const toast = useToast()
   const [list, setList] = useState(null)
   const [last, setLast] = useState({})
-  const [adding, setAdding] = useState(false)
+  const loc = useLocation()
+  // «شاگرد جدید» on the account page lands here with the form open.
+  const [adding, setAdding] = useState(!!loc.state?.add)
   const [q, setQ] = useState('')
   useEffect(() => {
     (async () => {
