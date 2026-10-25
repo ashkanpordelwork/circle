@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { scope } from '../../lib/scope.js'
 import { supabase, must } from '../../lib/supabase.js'
 import { overview, isoMinus, daysBetween } from '../../lib/dashboard.js'
 import { todayISO, DAY_NAMES } from '../../lib/plan.js'
@@ -59,9 +60,9 @@ export default function Dashboard() {
     (async () => {
       try {
         const [students, workouts, routines] = await Promise.all([
-          must(supabase.from('students').select('id, full_name, user_id, active').order('full_name')),
-          must(supabase.from('workouts').select('id, student_id, routine_name, date, created_at, workout_sets(count)').gte('date', isoMinus(today, 60)).order('date', { ascending: false }).limit(1000)),
-          must(supabase.from('routines').select('student_id, name, days'))
+          must(supabase.from('students').select('id, full_name, user_id, active').eq('coach_id', scope.uid).order('full_name')),
+          must(supabase.from('workouts').select('id, student_id, routine_name, date, created_at, workout_sets(count), students!inner(coach_id)').eq('students.coach_id', scope.uid).gte('date', isoMinus(today, 60)).order('date', { ascending: false }).limit(1000)),
+          must(supabase.from('routines').select('student_id, name, days, students!inner(coach_id)').eq('students.coach_id', scope.uid))
         ])
         const names = Object.fromEntries(students.map(s => [s.id, s.full_name]))
         setO({ ...overview({ students, workouts, routines, today }), names })

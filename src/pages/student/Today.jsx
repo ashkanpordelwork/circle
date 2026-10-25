@@ -7,6 +7,7 @@ import Icon from '../../components/Icon.jsx'
 import { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
 import { loadPlan } from './data.js'
+import { scope } from '../../lib/scope.js'
 
 export default function Today() {
   const me = useMe()
@@ -18,7 +19,7 @@ export default function Today() {
     (async () => {
       try {
         setPlan(await loadPlan())
-        setDoneToday(await must(supabase.from('workouts').select('routine_id').eq('date', todayISO())))
+        setDoneToday(await must(supabase.from('workouts').select('routine_id').eq('student_id', scope.student).eq('date', todayISO())))
       } catch (e) { toast(errorText(e), 'error'); setPlan([]) }
     })()
   }, [])

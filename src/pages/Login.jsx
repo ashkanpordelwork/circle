@@ -114,3 +114,13 @@ export function NotConfigured() {
     <p className="lead">مقادیر <code>VITE_SUPABASE_URL</code> و <code>VITE_SUPABASE_ANON_KEY</code> را در تنظیمات گیت‌هاب (Variables) وارد کنید و سایت را دوباره بسازید.</p>
   </main>
 }
+
+// A coach whose access the admin switched off. Their students and history are kept.
+export function Stopped() {
+  return <main className="auth">
+    <div className="mark"><Icon name="block" /></div>
+    <h1 className="title" style={{ textAlign: 'center' }}>دسترسی مربی بسته است</h1>
+    <p className="lead">مدیر سیستم دسترسی این حساب را موقتاً بسته است. شاگردها و برنامه‌ها سر جایشان هستند؛ برای باز شدن دوباره با مدیر تماس بگیرید.</p>
+    <button className="btn glass interactive block" onClick={() => supabase.auth.signOut()}><Icon name="logout" mirror />خروج از حساب</button>
+  </main>
+}

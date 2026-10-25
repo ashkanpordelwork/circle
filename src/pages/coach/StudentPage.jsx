@@ -14,6 +14,8 @@ import { IntField, RepsField, WeightField, TempoField } from '../../components/W
 import InviteCard from '../../components/InviteCard.jsx'
 import { profile, alertLine } from '../../lib/intake.js'
 import IntakeSummary from '../../components/IntakeSummary.jsx'
+import { useMe } from '../../App.jsx'
+import { CoachPicker, adminError } from '../admin/Admin.jsx'
 
 
 /* ---------- one exercise, edited on its own page ---------- */
@@ -214,8 +216,40 @@ function ProfileTab({ student, intake }) {
 
 /* ---------- settings ---------- */
 
+// What only an admin can do to a student: give them to another coach, or reset a lost login.
+function AdminStudentTools({ student, onSaved }) {
+  const toast = useToast()
+  const [sheet, setSheet] = useState(null)
+  return <div className="section">
+    <div className="section-title">مدیریت</div>
+    <div className="group glass-lite">
+      <button className="row pressable with-leading" onClick={() => setSheet('move')}>
+        <div className="tile-icon"><Icon name="swap_horiz" /></div>
+        <div className="content"><div className="title-text">انتقال به مربی دیگر</div><div className="sub">مربی فعلی: {student.coaches?.full_name?.trim() || '—'}</div></div>
+        <Disclosure /></button>
+      {student.user_id && <button className="row pressable with-leading" onClick={() => setSheet('reset')}>
+        <div className="tile-icon blue"><Icon name="lock_reset" /></div>
+        <div className="content"><div className="title-text">بازنشانی ورود</div><div className="sub">برای رمز فراموش‌شده؛ کد دعوت تازه می‌گیرد</div></div>
+        <Disclosure /></button>}
+    </div>
+    {sheet === 'move' && <CoachPicker title="انتقال به مربی دیگر" exclude={student.coach_id} onClose={() => setSheet(null)}
+      text="برنامه، پرسشنامه و همه سوابق شاگرد همراهش منتقل می‌شود."
+      onPick={async c => {
+        await must(supabase.rpc('admin_move_student', { p_student: student.id, p_coach: c.id }))
+        onSaved({ coach_id: c.id, coaches: { full_name: c.coach_name } }); toast(`به ${c.coach_name || 'مربی جدید'} منتقل شد`, 'success')
+      }} />}
+    {sheet === 'reset' && <Confirm title="ورود بازنشانی شود؟" okText="بازنشانی ورود" onClose={() => setSheet(null)}
+      text="حساب فعلی شاگرد حذف و یک کد دعوت تازه ساخته می‌شود. با همان شماره دوباره ثبت‌نام می‌کند؛ برنامه و سوابقش می‌ماند."
+      onOk={async () => {
+        try { const code = await must(supabase.rpc('admin_reset_login', { p_student: student.id })); onSaved({ user_id: null, invite_code: code }); toast('کد دعوت تازه آماده است', 'success') }
+        catch (e) { toast(adminError(e), 'error') }
+      }} />}
+  </div>
+}
+
 function SettingsTab({ student, onSaved, onRemoved }) {
   const toast = useToast()
+  const me = useMe()
   const [name, setName] = useState(student.full_name)
   const [phone, setPhone] = useState(student.phone || '')
   const [confirm, setConfirm] = useState(false)
@@ -242,6 +276,7 @@ function SettingsTab({ student, onSaved, onRemoved }) {
       </div>
       {student.user_id && <div className="section-footer">شاگرد با شماره‌ای که ثبت‌نام کرده وارد می‌شود؛ تغییر شماره اینجا روی ورودش اثری ندارد.</div>}
     </div>
+    {me.admin && <AdminStudentTools student={student} onSaved={onSaved} />}
     <div className="section">
       <div className="group glass-lite">
         <button className="row pressable" onClick={() => patch({ active: !student.active }, student.active ? 'دسترسی بسته شد' : 'دسترسی باز شد')}>
@@ -273,19 +308,25 @@ export default function StudentPage() {
     supabase.from('intakes').select('answers, completed_at').eq('student_id', id).maybeSingle()
       .then(({ data }) => setIntake(data || null))
   }, [id])
+  const me = useMe()
+  // An admin may open any coach's student; their own list is not where they came from then.
+  const home = me.role === 'coach' ? '/students' : '/admin/students'
   useEffect(() => {
-    supabase.from('students').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
-      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav('/students') } else setStudent(data)
+    supabase.from('students').select('*, coaches(full_name)').eq('id', id).maybeSingle().then(({ data, error }) => {
+      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav(home) } else setStudent(data)
     })
   }, [id])
   if (!student) return <Loading />
-  // Phone and sign-up state live under «تنظیمات»; only a closed account is worth saying up here.
-  return <Page title={student.full_name} back="/students" subtitle={student.active ? null : 'دسترسی بسته است'}>
+  const other = student.coach_id !== me.session.user.id
+  // Phone and sign-up state live under «تنظیمات»; only a closed account is worth saying up here,
+  // and, for an admin looking at someone else's student, whose student it is.
+  const sub = [other && `مربی: ${student.coaches?.full_name?.trim() || '—'}`, !student.active && 'دسترسی بسته است'].filter(Boolean).join('، ')
+  return <Page title={student.full_name} back={other ? true : '/students'} subtitle={sub || null}>
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
       options={[{ value: 'plan', label: 'برنامه' }, { value: 'profile', label: 'پرونده' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت' }]} />
     {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}
     {tab === 'profile' && <ProfileTab student={student} intake={intake} />}
     {tab === 'progress' && <ProgressTab student={student} />}
-    {tab === 'settings' && <SettingsTab student={student} onSaved={setStudent} onRemoved={() => nav('/students')} />}
+    {tab === 'settings' && <SettingsTab student={student} onSaved={s => setStudent(x => ({ ...x, ...s }))} onRemoved={() => nav(home)} />}
   </Page>
 }

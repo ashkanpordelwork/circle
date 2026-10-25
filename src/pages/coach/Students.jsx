@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { scope } from '../../lib/scope.js'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate } from '../../lib/plan.js'
 import { isPhone, normPhone } from '../../lib/phone.js'
@@ -49,8 +50,8 @@ export default function Students() {
   useEffect(() => {
     (async () => {
       try {
-        setList(await must(supabase.from('students').select('*').order('full_name')))
-        const ws = await must(supabase.from('workouts').select('student_id, date').order('date', { ascending: false }).limit(1000))
+        setList(await must(supabase.from('students').select('*').eq('coach_id', scope.uid).order('full_name')))
+        const ws = await must(supabase.from('workouts').select('student_id, date, students!inner(coach_id)').eq('students.coach_id', scope.uid).order('date', { ascending: false }).limit(1000))
         const m = {}
         for (const w of ws) if (!m[w.student_id]) m[w.student_id] = w.date
         setLast(m)

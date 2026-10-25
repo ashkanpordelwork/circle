@@ -8,18 +8,25 @@ import CoachAccount from './CoachAccount.jsx'
 
 export default function Account() {
   const me = useMe()
-  const name = me.role === 'coach' ? me.coach.full_name : me.student.full_name
+  const name = me.role === 'coach' ? me.coach.full_name : me.role === 'student' ? me.student.full_name : ''
   const phone = phoneOfEmail(me.session.user.email)
   return <Page fill>
     {me.role === 'coach' ? <CoachAccount /> : <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
         <div className="tile-icon"><Icon name="person" filled /></div>
         <div className="content">
-          <div className="title-text">{name || (me.role === 'coach' ? 'مربی' : 'شاگرد')}</div>
+          <div className="title-text">{name || (me.role === 'admin' ? 'مدیر سیستم' : 'شاگرد')}</div>
           <div className="sub latin" style={{ textAlign: 'right' }}>{phone ? fmtPhone(phone) : me.session.user.email}</div>
         </div>
-        <span className="pill ok">شاگرد</span>
+        <span className="pill ok">{me.role === 'admin' ? 'مدیر' : 'شاگرد'}</span>
       </div>
+    </div></div>}
+    {me.admin && me.role !== 'admin' && <div className="section"><div className="group glass-lite">
+      <Link to="/admin" className="row pressable with-leading">
+        <div className="tile-icon red"><Icon name="admin_panel_settings" /></div>
+        <div className="content"><div className="title-text">پنل مدیریت</div><div className="sub">همه حساب‌ها، دسترسی‌ها و فعالیت‌ها</div></div>
+        <Disclosure />
+      </Link>
     </div></div>}
     {me.role === 'student' && !me.intake?.skipped && <div className="section"><div className="group glass-lite">
       <Link to="/intake" className="row pressable with-leading">

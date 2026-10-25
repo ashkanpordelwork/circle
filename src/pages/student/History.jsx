@@ -5,6 +5,7 @@ import { loadExercises } from '../../lib/exercises.js'
 import { ExName } from '../../components/ExerciseInfo.jsx'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
+import { scope } from '../../lib/scope.js'
 
 export default function History() {
   const toast = useToast()
@@ -14,7 +15,7 @@ export default function History() {
     (async () => {
       try {
         await loadExercises()
-        const workouts = await must(supabase.from('workouts').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }).limit(60))
+        const workouts = await must(supabase.from('workouts').select('*').eq('student_id', scope.student).order('date', { ascending: false }).order('created_at', { ascending: false }).limit(60))
         const sets = workouts.length ? await must(supabase.from('workout_sets').select('*').in('workout_id', workouts.map(w => w.id))) : []
         setData({ workouts, sets })
       } catch (e) { toast(errorText(e), 'error'); setData({ workouts: [], sets: [] }) }

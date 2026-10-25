@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
+import { scope } from '../lib/scope.js'
 import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
 import { fmtDate } from '../lib/plan.js'
 import { loadExercises, exerciseName } from '../lib/exercises.js'
@@ -56,8 +57,12 @@ export default function CoachAccount() {
   const phone = phoneOfEmail(me.session.user.email)
 
   useEffect(() => {
-    const count = t => supabase.from(t).select('id', { count: 'exact', head: true }).then(r => r.count ?? 0)
-    Promise.all([must(supabase.from('students').select('id, active, user_id')), count('workouts'), count('routines'), count('workout_sets')])
+    // Counted through the student, so only this coach's own people (an admin reaches everyone).
+    const count = (t, join, path) => supabase.from(t).select('id, ' + join, { count: 'exact', head: true }).eq(path, scope.uid).then(r => { if (r.error) throw r.error; return r.count ?? 0 })
+    Promise.all([must(supabase.from('students').select('id, active, user_id').eq('coach_id', scope.uid)),
+      count('workouts', 'students!inner(coach_id)', 'students.coach_id'),
+      count('routines', 'students!inner(coach_id)', 'students.coach_id'),
+      count('workout_sets', 'workouts!inner(students!inner(coach_id))', 'workouts.students.coach_id')])
       .then(([students, workouts, routines, sets]) => setStats({
         live: students.filter(s => s.active && s.user_id).length,
         pending: students.filter(s => s.active && !s.user_id).length,
@@ -75,16 +80,16 @@ export default function CoachAccount() {
   const exportData = async kind => {
     setBusy(kind)
     try {
-      const students = await must(supabase.from('students').select('id, full_name'))
+      const students = await must(supabase.from('students').select('id, full_name').eq('coach_id', scope.uid))
       const names = Object.fromEntries(students.map(s => [s.id, s.full_name]))
       const stamp = new Date().toISOString().slice(0, 10)
       if (kind === 'workouts') {
         await loadExercises()
-        const ws = await all(() => supabase.from('workouts').select('id, student_id, date, routine_name, note, workout_sets(exercise_id, set_index, weight, reps)').order('date', { ascending: false }))
+        const ws = await all(() => supabase.from('workouts').select('id, student_id, date, routine_name, note, workout_sets(exercise_id, set_index, weight, reps), students!inner(coach_id)').eq('students.coach_id', scope.uid).order('date', { ascending: false }))
         if (!ws.length) return toast('هنوز تمرینی ثبت نشده است', 'warning')
         download(`circle-workouts-${stamp}.csv`, workoutsCsv(ws, names, exerciseName))
       } else {
-        const bw = await all(() => supabase.from('body_weights').select('student_id, date, weight').order('date', { ascending: false }))
+        const bw = await all(() => supabase.from('body_weights').select('student_id, date, weight, students!inner(coach_id)').eq('students.coach_id', scope.uid).order('date', { ascending: false }))
         if (!bw.length) return toast('هنوز وزنی ثبت نشده است', 'warning')
         download(`circle-weights-${stamp}.csv`, weightsCsv(bw, names))
       }

@@ -27,7 +27,7 @@ export default function LogWorkout() {
         await loadExercises()   // equipment decides whether a set needs a weight
         const r = (await loadPlan()).find(x => x.id === routineId)
         if (!r) { toast('این برنامه پیدا نشد', 'error'); return nav('/') }
-        const last = await must(supabase.from('workouts').select('id').eq('routine_id', routineId).order('date', { ascending: false }).limit(1))
+        const last = await must(supabase.from('workouts').select('id').eq('student_id', me.student.id).eq('routine_id', routineId).order('date', { ascending: false }).limit(1))
         const lastSets = last.length ? await must(supabase.from('workout_sets').select('*').eq('workout_id', last[0].id)) : []
         setRoutine(r); setLog(blankLog(r, lastSets))
       } catch (e) { toast(errorText(e), 'error') }

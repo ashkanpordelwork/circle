@@ -12,7 +12,7 @@ export default function Weight() {
   const toast = useToast()
   const [list, setList] = useState(null)
   const [w, setW] = useState('')
-  const load = () => supabase.from('body_weights').select('*').order('date', { ascending: false }).limit(90)
+  const load = () => supabase.from('body_weights').select('*').eq('student_id', me.student.id).order('date', { ascending: false }).limit(90)
     .then(({ data, error }) => { if (error) toast(errorText(error), 'error'); setList(data || []) })
   useEffect(() => { load() }, [])
   const save = async () => {
