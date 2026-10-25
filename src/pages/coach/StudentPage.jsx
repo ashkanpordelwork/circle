@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { loadExercises } from '../../lib/exercises.js'
 import { WEEK, DAY_NAMES, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum } from '../../lib/plan.js'
-import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
+import { isPhone, normPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
@@ -266,8 +266,8 @@ export default function StudentPage() {
     })
   }, [id])
   if (!student) return <Loading />
-  const status = !student.active ? 'دسترسی بسته' : student.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'
-  return <Page title={student.full_name} back="/students" subtitle={<><span className="latin">{student.phone ? fmtPhone(student.phone) : ''}</span> · {status}</>}>
+  // Phone and sign-up state live under «تنظیمات»; only a closed account is worth saying up here.
+  return <Page title={student.full_name} back="/students" subtitle={student.active ? null : 'دسترسی بسته است'}>
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
       options={[{ value: 'plan', label: 'برنامه' }, { value: 'profile', label: 'پرونده' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت' }]} />
     {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}

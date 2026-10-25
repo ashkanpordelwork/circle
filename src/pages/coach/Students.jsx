@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate } from '../../lib/plan.js'
-import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
+import { isPhone, normPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Sheet from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
@@ -72,7 +72,7 @@ export default function Students() {
           <div className="title-text">{s.full_name}</div>
           <div className="sub">{!s.active ? 'غیرفعال' : !s.user_id ? 'هنوز ثبت‌نام نکرده' : last[s.id] ? 'آخرین تمرین ' + fmtDate(last[s.id], { day: 'numeric', month: 'long' }) : 'هنوز تمرینی ثبت نکرده'}</div>
         </div>
-        <div className="trailing"><span className="latin caption">{s.phone ? fmtPhone(s.phone) : ''}</span><Disclosure /></div>
+        <Disclosure />
       </button>)}</div>
     </div>}
     {adding && <AddStudent onClose={() => setAdding(false)} onAdded={s => setList(l => [...(l || []), s].sort((a, b) => a.full_name.localeCompare(b.full_name, 'fa')))} />}
