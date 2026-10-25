@@ -6,5 +6,5 @@ import { ToastProvider } from './components/ui.jsx'
 import './styles.css'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode><BrowserRouter><ToastProvider><App /></ToastProvider></BrowserRouter></StrictMode>
+  <StrictMode><BrowserRouter basename={import.meta.env.BASE_URL}><ToastProvider><App /></ToastProvider></BrowserRouter></StrictMode>
 )

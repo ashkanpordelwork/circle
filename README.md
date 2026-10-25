@@ -10,7 +10,7 @@
 |---|---|
 | ظاهر اپ | React + Vite |
 | دیتابیس، ورود با گوگل، سطح دسترسی | Supabase |
-| انتشار | Vercel |
+| انتشار | GitHub Pages (یا Vercel) |
 
 ---
 
@@ -49,29 +49,31 @@ https://xxxx.supabase.co/auth/v1/callback
 4. `Client ID` و `Client secret` را کپی کنید.
 5. در Supabase: `Authentication` ← `Sign In / Providers` ← `Google` را روشن کنید و این دو مقدار را وارد کنید.
 
-### ۳. کد روی GitHub
+### ۳. انتشار روی GitHub Pages
 
-- این پوشه را در یک ریپوی GitHub (خصوصی هم می‌شود) قرار دهید.
-
-### ۴. Vercel: انتشار
-
-1. در `vercel.com` با GitHub وارد شوید ← `Add New` ← `Project` ← ریپو را انتخاب کنید.
-2. در `Environment Variables` این دو را اضافه کنید:
+1. ریپو باید **Public** باشد (Pages رایگان برای ریپوی خصوصی کار نمی‌کند).
+   - `Settings` ← پایین صفحه ← `Change visibility`.
+2. `Settings` ← `Pages` ← در `Source` گزینه **GitHub Actions** را انتخاب کنید.
+3. `Settings` ← `Secrets and variables` ← `Actions` ← تب **Variables** ← `New repository variable`:
 
 ```ini
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-3. `Deploy` را بزنید. آدرس سایت را کپی کنید (مثلاً `https://morabi.vercel.app`).
+4. تب `Actions` ← `Deploy to GitHub Pages` ← `Run workflow`.
+   - بعد از حدود ۲ دقیقه سایت روی این آدرس است: `https://<username>.github.io/<repo>/`
+   - از این به بعد هر تغییری در شاخه `main`، سایت را خودکار به‌روز می‌کند.
 
-### ۵. وصل کردن آدرس سایت به Supabase
+> اگر Vercel را ترجیح می‌دهید: پروژه را در Vercel اضافه کنید و همان دو مقدار را در `Environment Variables` بگذارید. فایل `vercel.json` آماده است.
+
+### ۴. وصل کردن آدرس سایت به Supabase
 
 - در Supabase: `Authentication` ← `URL Configuration`:
-  - `Site URL`: آدرس Vercel شما
-  - `Redirect URLs`: همان آدرس، به‌اضافه `http://localhost:5173` برای اجرای محلی
+  - `Site URL`: آدرس سایت (مثلاً `https://ashkanpordelwork.github.io/circle/`)
+  - `Redirect URLs`: همان آدرس، به‌اضافه `http://localhost:5173/` برای اجرای محلی
 
-### ۶. اولین ورود
+### ۵. اولین ورود
 
 1. سایت را باز کنید و «ورود با گوگل» را بزنید.
 2. با جیمیلی که در مرحله ۱ ثبت کردید وارد شوید؛ پنل مربی باز می‌شود.

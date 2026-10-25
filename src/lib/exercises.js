@@ -28,7 +28,7 @@ let cache = null
 let byId = null
 export async function loadExercises() {
   if (cache) return cache
-  const r = await fetch('/exercises.json')
+  const r = await fetch(import.meta.env.BASE_URL + 'exercises.json')
   cache = await r.json()
   byId = new Map(cache.map(x => [x.id, x]))
   return cache

@@ -8,7 +8,7 @@ export default function Login() {
   const [err, setErr] = useState('')
   const go = async () => {
     setBusy(true); setErr('')
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + import.meta.env.BASE_URL } })
     if (error) { setErr(error.message); setBusy(false) }
   }
   return <div className="app"><div className="login">
