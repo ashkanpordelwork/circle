@@ -1,28 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
-import { scope } from '../lib/scope.js'
 import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
 import { fmtDate } from '../lib/plan.js'
-import { loadExercises, exerciseName } from '../lib/exercises.js'
-import { workoutsCsv, weightsCsv, download } from '../lib/export.js'
 import { useToast, errorText } from '../components/ui.jsx'
 import Sheet from '../components/Sheet.jsx'
 import Icon, { Disclosure } from '../components/Icon.jsx'
 import { appUrl } from '../components/InviteCard.jsx'
 
-const fa = n => Number(n).toLocaleString('fa-IR')
-
-// Every row of a table the coach can see; PostgREST hands them out a thousand at a time.
-async function all(query) {
-  const out = []
-  for (let from = 0; ; from += 1000) {
-    const page = await must(query().range(from, from + 999))
-    out.push(...page)
-    if (page.length < 1000) return out
-  }
-}
 
 function NameSheet({ coach, onSaved, onClose }) {
   const toast = useToast()
@@ -45,55 +31,19 @@ function NameSheet({ coach, onSaved, onClose }) {
   </Sheet>
 }
 
-// The coach's own page: who they are, what they have built so far, and the tools around it.
+// The coach's own page: who they are, and the tools around it. (Their numbers live on the dashboard.)
 export default function CoachAccount() {
   const me = useMe()
   const nav = useNavigate()
   const toast = useToast()
   const [coach, setCoach] = useState(me.coach)
   const [editing, setEditing] = useState(false)
-  const [stats, setStats] = useState(null)
-  const [busy, setBusy] = useState('')
   const phone = phoneOfEmail(me.session.user.email)
-
-  useEffect(() => {
-    // Counted through the student, so only this coach's own people (an admin reaches everyone).
-    const count = (t, join, path) => supabase.from(t).select('id, ' + join, { count: 'exact', head: true }).eq(path, scope.uid).then(r => { if (r.error) throw r.error; return r.count ?? 0 })
-    Promise.all([must(supabase.from('students').select('id, active, user_id').eq('coach_id', scope.uid)),
-      count('workouts', 'students!inner(coach_id)', 'students.coach_id'),
-      count('routines', 'students!inner(coach_id)', 'students.coach_id'),
-      count('workout_sets', 'workouts!inner(students!inner(coach_id))', 'workouts.students.coach_id')])
-      .then(([students, workouts, routines, sets]) => setStats({
-        live: students.filter(s => s.active && s.user_id).length,
-        pending: students.filter(s => s.active && !s.user_id).length,
-        workouts, routines, sets
-      }))
-      .catch(e => toast(errorText(e), 'error'))
-  }, [])
 
   const shareApp = async () => {
     const text = `اپ Circle: ${appUrl()}`
     if (navigator.share) return navigator.share({ text }).catch(() => {})
     try { await navigator.clipboard.writeText(text); toast('لینک اپ کپی شد', 'success') } catch { toast('کپی در این مرورگر ممکن نیست', 'warning') }
-  }
-
-  const exportData = async kind => {
-    setBusy(kind)
-    try {
-      const students = await must(supabase.from('students').select('id, full_name').eq('coach_id', scope.uid))
-      const names = Object.fromEntries(students.map(s => [s.id, s.full_name]))
-      const stamp = new Date().toISOString().slice(0, 10)
-      if (kind === 'workouts') {
-        await loadExercises()
-        const ws = await all(() => supabase.from('workouts').select('id, student_id, date, routine_name, note, workout_sets(exercise_id, set_index, weight, reps), students!inner(coach_id)').eq('students.coach_id', scope.uid).order('date', { ascending: false }))
-        if (!ws.length) return toast('هنوز تمرینی ثبت نشده است', 'warning')
-        download(`circle-workouts-${stamp}.csv`, workoutsCsv(ws, names, exerciseName))
-      } else {
-        const bw = await all(() => supabase.from('body_weights').select('student_id, date, weight, students!inner(coach_id)').eq('students.coach_id', scope.uid).order('date', { ascending: false }))
-        if (!bw.length) return toast('هنوز وزنی ثبت نشده است', 'warning')
-        download(`circle-weights-${stamp}.csv`, weightsCsv(bw, names))
-      }
-    } catch (e) { toast(errorText(e), 'error') } finally { setBusy('') }
   }
 
   const name = coach.full_name?.trim()
@@ -110,20 +60,6 @@ export default function CoachAccount() {
     {!name && <div className="section-footer" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
 
     <div className="section">
-      <div className="section-title">کارنامه</div>
-      <div className="stats">
-        <div className="stat glass-lite"><div className="stat-icon"><Icon name="group" filled /></div>
-          <div className="v">{stats ? fa(stats.live) : '—'}</div><div className="l">شاگرد فعال{stats?.pending ? ` (${fa(stats.pending)} منتظر)` : ''}</div></div>
-        <div className="stat glass-lite"><div className="stat-icon blue"><Icon name="calendar_month" /></div>
-          <div className="v">{stats ? fa(stats.routines) : '—'}</div><div className="l">برنامه نوشته‌شده</div></div>
-        <div className="stat glass-lite"><div className="stat-icon"><Icon name="fitness_center" /></div>
-          <div className="v">{stats ? fa(stats.workouts) : '—'}</div><div className="l">جلسه تمرین ثبت‌شده</div></div>
-        <div className="stat glass-lite"><div className="stat-icon orange"><Icon name="trending_up" /></div>
-          <div className="v">{stats ? fa(stats.sets) : '—'}</div><div className="l">ست زده‌شده</div></div>
-      </div>
-    </div>
-
-    <div className="section">
       <div className="section-title">ابزارها</div>
       <div className="group glass-lite">
         <button className="row pressable with-leading" onClick={() => nav('/students', { state: { add: true } })}>
@@ -133,21 +69,6 @@ export default function CoachAccount() {
           <div className="tile-icon blue"><Icon name="share" /></div>
           <div className="content"><div className="title-text">ارسال لینک اپ</div><div className="sub latin" style={{ textAlign: 'right' }}>{appUrl().replace(/^https?:\/\//, '')}</div></div><Disclosure /></button>
       </div>
-    </div>
-
-    <div className="section">
-      <div className="section-title">پشتیبان‌گیری</div>
-      <div className="group glass-lite">
-        <button className="row pressable with-leading" disabled={!!busy} onClick={() => exportData('workouts')}>
-          <div className="tile-icon"><Icon name="download" /></div>
-          <div className="content"><div className="title-text">خروجی تمرین‌ها</div><div className="sub">همه ست‌های همه شاگردها، برای اکسل</div></div>
-          {busy === 'workouts' ? <span className="caption">در حال آماده‌سازی…</span> : <Disclosure />}</button>
-        <button className="row pressable with-leading" disabled={!!busy} onClick={() => exportData('weights')}>
-          <div className="tile-icon orange"><Icon name="monitor_weight" /></div>
-          <div className="content"><div className="title-text">خروجی وزن‌ها</div><div className="sub">وزن‌های ثبت‌شده شاگردها</div></div>
-          {busy === 'weights' ? <span className="caption">در حال آماده‌سازی…</span> : <Disclosure />}</button>
-      </div>
-      <div className="section-footer">فایل CSV است و در Excel و Google Sheets باز می‌شود.</div>
     </div>
 
     {editing && <NameSheet coach={coach} onClose={() => setEditing(false)} onSaved={c => { setCoach(c); me.setCoach?.(c) }} />}

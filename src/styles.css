@@ -265,23 +265,13 @@ a { color: var(--accent); }
   transition: opacity 220ms ease;
 }
 .navbar.scrolled::before { opacity: 1; }
-.navbar .small-title {
-  flex: 1;
-  text-align: center;
-  font-weight: 700;
-  font-size: 1rem;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 200ms ease, transform 260ms cubic-bezier(0.2, 0.9, 0.25, 1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.navbar.scrolled .small-title { opacity: 1; transform: none; }
-.navbar .side { min-width: 3rem; display: flex; gap: 0.5rem; align-items: center; }
+.navbar { gap: 0.75rem; margin-bottom: 0.75rem; }
+/* The title beside the back button: small, one line, with an optional line under it. */
+.nav-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.nav-h { margin: 0; font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-sub { font-size: 0.75rem; line-height: 1rem; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.navbar .side { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
 .navbar .side.end { justify-content: flex-end; }
-.large-title { padding: 0 0.25rem 1.25rem; }
-.large-title .footnote { margin-top: 0; }
 
 /* ---------- press feedback for non-glass rows (glass swells instead, lib/glass.js) ---------- */
 
@@ -349,7 +339,7 @@ a { color: var(--accent); }
   position: relative;
 }
 button.row, a.row { cursor: pointer; text-decoration: none; color: inherit; }
-.row + .row::before, div + .row::before {
+.row + .row::before, div + .row::before, .item-row + .item-row > .row::before {
   content: '';
   position: absolute;
   top: 0;
@@ -643,6 +633,19 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 html.has-screen body { overflow: hidden; }
 .inline-info { padding: 0 1rem 1rem; }
 
+/* ---------- plan editor: a day's exercises, each opening in place ---------- */
+
+.item-row.open { background: color-mix(in srgb, var(--label) 3%, transparent); }
+.item-edit { padding: 0 1rem 1rem; }
+.item-edit .frames { margin-top: 0.5rem; }
+.item-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.shared-note { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: var(--radius);
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface)); font-size: 0.875rem; line-height: 1.5rem; }
+.shared-note > .icon { color: var(--blue); }
+.save-state { font-size: 0.75rem; font-weight: 500; color: var(--label-3); }
+.save-state.saved { color: var(--accent); }
+.save-state.error { color: var(--red); }
+
 /* ---------- sheets: floating glass, inset from the edges, dragged 1:1 ---------- */
 
 .scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; }
@@ -663,10 +666,9 @@ html.has-screen body { overflow: hidden; }
   will-change: transform;
   touch-action: none;
 }
-.sheet .grabber, .sheet .sheet-head { -webkit-user-select: none; user-select: none; }
-.sheet .grabber { padding: 0.5rem 0 0.25rem; display: grid; place-items: center; cursor: grab; }
-.sheet .grabber::after { content: ''; width: 2.5rem; height: 0.25rem; border-radius: 999px; background: var(--label-3); }
-.sheet .sheet-head { display: flex; align-items: center; gap: 0.5rem; padding: 0 1rem 0.5rem; }
+.sheet .sheet-head { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1rem 0.5rem; -webkit-user-select: none; user-select: none; }
+/* While a sheet is up, the page's floating buttons step aside so nothing sits over or beside it. */
+html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .sheet .sheet-head .title { flex: 1; font-size: 1.25rem; }
 .sheet .sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 1rem 1.25rem; touch-action: pan-y; border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
 .sheet .glass-lite { background: color-mix(in srgb, var(--lite-fill) 70%, transparent); }
@@ -926,7 +928,6 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 
 /* Tab pages carry no heading: just clear the status bar. */
 .top-space { height: calc(var(--sat) + 1rem); }
-.navbar.bare { justify-content: flex-end; }
 .choice:disabled { opacity: 0.35; cursor: not-allowed; }
 .choice:disabled:active { background: transparent; }
 

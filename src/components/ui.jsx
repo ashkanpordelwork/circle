@@ -38,31 +38,30 @@ export function ToastProvider({ children }) {
 // shows the title small. Back, when there is one, sits at the start (the right, in RTL).
 // Without a title (the tab pages: the tab bar already names them) there is no heading at all, and
 // no bar either unless the page has a button to put in it.
+// A page. With a title, it sits in the bar beside the back button, small, like a pushed screen;
+// pages reached from the tab bar have no title at all (the tab already names them).
 export function Page({ title, subtitle, back, actions, children, noTabbar, fill }) {
   const nav = useNavigate()
   const sentinel = useRef(null)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
-    const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting), { rootMargin: '-56px 0px 0px 0px' })
+    const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting), { rootMargin: '-8px 0px 0px 0px' })
     if (sentinel.current) io.observe(sentinel.current)
     return () => io.disconnect()
   }, [])
   const bar = title || back || actions
   return <div className={'page' + (noTabbar ? ' no-tabbar' : '') + (fill ? ' fill' : '')}>
     {!bar && <div className="top-space" />}
-    {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '') + (title ? '' : ' bare')}>
-      <div className="side">
-        {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'function' ? back() : typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
-          <Icon name="chevron_right" /></button>}
+    {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '')}>
+      {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'function' ? back() : typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
+        <Icon name="chevron_right" /></button>}
+      <div className="nav-title">
+        {title && <h1 className="nav-h">{title}</h1>}
+        {subtitle && <div className="nav-sub">{subtitle}</div>}
       </div>
-      {title && <div className="small-title" aria-hidden={!scrolled}>{title}</div>}
-      <div className="side end">{actions}</div>
+      {actions && <div className="side end">{actions}</div>}
     </header>}
-    {title ? <div className="large-title">
-      <h1 className="title-lg">{title}</h1>
-      {subtitle && <div className="footnote">{subtitle}</div>}
-      <div ref={sentinel} />
-    </div> : <div ref={sentinel} />}
+    <div ref={sentinel} />
     {children}
   </div>
 }

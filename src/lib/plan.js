@@ -47,6 +47,50 @@ export function toPayload(draft) {
   }))
 }
 
+/* ---------- the week, as the coach edits it ---------- */
+// The draft is still a list of sessions (routines) that each repeat on some weekdays; the editor
+// shows it day by day. These keep it consistent and never change a draft in place.
+
+export const newItem = id => ({ exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', tempo: '', note: '' })
+export const sessionName = d => 'تمرین ' + DAY_NAMES[d]
+
+// Each day of the Persian week with its sessions; and the sessions on no day at all.
+export const weekView = draft => WEEK.map(day => ({ day, sessions: draft.filter(r => r.days.includes(day)) }))
+export const unscheduled = draft => draft.filter(r => !r.days.length)
+
+// Add exercises to a day: to its first session, or a new one named after the day.
+export function addToDay(draft, day, ids, sessionId) {
+  const target = draft.find(r => r.id === sessionId) || draft.find(r => r.days.includes(day))
+  if (target) return draft.map(r => (r === target ? { ...r, items: [...r.items, ...ids.map(newItem)] } : r))
+  return [...draft, { id: newId(), name: sessionName(day), days: [day], items: ids.map(newItem) }]
+}
+
+// Make a day a rest day: a session only on that day goes; a session on other days too stays there.
+export const clearDay = (draft, day) =>
+  draft.flatMap(r => (!r.days.includes(day) ? [r] : r.days.length > 1 ? [{ ...r, days: r.days.filter(d => d !== day) }] : []))
+
+// A copy keeps a name the coach gave it; a default name («تمرین شنبه») follows the new day.
+const isDefaultName = name => DAY_NAMES.some(n => name === 'تمرین ' + n)
+const copyOf = (r, day) => ({ id: newId(), name: isDefaultName(r.name) ? sessionName(day) : r.name, days: [day], items: r.items.map(i => ({ ...i })) })
+
+// A session shared by several days, made this day's own, so editing it leaves the others alone.
+export function splitDay(draft, id, day) {
+  const r = draft.find(x => x.id === id)
+  if (!r || r.days.length < 2 || !r.days.includes(day)) return draft
+  return [...draft.map(x => (x === r ? { ...x, days: x.days.filter(d => d !== day) } : x)), copyOf(r, day)]
+}
+
+// Copy a session onto other days, each its own copy, replacing what those days had.
+export function copyToDays(draft, id, days) {
+  const r = draft.find(x => x.id === id)
+  if (!r) return draft
+  let out = draft
+  for (const d of days) if (!r.days.includes(d)) out = [...clearDay(out, d), copyOf(r, d)]
+  return out
+}
+
+export const updateSession = (draft, id, fn) => draft.map(r => (r.id === id ? { ...r, ...fn(r) } : r))
+
 export const draftKey = (draft, note) => JSON.stringify(toPayload(draft)) + '|' + (note || '')
 
 // Tempo: four phases in seconds — lowering, pause at the bottom, lifting, pause at the top.

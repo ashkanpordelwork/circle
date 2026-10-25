@@ -15,6 +15,7 @@ const Ctx = createContext({ close: () => {} })
 export const useScreen = () => useContext(Ctx)
 
 let seq = 0
+let openCount = 0   // screens may stack (a day, then the exercise list over it)
 
 export default function Screen({ title, subtitle, actions, onClose, children }) {
   const key = useRef('screen-' + ++seq)
@@ -34,12 +35,11 @@ export default function Screen({ title, subtitle, actions, onClose, children }) 
     addEventListener('popstate', onPop)
     const scroller = document.scrollingElement
     const y = scroller.scrollTop
-    document.documentElement.classList.add('has-screen')
+    if (openCount++ === 0) document.documentElement.classList.add('has-screen')
     return () => {
       alive.current = false
       removeEventListener('popstate', onPop)
-      document.documentElement.classList.remove('has-screen')
-      scroller.scrollTop = y
+      if (--openCount === 0) { document.documentElement.classList.remove('has-screen'); scroller.scrollTop = y }
       // Closed some other way (the item it edited was removed): drop our history entry quietly.
       setTimeout(() => { if (!alive.current && history.state?.screen === k) history.back() })
     }

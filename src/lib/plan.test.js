@@ -75,3 +75,41 @@ describe('plan helpers', () => {
   })
   it('isEmail', () => { expect(isEmail('a@gmail.com')).toBe(true); expect(isEmail('a@b')).toBe(false) })
 })
+
+import { weekView, unscheduled, addToDay, clearDay, splitDay, copyToDays, updateSession } from './plan.js'
+
+describe('the week editor', () => {
+  const legs = { id: 'legs', name: 'پا', days: [6, 1], items: [{ exercise_id: 'squat', sets: 3, reps: '8', weight: 60, rest_sec: '', tempo: '', note: '' }] }
+  const loose = { id: 'loose', name: 'بدون روز', days: [], items: [] }
+  const draft = [legs, loose]
+  it('shows the week from Saturday, a shared session on each of its days', () => {
+    const w = weekView(draft)
+    expect(w.map(x => x.day)).toEqual([6, 0, 1, 2, 3, 4, 5])
+    expect(w.filter(x => x.sessions.length).map(x => x.day)).toEqual([6, 1])
+    expect(unscheduled(draft).map(r => r.id)).toEqual(['loose'])
+  })
+  it('adds to the day\'s session, or starts one named after the day', () => {
+    const a = addToDay(draft, 6, ['lunge'])
+    expect(a.find(r => r.id === 'legs').items.map(i => i.exercise_id)).toEqual(['squat', 'lunge'])
+    expect(legs.items).toHaveLength(1)   // the old draft is untouched
+    const b = addToDay(draft, 0, ['bench', 'row'])
+    const sun = b.find(r => r.days.includes(0))
+    expect([sun.name, sun.items.map(i => [i.exercise_id, i.sets, i.reps])]).toEqual(['تمرین یکشنبه', [['bench', 3, '10'], ['row', 3, '10']]])
+  })
+  it('a rest day keeps a shared session on its other days', () => {
+    expect(clearDay(draft, 6).find(r => r.id === 'legs').days).toEqual([1])
+    expect(clearDay(clearDay(draft, 6), 1).some(r => r.id === 'legs')).toBe(false)
+  })
+  it('splits a shared day off, and copies a session onto other days', () => {
+    const s = splitDay(draft, 'legs', 1)
+    expect(s.find(r => r.id === 'legs').days).toEqual([6])
+    const mon = s.find(r => r.days.includes(1))
+    expect([mon.id !== 'legs', mon.name, mon.items[0].weight]).toEqual([true, 'پا', 60])
+    const c = copyToDays(addToDay(draft, 3, ['curl']), 'legs', [3, 4])
+    expect(c.filter(r => r.days.includes(3)).map(r => r.name)).toEqual(['پا'])   // replaced Tuesday's curls
+    expect(c.filter(r => r.days.includes(4)).map(r => r.items.length)).toEqual([1])
+    expect(updateSession(draft, 'legs', () => ({ name: 'پا سنگین' }))[0].name).toBe('پا سنگین')
+    const sat = addToDay([], 6, ['bench'])
+    expect(copyToDays(sat, sat[0].id, [1]).find(r => r.days.includes(1)).name).toBe('تمرین دوشنبه')
+  })
+})

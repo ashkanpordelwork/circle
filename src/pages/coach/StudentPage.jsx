@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { loadExercises } from '../../lib/exercises.js'
-import { WEEK, DAY_NAMES, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum } from '../../lib/plan.js'
+import { WEEK, DAY_NAMES, toDraft, toPayload, draftKey, summarize, setText, fmtTarget, fmtDate, fmtNum, weekView, unscheduled, addToDay, clearDay, splitDay, copyToDays, updateSession, sessionName } from '../../lib/plan.js'
 import { isPhone, normPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
 import { Thumb, ExName, ExerciseDetails } from '../../components/ExerciseInfo.jsx'
-import Screen, { useScreen } from '../../components/Screen.jsx'
+import Screen from '../../components/Screen.jsx'
+import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import { IntField, RepsField, WeightField, TempoField } from '../../components/Wheel.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
@@ -18,119 +19,177 @@ import { useMe } from '../../App.jsx'
 import { CoachPicker, adminError } from '../admin/Admin.jsx'
 
 
-/* ---------- one exercise, edited on its own page ---------- */
+const faN = n => Number(n).toLocaleString('fa-IR')
 
-// A page, not a sheet: the wheels for sets, reps and weight open as sheets on top of it, and a sheet
-// is never stacked on another. How the exercise is done unfolds in place.
-function ItemEditor({ item, index, count, routineName, onChange, onMove, onRemove, onClose }) {
-  return <Screen title="تنظیم حرکت" subtitle={routineName} onClose={onClose} actions={<ScreenDone />}>
-    <ItemFields item={item} index={index} count={count} onChange={onChange} onMove={onMove} onRemove={onRemove} />
-  </Screen>
-}
-function ScreenDone() {
-  const { close } = useScreen()
-  return <button className="btn glass interactive prominent small" onClick={close}>تمام</button>
-}
-function ItemFields({ item, index, count, onChange, onMove, onRemove }) {
-  const [info, setInfo] = useState(false)
+/* ---------- the plan: the week, a day, an exercise ---------- */
+// The coach thinks in days: «Saturday: chest». The tab shows the seven days; a day opens on its own
+// page with its exercises, each one opening in place for sets, reps and weight. Every change is
+// saved for the student on its own — there is no save button to forget.
+
+// One exercise of a day: a row that opens in place.
+function ItemRow({ item, index, count, open, onToggle, onChange, onMove, onRemove }) {
+  const [more, setMore] = useState(false)
   const set = (k, v) => onChange({ ...item, [k]: v })
-  return <>
-    <div className="group glass-lite section">
-      <button className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setInfo(v => !v)} aria-expanded={info}>
-        <Thumb id={item.exercise_id} />
-        <div className="content"><ExName id={item.exercise_id} /><div className="sub">{info ? 'بستن روش اجرا' : 'نمایش حرکت و روش اجرا'}</div></div>
-        <Icon name={info ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
-      </button>
-      {info && <div className="inline-info"><ExerciseDetails id={item.exercise_id} showEn={false} /></div>}
-    </div>
-    <div className="card glass-lite">
+  return <div className={'item-row' + (open ? ' open' : '')}>
+    <button className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={onToggle} aria-expanded={open}>
+      <Thumb id={item.exercise_id} />
+      <div className="content"><ExName id={item.exercise_id} /><div className="sub">{fmtTarget(item)}{item.note ? ' · ' + item.note : ''}</div></div>
+      <Icon name={open ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
+    </button>
+    {open && <div className="item-edit">
       <div className="inline-fields">
         <div className="field"><label>ست</label><IntField value={item.sets} onChange={v => set('sets', v)} title="تعداد ست" min={1} max={20} unit="ست" /></div>
         <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
         <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
         <div className="field"><label>استراحت</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" suffix="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
       </div>
-      <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
-        <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
-      <div className="field mt" style={{ marginBottom: 0 }}><label>نکته برای شاگرد</label>
-        <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
-    </div>
-    {count > 1 && <div className="section">
-      <div className="section-title">جای حرکت در برنامه ({(index + 1).toLocaleString('fa-IR')} از {count.toLocaleString('fa-IR')})</div>
-      <div className="hstack">
-        <button className="btn glass interactive grow" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالاتر</button>
-        <button className="btn glass interactive grow" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین‌تر</button>
+      {more ? <>
+        <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
+          <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
+        <div className="field"><label>نکته برای شاگرد</label>
+          <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
+        <ExerciseDetails id={item.exercise_id} showEn={false} />
+      </> : <button className="btn plain small pressable mt" onClick={() => setMore(true)}><Icon name="expand_more" />تمپو، نکته و روش اجرا</button>}
+      <div className="item-actions">
+        <button className="icon-btn glass interactive" disabled={index === 0} onClick={() => onMove(-1)} aria-label="بالاتر"><Icon name="arrow_upward" /></button>
+        <button className="icon-btn glass interactive" disabled={index === count - 1} onClick={() => onMove(1)} aria-label="پایین‌تر"><Icon name="arrow_downward" /></button>
+        <div className="grow" />
+        <button className="btn glass interactive danger small" onClick={onRemove}><Icon name="delete" />حذف</button>
       </div>
     </div>}
-    <button className="btn glass interactive danger block" onClick={onRemove}><Icon name="delete" />حذف از برنامه</button>
+  </div>
+}
+
+// Pick days, in one sheet.
+function DaysSheet({ title, text, okText, exclude = [], initial = [], onOk, onClose }) {
+  const [days, setDays] = useState(initial)
+  return <Sheet title={title} onClose={onClose}><DaysBody text={text} okText={okText} exclude={exclude} days={days} setDays={setDays} onOk={onOk} /></Sheet>
+}
+function DaysBody({ text, okText, exclude, days, setDays, onOk }) {
+  const { close } = useSheet()
+  return <>
+    {text && <p className="subhead secondary" style={{ marginTop: 0 }}>{text}</p>}
+    <div className="days">{WEEK.filter(d => !exclude.includes(d)).map(d => <button key={d} className={'day pressable' + (days.includes(d) ? ' on' : '')}
+      aria-pressed={days.includes(d)} onClick={() => setDays(x => (x.includes(d) ? x.filter(y => y !== d) : [...x, d]))}>{DAY_NAMES[d]}</button>)}</div>
+    <button className="btn glass interactive prominent block mt" disabled={!days.length} onClick={() => { onOk(days); close() }}>{okText}</button>
   </>
 }
 
-/* ---------- a routine ---------- */
-
-function RoutineCard({ r, onChange, onRemove }) {
-  const [picking, setPicking] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const update = fn => onChange(cur => ({ ...cur, ...fn(cur) }))
-  const toggleDay = d => update(cur => ({ days: cur.days.includes(d) ? cur.days.filter(x => x !== d) : [...cur.days, d] }))
-  const setItem = (i, next) => update(cur => ({ items: cur.items.map((x, k) => (k === i ? next : x)) }))
-  const move = (i, dir) => { update(cur => { const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items } }); setEditing(i + dir) }
-  const add = id => update(cur => ({ items: [...cur.items, { exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', tempo: '', note: '' }] }))
-  return <div className="card glass-lite">
-    <div className="card-head">
-      <div className="tile-icon"><Icon name="fitness_center" /></div>
-      <input className="input grow headline" style={{ background: 'transparent', paddingInline: '0.5rem' }} value={r.name} maxLength={80}
-        onChange={e => { const v = e.target.value; update(() => ({ name: v })) }} aria-label="نام برنامه" />
-      <button className="icon-btn bare danger pressable" onClick={onRemove} aria-label="حذف برنامه"><Icon name="delete" /></button>
-    </div>
-    <div className="days" role="group" aria-label="روزهای این برنامه">{WEEK.map(d => <button key={d} className={'day pressable' + (r.days.includes(d) ? ' on' : '')}
-      aria-pressed={r.days.includes(d)} onClick={() => toggleDay(d)}>{DAY_NAMES[d]}</button>)}</div>
-    {r.items.length > 0 && <div className="group mt" style={{ background: 'var(--fill)' }}>
-      {r.items.map((it, i) => <button key={i + it.exercise_id} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setEditing(i)}>
-        <Thumb id={it.exercise_id} />
-        <div className="content"><ExName id={it.exercise_id} />
-          <div className="sub">{fmtTarget(it)}{it.note ? ' · ' + it.note : ''}</div></div>
-        <Disclosure />
-      </button>)}
+// One day of the week on its own page.
+function DayScreen({ day, draft, setDraft, onClose }) {
+  const sessions = draft.filter(r => r.days.includes(day))
+  const [open, setOpen] = useState(null)          // `${sessionId}:${index}` of the exercise opened in place
+  const [picking, setPicking] = useState(null)    // the session exercises are added to ('' = new)
+  const [sheet, setSheet] = useState(null)
+  const others = weekView(draft).filter(x => x.day !== day && x.sessions.length)
+  const edit = (id, fn) => setDraft(d => updateSession(d, id, fn))
+  return <Screen title={DAY_NAMES[day]} subtitle={sessions.length ? `${faN(sessions.reduce((n, r) => n + r.items.length, 0))} حرکت` : 'استراحت'} onClose={onClose}>
+    {!sessions.length && <>
+      <Empty icon="bedtime" title="روز استراحت">برای این روز حرکت اضافه کنید، یا برنامه یک روز دیگر را کپی کنید.</Empty>
+      <button className="btn glass interactive prominent block" onClick={() => setPicking('')}><Icon name="add" />افزودن حرکت</button>
+      {others.length > 0 && <div className="section mt">
+        <div className="section-title">مثل یک روز دیگر</div>
+        <div className="group glass-lite">{others.map(x => <button key={x.day} className="row pressable with-leading" onClick={() => setDraft(d => copyToDays(d, x.sessions[0].id, [day]))}>
+          <div className="tile-icon"><Icon name="content_copy" /></div>
+          <div className="content"><div className="title-text">{DAY_NAMES[x.day]}</div><div className="sub">{x.sessions[0].name} · {faN(x.sessions[0].items.length)} حرکت</div></div>
+          <Icon name="add" style={{ color: 'var(--accent)' }} />
+        </button>)}</div>
+      </div>}
+    </>}
+    {sessions.map(r => <div key={r.id} className="section">
+      <div className="field"><label htmlFor={'n' + r.id}>نام جلسه</label>
+        <input id={'n' + r.id} className="input" value={r.name} maxLength={80} placeholder={sessionName(day)} onChange={e => { const v = e.target.value; edit(r.id, () => ({ name: v })) }} /></div>
+      {r.days.length > 1 && <div className="shared-note">
+        <Icon name="content_copy" /><div className="grow">همین جلسه در {r.days.filter(d => d !== day).sort((a, b) => WEEK.indexOf(a) - WEEK.indexOf(b)).map(d => DAY_NAMES[d]).join('، ')} هم هست؛ تغییرها در همه اعمال می‌شود.</div>
+        <button className="btn plain small pressable" onClick={() => setDraft(d => splitDay(d, r.id, day))}>جدا کن</button>
+      </div>}
+      {r.items.length > 0 && <div className="group glass-lite">{r.items.map((it, i) => <ItemRow key={i + it.exercise_id} item={it} index={i} count={r.items.length}
+        open={open === r.id + ':' + i} onToggle={() => setOpen(o => (o === r.id + ':' + i ? null : r.id + ':' + i))}
+        onChange={next => edit(r.id, cur => ({ items: cur.items.map((x, k) => (k === i ? next : x)) }))}
+        onMove={dir => { edit(r.id, cur => { const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items } }); setOpen(r.id + ':' + (i + dir)) }}
+        onRemove={() => { edit(r.id, cur => ({ items: cur.items.filter((_, k) => k !== i) })); setOpen(null) }} />)}</div>}
+      <button className="btn glass interactive prominent block mt" onClick={() => setPicking(r.id)}><Icon name="add" />افزودن حرکت</button>
+    </div>)}
+    {sessions.length > 0 && <div className="section">
+      <div className="group glass-lite">
+        <button className="row pressable with-leading" onClick={() => setSheet('copy')}>
+          <div className="tile-icon blue"><Icon name="content_copy" /></div>
+          <div className="content"><div className="title-text">کپی به روزهای دیگر</div><div className="sub">همین تمرین برای روزهای دیگر هم</div></div><Disclosure /></button>
+        <button className="row pressable with-leading" onClick={() => setSheet('rest')}>
+          <div className="tile-icon gray"><Icon name="bedtime" /></div>
+          <div className="content"><div className="title-text">استراحت</div><div className="sub">حذف تمرین این روز</div></div><Disclosure /></button>
+      </div>
     </div>}
-    <button className="btn glass interactive block mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
-    {picking && <ExercisePicker added={r.items.map(i => i.exercise_id)} onPick={add} routineName={r.name} onClose={() => setPicking(false)} />}
-    {editing != null && r.items[editing] && <ItemEditor item={r.items[editing]} index={editing} count={r.items.length} routineName={r.name}
-      onChange={next => setItem(editing, next)} onMove={dir => move(editing, dir)} onClose={() => setEditing(null)}
-      onRemove={() => { const i = editing; setEditing(null); update(cur => ({ items: cur.items.filter((_, k) => k !== i) })) }} />}
-  </div>
+    {picking !== null && <ExercisePicker routineName={DAY_NAMES[day]}
+      added={(sessions.find(r => r.id === picking) || sessions[0])?.items.map(i => i.exercise_id) || []}
+      onPick={id => setDraft(d => addToDay(d, day, [id], picking || undefined))} onClose={() => setPicking(null)} />}
+    {sheet === 'copy' && <DaysSheet title="کپی به روزهای دیگر" okText="کپی" exclude={[day]} onClose={() => setSheet(null)}
+      text="تمرین این روز روی روزهای انتخاب‌شده کپی می‌شود و جای برنامه قبلی آن روزها را می‌گیرد."
+      onOk={days => setDraft(d => copyToDays(d, sessions[0].id, days))} />}
+    {sheet === 'rest' && <Confirm title={`${DAY_NAMES[day]} روز استراحت شود؟`} okText="استراحت" danger onClose={() => setSheet(null)}
+      text="حرکت‌های این روز حذف می‌شود. اگر همین جلسه در روزهای دیگر هم باشد، آنجا می‌ماند."
+      onOk={() => setDraft(d => clearDay(d, day))} />}
+  </Screen>
+}
+
+// Saves the plan and the note a moment after the last change, one save at a time.
+function useAutosave(student, draft, note, onSaved) {
+  const toast = useToast()
+  const [status, setStatus] = useState('saved')   // saved | pending | saving | error
+  const saved = useRef(null)
+  const latest = useRef({ draft, note })
+  latest.current = { draft, note }
+  const chain = useRef(Promise.resolve())
+  const alive = useRef(true)
+  const save = () => {
+    const { draft: d, note: n } = latest.current
+    if (!d || saved.current === null) return
+    const key = draftKey(d, n)
+    if (key === saved.current) return
+    chain.current = chain.current.then(async () => {
+      if (key === saved.current) return
+      if (alive.current) setStatus('saving')
+      try {
+        await must(supabase.rpc('save_plan', { p_student: student.id, p_routines: toPayload(d) }))
+        if (n !== (student.note || '')) await must(supabase.from('students').update({ note: n }).eq('id', student.id))
+        saved.current = key
+        if (alive.current) { onSaved({ note: n }); setStatus(draftKey(latest.current.draft, latest.current.note) === key ? 'saved' : 'pending') }
+      } catch (e) { if (alive.current) { setStatus('error'); toast(errorText(e), 'error') } }
+    })
+  }
+  useEffect(() => {
+    if (!draft) return
+    if (saved.current === null) { saved.current = draftKey(draft, note); return }   // just loaded
+    if (draftKey(draft, note) === saved.current) return
+    setStatus('pending')
+    const t = setTimeout(save, 700)
+    return () => clearTimeout(t)
+  }, [draft, note])
+  // Leaving the page with a change still waiting: save it now.
+  useEffect(() => { alive.current = true; return () => { alive.current = false; save() } }, [])
+  return [status, save]
 }
 
 function PlanTab({ student, onSaved, alerts, onAlerts }) {
   const toast = useToast()
   const [draft, setDraft] = useState(null)
   const [note, setNote] = useState(student.note || '')
-  const [saved, setSaved] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [removing, setRemoving] = useState(null)
+  const [day, setDay] = useState(null)
+  const [assigning, setAssigning] = useState(null)
+  const [status, retry] = useAutosave(student, draft, note, onSaved)
   useEffect(() => {
     (async () => {
       try {
         await loadExercises()
         const rs = await must(supabase.from('routines').select('*').eq('student_id', student.id))
         const items = rs.length ? await must(supabase.from('routine_items').select('*').in('routine_id', rs.map(r => r.id))) : []
-        const d = toDraft(rs, items)
-        setDraft(d); setSaved(draftKey(d, student.note || ''))
+        setDraft(toDraft(rs, items))
       } catch (e) { toast(errorText(e), 'error') }
     })()
   }, [student.id])
   if (!draft) return <Loading />
-  const dirty = draftKey(draft, note) !== saved
-  const setRoutine = (id, fn) => setDraft(d => d.map(r => (r.id === id ? fn(r) : r)))
-  const save = async () => {
-    setBusy(true)
-    try {
-      await must(supabase.rpc('save_plan', { p_student: student.id, p_routines: toPayload(draft) }))
-      if (note !== (student.note || '')) await must(supabase.from('students').update({ note }).eq('id', student.id))
-      setSaved(draftKey(draft, note)); onSaved({ ...student, note })
-      toast(`برنامه ${student.full_name} ذخیره شد`, 'success')
-    } catch (e) { toast(errorText(e), 'error') } finally { setBusy(false) }
-  }
+  const week = weekView(draft)
+  const loose = unscheduled(draft)
   return <>
     {alerts && <button className="alert-strip pressable" onClick={onAlerts}>
       <Icon name="warning" filled />
@@ -138,19 +197,33 @@ function PlanTab({ student, onSaved, alerts, onAlerts }) {
       <Disclosure />
     </button>}
     <div className="section">
+      <div className="section-title hstack between">
+        <span>برنامه هفتگی</span>
+        <span className={'save-state ' + status}>{status === 'saved' ? 'ذخیره شد' : status === 'error' ? <button className="btn plain small pressable" onClick={retry}>ذخیره نشد؛ دوباره</button> : 'در حال ذخیره…'}</span>
+      </div>
+      <div className="group glass-lite">{week.map(({ day: d, sessions }) => <button key={d} className="row pressable with-leading" onClick={() => setDay(d)}>
+        <div className={'tile-icon' + (sessions.length ? '' : ' gray')}><Icon name={sessions.length ? 'fitness_center' : 'bedtime'} /></div>
+        <div className="content"><div className="title-text">{DAY_NAMES[d]}</div>
+          <div className="sub">{sessions.length ? sessions.map(r => `${r.name} · ${faN(r.items.length)} حرکت`).join('، ') : 'استراحت'}</div></div>
+        <Disclosure />
+      </button>)}</div>
+      <div className="section-footer">روی هر روز بزنید تا حرکت‌هایش را بچینید. تغییرها خودکار برای شاگرد ذخیره می‌شود.</div>
+    </div>
+    {loose.length > 0 && <div className="section">
+      <div className="section-title">بدون روز</div>
+      <div className="group glass-lite">{loose.map(r => <button key={r.id} className="row pressable with-leading" onClick={() => setAssigning(r)}>
+        <div className="tile-icon orange"><Icon name="calendar_month" /></div>
+        <div className="content"><div className="title-text">{r.name}</div><div className="sub">{faN(r.items.length)} حرکت · شاگرد نمی‌بیند؛ برایش روز انتخاب کنید</div></div>
+        <Disclosure /></button>)}</div>
+    </div>}
+    <div className="section">
       <div className="section-title">یادداشت برای شاگرد</div>
       <textarea className="input" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} placeholder="در صفحه «امروز» شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…"
         value={note} onChange={e => setNote(e.target.value)} maxLength={2000} />
     </div>
-    <div className="section-title">برنامه‌های تمرینی</div>
-    {draft.map(r => <RoutineCard key={r.id} r={r} onChange={fn => setRoutine(r.id, fn)} onRemove={() => setRemoving(r)} />)}
-    {!draft.length && <Empty icon="calendar_month" title="هنوز برنامه‌ای ندارد">یک برنامه بسازید، روزهایش را انتخاب کنید و حرکت اضافه کنید.</Empty>}
-    <button className="btn glass interactive block" onClick={() => setDraft(d => [...d, { id: newId(), name: 'برنامه ' + (d.length + 1).toLocaleString('fa-IR'), days: [], items: [] }])}>
-      <Icon name="add" />برنامه جدید</button>
-    {dirty && <div className="float-bar"><button className="btn glass interactive prominent block" disabled={busy} onClick={save}>
-      <Icon name="check" />{busy ? 'در حال ذخیره…' : 'ذخیره و ارسال برای شاگرد'}</button></div>}
-    {removing && <Confirm title={`«${removing.name}» حذف شود؟`} text="بعد از ذخیره، شاگرد دیگر این برنامه را نمی‌بیند. تمرین‌هایی که ثبت کرده باقی می‌ماند." okText="حذف برنامه" danger
-      onOk={() => setDraft(d => d.filter(r => r.id !== removing.id))} onClose={() => setRemoving(null)} />}
+    {day !== null && <DayScreen day={day} draft={draft} setDraft={setDraft} onClose={() => setDay(null)} />}
+    {assigning && <DaysSheet title={`روزهای «${assigning.name}»`} okText="ذخیره" onClose={() => setAssigning(null)}
+      onOk={days => setDraft(d => updateSession(d, assigning.id, () => ({ days })))} />}
   </>
 }
 
@@ -324,7 +397,7 @@ export default function StudentPage() {
   return <Page title={student.full_name} back={other ? true : '/students'} subtitle={sub || null}>
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
       options={[{ value: 'plan', label: 'برنامه' }, { value: 'profile', label: 'پرونده' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت' }]} />
-    {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}
+    {tab === 'plan' && <PlanTab student={student} onSaved={x => setStudent(cur => ({ ...cur, ...x }))} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}
     {tab === 'profile' && <ProfileTab student={student} intake={intake} />}
     {tab === 'progress' && <ProgressTab student={student} />}
     {tab === 'settings' && <SettingsTab student={student} onSaved={s => setStudent(x => ({ ...x, ...s }))} onRemoved={() => nav(home)} />}
