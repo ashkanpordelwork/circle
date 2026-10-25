@@ -31,7 +31,7 @@ function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
       <div className="field"><label>ست</label><IntField value={item.sets} onChange={v => set('sets', v)} title="تعداد ست" min={1} max={20} unit="ست" /></div>
       <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
       <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
-      <div className="field"><label>استراحت (ثانیه)</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
+      <div className="field"><label>استراحت</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" suffix="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
     </div>
     <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
       <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
@@ -62,7 +62,7 @@ function RoutineCard({ r, onChange, onRemove }) {
   return <div className="card glass-lite">
     <div className="card-head">
       <div className="tile-icon"><Icon name="fitness_center" /></div>
-      <input className="input grow headline" style={{ background: 'transparent', paddingInline: '0.25rem', minHeight: '2.5rem' }} value={r.name} maxLength={80}
+      <input className="input grow headline" style={{ background: 'transparent', paddingInline: '0.5rem' }} value={r.name} maxLength={80}
         onChange={e => { const v = e.target.value; update(() => ({ name: v })) }} aria-label="نام برنامه" />
       <button className="icon-btn bare danger pressable" onClick={onRemove} aria-label="حذف برنامه"><Icon name="delete" /></button>
     </div>
@@ -161,7 +161,7 @@ function ProgressTab({ student }) {
     <div className="stats">
       <div className="stat glass-lite"><div className="v">{data.workouts.length.toLocaleString('fa-IR')}</div><div className="l">تمرین ثبت‌شده</div></div>
       <div className="stat glass-lite"><div className="v">{data.workouts.filter(w => w.date >= monthAgo).length.toLocaleString('fa-IR')}</div><div className="l">در ۳۰ روز اخیر</div></div>
-      <div className="stat glass-lite"><div className="v" style={{ fontSize: '1.125rem' }}>{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'long' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
+      <div className="stat glass-lite"><div className="v" style={{ fontSize: '1.25rem' }}>{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'long' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
       <div className="stat glass-lite"><div className="v">{data.weights[0] ? fmtNum(data.weights[0].weight) : '—'}</div><div className="l">وزن فعلی (کیلو)</div></div>
     </div>
     {data.weights.length > 1 && <div className="card glass-lite"><div className="headline">وزن بدن</div><WeightChart points={[...data.weights].reverse()} /></div>}
@@ -178,11 +178,11 @@ function ProgressTab({ student }) {
             <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
           </button>
           {isOpen && <div style={{ padding: '0 1rem 0.75rem' }}>
-            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
+            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.5rem 0' }}>
               <ExName id={id} className="subhead" style={{ fontWeight: 600 }} />
               <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
             </div>)}
-            {w.note && <div className="footnote" style={{ marginTop: '0.375rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}
+            {w.note && <div className="footnote" style={{ marginTop: '0.5rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}
           </div>}
         </div>
       })}</div>}

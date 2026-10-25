@@ -45,7 +45,7 @@ export default function ExerciseInfo({ id, onClose }) {
     {en !== exerciseName(id) && <div className="en-name latin" style={{ marginTop: '-0.25rem', marginBottom: '0.75rem' }}>{en}</div>}
     <Frames id={id} />
     {x && <>
-      <div className="hstack wrap" style={{ margin: '0.875rem 0' }}>
+      <div className="hstack wrap" style={{ margin: '1rem 0' }}>
         {x.m.map(m => <span key={m} className="pill ok">{MUSCLES[m] || m}</span>)}
         {x.s.map(m => <span key={m} className="pill">{MUSCLES[m] || m}</span>)}
         <span className="pill">{EQUIPMENT[x.e] || x.e}</span>

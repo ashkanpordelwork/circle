@@ -33,8 +33,8 @@ export default function History() {
               <div className="sub">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div>
             <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
           </button>
-          {isOpen && <div style={{ padding: '0 1rem 0.75rem 1rem', paddingInlineStart: '4rem' }}>
-            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
+          {isOpen && <div style={{ padding: '0 1rem 0.75rem 1rem', paddingInlineStart: '4.25rem' }}>
+            {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.5rem 0' }}>
               <ExName id={id} className="subhead" style={{ fontWeight: 600 }} />
               <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
             </div>)}

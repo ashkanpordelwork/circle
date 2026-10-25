@@ -123,11 +123,12 @@ export function WeightField({ value, onChange, title = 'وزن', hint, hintLabel
 }
 
 // A whole number on one wheel: sets, reps, seconds.
-export function IntField({ value, onChange, title, min = 0, max = 100, step = 1, unit, clearText, ariaLabel, placeholder, className, fallback }) {
+// `suffix` is shown after the value in the field itself (e.g. «ث»), where a label has no room for the unit.
+export function IntField({ value, onChange, title, min = 0, max = 100, step = 1, unit, suffix, clearText, ariaLabel, placeholder, className, fallback }) {
   const values = range(min, max, step)
   const start = nearest(values, value !== '' && value != null ? value : fallback ?? min) ?? min
   return <PickField title={title} ariaLabel={ariaLabel} className={'num ' + (className || '')}
-    text={value === '' || value == null ? '' : faDigits(value)} placeholder={placeholder}
+    text={value === '' || value == null ? '' : faDigits(value) + (suffix ? ' ' + suffix : '')} placeholder={placeholder}
     initial={start}
     render={(d, set) => <Wheels unit={unit}><Wheel values={values} value={d} onChange={set} label={title} /></Wheels>}
     onDone={onChange} clearText={clearText} onClear={clearText ? () => onChange('') : null} />

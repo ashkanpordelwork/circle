@@ -6,7 +6,7 @@ export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
 
 export const inviteText = s =>
   `سلام ${s.full_name}! برنامه تمرینی‌ات آماده است.\n` +
-  `۱. وارد این سایت شو: ${appUrl()}\n` +
+  `۱. اپ Circle را باز کن: ${appUrl()}\n` +
   // The number in one piece: with spaces, its groups get reordered inside Persian text.
   `۲. «ثبت‌نام» را بزن، شماره ${normPhone(s.phone)} و یک رمز دلخواه وارد کن.\n` +
   `۳. کد دعوت: ${s.invite_code}`
@@ -30,7 +30,7 @@ export default function InviteCard({ student, onNewCode }) {
   return <div className="card glass-lite">
     <div className="card-head"><div className="tile-icon orange"><Icon name="key" /></div>
       <div className="grow"><div className="headline">کد دعوت</div><div className="caption">شاگرد با این کد به شما وصل می‌شود</div></div></div>
-    <div className="latin tnum" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.3em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
+    <div className="latin tnum" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.25em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
     <div className="subhead" style={{ whiteSpace: 'pre-wrap', background: 'var(--fill)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '0.75rem' }}>{text}</div>
     <div className="hstack wrap">
       <button className="btn glass interactive prominent grow" onClick={share}><Icon name="share" />ارسال دعوت</button>

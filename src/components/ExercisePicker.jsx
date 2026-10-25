@@ -33,7 +33,7 @@ function Body({ onPick, added }) {
       {Object.entries(EQUIPMENT).map(([k, v]) => <button key={k} className={'chip glass-lite pressable' + (equipment === k ? ' on' : '')} onClick={() => setEquipment(equipment === k ? '' : k)}>{v}</button>)}
     </div>
     {!all ? <Loading /> : <>
-      <div className="caption" style={{ padding: '0 0.25rem 0.375rem' }}>{found.length.toLocaleString('fa-IR')} حرکت</div>
+      <div className="caption" style={{ padding: '0 0.25rem 0.5rem' }}>{found.length.toLocaleString('fa-IR')} حرکت</div>
       <div className="group glass-lite">{found.slice(0, limit).map(x => <button key={x.id} className="row pressable" style={{ '--sep-inset': '5.25rem' }}
         onClick={() => { onPick(x.id); haptic(8) }}>
         <Thumb id={x.id} />

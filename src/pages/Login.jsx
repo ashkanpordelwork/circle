@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { isPhone, phoneEmail, normCode, fmtPhone } from '../lib/phone.js'
 import { useToast, errorText, Segmented } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
+import Logo from '../components/Logo.jsx'
 
 // Sign in, or create an account the first time. A student types the invite code their coach gave
 // them; the coach (whose number the owner lists in coach_phones) leaves it empty.
@@ -42,8 +43,8 @@ export default function Login() {
   }
 
   return <main className="auth">
-    <div className="mark"><Icon name="fitness_center" /></div>
-    <h1 className="title-lg">مربی من</h1>
+    <div className="mark app"><Logo size="2.75rem" /></div>
+    <h1 className="title-lg latin brand">Circle</h1>
     <p className="lead">برنامه تمرینی‌ات را از مربی بگیر و تمرین‌هایت را ثبت کن.</p>
     <Segmented label="ورود یا ثبت‌نام" value={mode} onChange={setMode}
       options={[{ value: 'login', label: 'ورود' }, { value: 'signup', label: 'ثبت‌نام' }]} />
