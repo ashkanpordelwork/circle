@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { exerciseName, loadExercises } from '../../lib/exercises.js'
+import { loadExercises } from '../../lib/exercises.js'
 import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum, showNum, readNum } from '../../lib/plan.js'
 import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
-import ExerciseInfo, { Thumb } from '../../components/ExerciseInfo.jsx'
+import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
 
@@ -26,7 +26,7 @@ function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
   return <>
     <button className="row pressable" style={{ padding: 0, marginBottom: '1rem' }} onClick={() => setInfo(true)}>
       <Thumb id={item.exercise_id} />
-      <div className="content"><div className="title-text latin" style={{ textAlign: 'right' }}>{exerciseName(item.exercise_id)}</div><div className="sub">نمایش حرکت و روش اجرا</div></div>
+      <div className="content"><ExName id={item.exercise_id} /><div className="sub">نمایش حرکت و روش اجرا</div></div>
       <Disclosure />
     </button>
     <div className="inline-fields">
@@ -71,7 +71,7 @@ function RoutineCard({ r, onChange, onRemove }) {
     {r.items.length > 0 && <div className="group mt" style={{ background: 'var(--fill)' }}>
       {r.items.map((it, i) => <button key={i + it.exercise_id} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setEditing(i)}>
         <Thumb id={it.exercise_id} />
-        <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
+        <div className="content"><ExName id={it.exercise_id} />
           <div className="sub">{fmtTarget(it)}{it.note ? ' · ' + it.note : ''}</div></div>
         <Disclosure />
       </button>)}
@@ -174,7 +174,7 @@ function ProgressTab({ student }) {
           </button>
           {isOpen && <div style={{ padding: '0 1rem 0.75rem' }}>
             {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
-              <div className="subhead latin" style={{ fontWeight: 600, textAlign: 'right' }}>{exerciseName(id)}</div>
+              <ExName id={id} className="subhead" style={{ fontWeight: 600 }} />
               <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
             </div>)}
             {w.note && <div className="footnote" style={{ marginTop: '0.375rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}

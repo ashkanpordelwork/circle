@@ -3,7 +3,7 @@ import { loadExercises, searchExercises, MUSCLES, EQUIPMENT } from '../lib/exerc
 import Sheet, { useSheet } from './Sheet.jsx'
 import Icon from './Icon.jsx'
 import { Loading, haptic } from './ui.jsx'
-import { Thumb } from './ExerciseInfo.jsx'
+import { Thumb, ExName } from './ExerciseInfo.jsx'
 
 function Body({ onPick, added }) {
   const { close } = useSheet()
@@ -38,7 +38,7 @@ function Body({ onPick, added }) {
         onClick={() => { onPick(x.id); haptic(8) }}>
         <Thumb id={x.id} />
         <div className="content">
-          <div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{x.n}</div>
+          <ExName id={x.id} />
           <div className="sub ellipsis">{x.m.map(m => MUSCLES[m] || m).join('، ')} · {EQUIPMENT[x.e] || x.e}</div>
         </div>
         <Icon name={has.has(x.id) ? 'check_circle' : 'add'} filled={has.has(x.id)} style={{ color: 'var(--accent)' }} />

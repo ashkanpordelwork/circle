@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { blankLog, logToRows, todayISO, fmtTarget, faDigits, showNum, readNum } from '../../lib/plan.js'
-import { exerciseName } from '../../lib/exercises.js'
 import { Page, Loading, useToast, errorText, haptic } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
-import ExerciseInfo, { Thumb } from '../../components/ExerciseInfo.jsx'
+import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
 import { loadPlan } from './data.js'
 
@@ -90,7 +89,7 @@ export default function LogWorkout() {
       return <div key={e} className="card glass-lite">
         <button className="row pressable" style={{ padding: 0, marginBottom: '0.75rem' }} onClick={() => setInfo(ex.exercise_id)}>
           <Thumb id={ex.exercise_id} />
-          <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right', fontWeight: 650 }}>{exerciseName(ex.exercise_id)}</div>
+          <div className="content"><ExName id={ex.exercise_id} style={{ fontWeight: 650 }} />
             <div className="sub">هدف: {fmtTarget(plan)}</div>
             {plan.note && <div className="sub">{plan.note}</div>}</div>
           <Disclosure />

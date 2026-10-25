@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { routinesForDay, DAY_NAMES, WEEK, fmtTarget, faDigits } from '../../lib/plan.js'
-import { exerciseName } from '../../lib/exercises.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
-import ExerciseInfo, { Thumb } from '../../components/ExerciseInfo.jsx'
+import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { loadPlan } from './data.js'
 
 export default function Week() {
@@ -30,7 +29,7 @@ export default function Week() {
               </div>
               {r.items.map((it, i) => <button key={i} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setInfo(it.exercise_id)}>
                 <Thumb id={it.exercise_id} />
-                <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
+                <div className="content"><ExName id={it.exercise_id} />
                   <div className="sub">{fmtTarget(it)}{it.rest_sec !== '' ? ` · استراحت ${faDigits(it.rest_sec)} ثانیه` : ''}</div>
                   {it.note && <div className="sub">{it.note}</div>}</div>
                 <Disclosure />

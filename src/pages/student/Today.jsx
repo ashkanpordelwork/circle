@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { routinesForDay, DAY_NAMES, WEEK, fmtDate, todayISO, fmtTarget } from '../../lib/plan.js'
-import { exerciseName } from '../../lib/exercises.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
-import { Thumb } from '../../components/ExerciseInfo.jsx'
+import { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
 import { loadPlan } from './data.js'
 
@@ -52,7 +51,7 @@ export default function Today() {
         <div className="group" style={{ background: 'rgba(255,255,255,0.16)', boxShadow: 'inset 0 1px 0.5px rgba(255,255,255,0.4)' }}>
           {r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
             <Thumb id={it.exercise_id} />
-            <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
+            <div className="content"><ExName id={it.exercise_id} />
               <div className="sub">{fmtTarget(it)}</div></div>
           </div>)}
         </div>

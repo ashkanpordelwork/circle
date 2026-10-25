@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate, summarize, setText } from '../../lib/plan.js'
-import { exerciseName, loadExercises } from '../../lib/exercises.js'
+import { loadExercises } from '../../lib/exercises.js'
+import { ExName } from '../../components/ExerciseInfo.jsx'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -34,7 +35,7 @@ export default function History() {
           </button>
           {isOpen && <div style={{ padding: '0 1rem 0.75rem 1rem', paddingInlineStart: '4rem' }}>
             {[...sum.keys()].map(id => <div key={id} style={{ padding: '0.375rem 0' }}>
-              <div className="subhead latin" style={{ fontWeight: 600, textAlign: 'right' }}>{exerciseName(id)}</div>
+              <ExName id={id} className="subhead" style={{ fontWeight: 600 }} />
               <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
             </div>)}
           </div>}

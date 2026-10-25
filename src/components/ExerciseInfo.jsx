@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { exerciseById, exerciseName, imageUrl, MUSCLES, EQUIPMENT, LEVELS } from '../lib/exercises.js'
+import { exerciseById, exerciseName, exerciseNameEn, imageUrl, MUSCLES, EQUIPMENT, LEVELS } from '../lib/exercises.js'
 import { reducedMotion } from '../lib/spring.js'
 import Sheet from './Sheet.jsx'
 import Icon from './Icon.jsx'
@@ -11,6 +11,16 @@ export function Thumb({ id }) {
   return <div className="thumb">{x?.img.length && !bad
     ? <img src={imageUrl(x.img[0])} alt="" loading="lazy" decoding="async" onError={() => setBad(true)} />
     : <Icon name="fitness_center" />}</div>
+}
+
+// The Persian name with the English one in small type beneath it (gym-floor names are often
+// English). The English line is dropped when there is no Persian name to pair it with.
+export function ExName({ id, className = 'title-text', style }) {
+  const fa = exerciseName(id), en = exerciseNameEn(id)
+  return <>
+    <div className={className + ' ellipsis'} style={{ textAlign: 'right', ...style }}>{fa}</div>
+    {en !== fa && <div className="en-name latin ellipsis">{en}</div>}
+  </>
 }
 
 // The library has a start and an end photo per exercise; alternating them shows the movement.
@@ -30,7 +40,9 @@ export function Frames({ id }) {
 
 export default function ExerciseInfo({ id, onClose }) {
   const x = exerciseById(id)
-  return <Sheet title={<span className="latin">{exerciseName(id)}</span>} label={exerciseName(id)} onClose={onClose}>
+  const en = exerciseNameEn(id)
+  return <Sheet title={exerciseName(id)} label={exerciseName(id)} onClose={onClose}>
+    {en !== exerciseName(id) && <div className="en-name latin" style={{ marginTop: '-0.25rem', marginBottom: '0.75rem' }}>{en}</div>}
     <Frames id={id} />
     {x && <>
       <div className="hstack wrap" style={{ margin: '0.875rem 0' }}>
@@ -39,8 +51,10 @@ export default function ExerciseInfo({ id, onClose }) {
         <span className="pill">{EQUIPMENT[x.e] || x.e}</span>
         {x.l && <span className="pill">{LEVELS[x.l]}</span>}
       </div>
-      <div className="section-title" style={{ paddingInline: 0 }}>روش اجرا (انگلیسی)</div>
-      <ol className="subhead latin" dir="ltr" style={{ textAlign: 'left', paddingInlineStart: '1.25rem', margin: 0 }}>{x.st.map((s, i) => <li key={i} style={{ marginBottom: '0.375rem' }}>{s}</li>)}</ol>
+      <div className="section-title" style={{ paddingInline: 0 }}>روش اجرا</div>
+      {x.st.length
+        ? <ol className="steps">{x.st.map((s, i) => <li key={i}><span className="n tnum" aria-hidden="true">{(i + 1).toLocaleString('fa-IR')}</span><span>{s}</span></li>)}</ol>
+        : <div className="subhead" style={{ color: 'var(--label-2)' }}>توضیحی برای این حرکت ثبت نشده است.</div>}
     </>}
   </Sheet>
 }

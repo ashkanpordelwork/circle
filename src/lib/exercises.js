@@ -26,25 +26,40 @@ export const LEVELS = { beginner: 'مبتدی', intermediate: 'متوسط', expe
 
 let cache = null
 let byId = null
+// Each entry: n English name, f Persian name, st Persian steps (see scripts/build-exercises.mjs).
+export function setExercises(list) {
+  cache = list
+  byId = new Map(list.map(x => [x.id, x]))
+  return list
+}
 export async function loadExercises() {
   if (cache) return cache
   const r = await fetch(import.meta.env.BASE_URL + 'exercises.json')
-  cache = await r.json()
-  byId = new Map(cache.map(x => [x.id, x]))
-  return cache
+  return setExercises(await r.json())
 }
 export const exerciseById = id => byId?.get(id) || null
-// A name for an id the library may not know (a renamed upstream entry): readable, never blank.
-export const exerciseName = id => exerciseById(id)?.n || String(id).replace(/_/g, ' ')
+// The English name; for an id the library may not know (a renamed upstream entry) the id itself,
+// readable and never blank.
+export const exerciseNameEn = id => exerciseById(id)?.n || String(id).replace(/_/g, ' ')
+// The Persian name, falling back to the English one.
+export const exerciseName = id => exerciseById(id)?.f || exerciseNameEn(id)
 
-// Search by English words in any order, or by a Persian muscle / equipment word.
+// Arabic ي/ك, half-spaces and Persian digits all read as what a Persian keyboard types.
+export const normText = s => String(s).toLowerCase()
+  .replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\u064B-\u0652]/g, '')
+  .replace(/[\u200c\u200f\u200e]/g, ' ')
+  .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+
+// Search by Persian or English words in any order, or by a muscle / equipment word.
+// "جلوبازو" finds "جلو بازو": every word is also tried against the text without spaces.
 export function searchExercises(list, query, { muscle = '', equipment = '' } = {}) {
-  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const words = normText(query).trim().split(/\s+/).filter(Boolean)
   return list.filter(x => {
     if (muscle && !x.m.includes(muscle)) return false
     if (equipment && x.e !== equipment) return false
     if (!words.length) return true
-    const hay = [x.n, ...x.m.map(m => MUSCLES[m] || m), EQUIPMENT[x.e] || x.e, CATEGORIES[x.c] || x.c].join(' ').toLowerCase()
-    return words.every(w => hay.includes(w))
+    const hay = normText([x.f || '', x.n, ...x.m.map(m => MUSCLES[m] || m), EQUIPMENT[x.e] || x.e, CATEGORIES[x.c] || x.c].join(' '))
+    const tight = hay.replace(/\s+/g, '')
+    return words.every(w => hay.includes(w) || tight.includes(w))
   })
 }
