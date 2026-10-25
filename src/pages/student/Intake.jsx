@@ -9,8 +9,8 @@ import Icon from '../../components/Icon.jsx'
 const fa = n => Number(n).toLocaleString('fa-IR')
 
 // One option of a question: a row with a radio or a checkbox at its end.
-function Choice({ on, multi, children, onClick }) {
-  return <button type="button" className={'row pressable choice' + (on ? ' on' : '')} role={multi ? 'checkbox' : 'radio'} aria-checked={on} onClick={onClick}>
+function Choice({ on, multi, disabled, children, onClick }) {
+  return <button type="button" className={'row pressable choice' + (on ? ' on' : '')} role={multi ? 'checkbox' : 'radio'} aria-checked={on} disabled={disabled} onClick={onClick}>
     <div className="content"><div className="title-text">{children}</div></div>
     <span className={'tick' + (multi ? ' square' : '')} aria-hidden="true">{on && <Icon name="check" />}</span>
   </button>
@@ -47,7 +47,9 @@ function Options({ step, a, set }) {
   const val = a[step.key]
   return <>
     <div className="group glass-lite" role={multi ? 'group' : 'radiogroup'} aria-label={step.title}>
+      {/* «ندارم» rules the rest out: they stay greyed until it is unticked. */}
       {step.options.map(([k, l]) => <Choice key={k} multi={multi} on={multi ? (val || []).includes(k) : val === k}
+        disabled={multi && k !== 'none' && (val || []).includes('none')}
         onClick={() => { haptic(4); set({ [step.key]: multi ? toggle(val, k) : k }) }}>{l}</Choice>)}
     </div>
     {step.key === 'experience' && <>

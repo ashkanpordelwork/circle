@@ -22,7 +22,8 @@ export function Wheel({ values, value, onChange, format = faDigits, label, width
     const c = el.scrollTop / h()
     ;[...el.children].forEach((opt, k) => {
       const d = k - c
-      opt.style.transform = `rotateX(${Math.max(-75, Math.min(75, -d * 22))}deg)`
+      // Perspective per item, around its own centre: the value turns on the drum but never drifts sideways.
+      opt.style.transform = `perspective(34rem) rotateX(${Math.max(-75, Math.min(75, -d * 22))}deg)`
       opt.style.opacity = String(Math.max(0.18, 1 - Math.abs(d) * 0.3))
       opt.classList.toggle('sel', Math.abs(d) < 0.5)
     })

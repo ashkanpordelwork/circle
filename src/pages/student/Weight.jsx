@@ -27,7 +27,7 @@ export default function Weight() {
   return <Page>
     <div className="hstack" style={{ marginBottom: '1.25rem' }}>
       <WeightField value={w} onChange={setW} title="وزن امروز" fine min={30} max={250} hint={list?.[0]?.weight} hintLabel="آخرین وزن"
-        placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلوگرم" className="grow" />
+        placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلو" className="grow" />
       <button className="btn glass interactive prominent" disabled={w === ''} onClick={save}><Icon name="add" />ثبت</button>
     </div>
     {!list ? <Loading /> : !list.length ? <Empty icon="monitor_weight" title="هنوز وزنی ثبت نکرده‌ای">هر چند روز یک بار وزنت را ثبت کن تا روند را ببینی.</Empty> : <>

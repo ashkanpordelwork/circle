@@ -16,7 +16,7 @@ export const GOALS = [
 ]
 
 export const EXPERIENCE = [
-  ['none', 'تازه‌کار، تا حالا تمرین نکرده‌ام'],
+  ['none', 'تا حالا تمرین نکرده‌ام'],
   ['lt6m', 'کمتر از ۶ ماه'],
   ['6m2y', '۶ ماه تا ۲ سال'],
   ['gt2y', 'بیشتر از ۲ سال']
@@ -60,11 +60,11 @@ export const DIET = [
 // The screens, in order. `list` questions are multiple choice; `single` ones pick one.
 export const STEPS = [
   { key: 'body', icon: 'person', title: 'کمی از خودت بگو', sub: 'مربی برای تنظیم شدت تمرین به این‌ها نیاز دارد.' },
-  { key: 'goals', icon: 'flag', title: 'هدفت از تمرین چیست؟', sub: 'هر چند تا که درست است انتخاب کن.', options: GOALS, multi: true, note: 'مثلاً ۸ کیلو کم کنم تا عید' },
+  { key: 'goals', icon: 'flag', title: 'هدفت از تمرین چیست؟', sub: 'هر چند گزینه که لازم است انتخاب کن.', options: GOALS, multi: true, note: 'مثلاً ۸ کیلو کم کنم تا عید' },
   { key: 'experience', icon: 'fitness_center', title: 'سابقه تمرین', sub: 'چقدر با تمرین با وزنه آشنایی؟', options: EXPERIENCE, note: 'مثلاً قبلاً فوتبال بازی می‌کردم' },
   { key: 'injuries', icon: 'healing', title: 'آسیب یا درد داری؟', sub: 'آسیب قدیمی یا دردی که هنگام تمرین حس می‌کنی.', options: INJURIES, multi: true, note: 'کدام سمت، از کی، و چه حرکتی دردش را بیشتر می‌کند' },
-  { key: 'conditions', icon: 'medical_information', title: 'بیماری یا شرایط خاص', sub: 'برای امنیت تمرین مهم است.', options: CONDITIONS, multi: true, note: 'داروی خاصی مصرف می‌کنی؟ اینجا بنویس' },
-  { key: 'diet', icon: 'restaurant', title: 'محدودیت غذایی', sub: 'برای پیشنهادهای تغذیه‌ای مربی.', options: DIET, multi: true, note: 'مثلاً به بادام‌زمینی حساسیت دارم' }
+  { key: 'conditions', icon: 'medical_information', title: 'بیماری یا شرایط خاص', sub: 'برای ایمنی تمرینت مهم است.', options: CONDITIONS, multi: true, note: 'داروی خاصی مصرف می‌کنی؟ اینجا بنویس' },
+  { key: 'diet', icon: 'restaurant', title: 'محدودیت غذایی', sub: 'مربی در پیشنهادهای تغذیه‌ای به آن توجه می‌کند.', options: DIET, multi: true, note: 'مثلاً به بادام‌زمینی حساسیت دارم' }
 ]
 
 export const DAYS_PER_WEEK = [1, 2, 3, 4, 5, 6, 7]

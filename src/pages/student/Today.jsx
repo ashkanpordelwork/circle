@@ -38,8 +38,8 @@ export default function Today() {
       : !todays.length ? <div className="card glass-lite">
         <div className="card-head"><div className="tile-icon blue"><Icon name="bedtime" filled /></div>
           <div><div className="headline">امروز روز استراحت است</div>
-            {next !== undefined && <div className="footnote">جلسه بعد: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}</div></div>
-        <button className="btn glass interactive block" onClick={() => nav('/week')}><Icon name="calendar_month" />برنامه هفته</button>
+            {next !== undefined && <div className="footnote">تمرین بعدی: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}</div></div>
+        <button className="btn glass interactive block" onClick={() => nav('/week')}><Icon name="calendar_month" />برنامه هفتگی</button>
       </div>
       : todays.map(r => <section key={r.id} className="card hero" aria-label={r.name}>
         <div className="hstack between">

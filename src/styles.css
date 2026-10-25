@@ -763,17 +763,19 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 .input.pick { display: grid; place-items: center; cursor: pointer; color: var(--label); font-weight: 600; text-align: center; }
 .input.pick .ph { color: var(--label-3); font-weight: 500; }
 .input.pick.static { cursor: default; color: var(--label-3); font-size: 0.8125rem; font-weight: 500; }
-.wheels-wrap { position: relative; display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin: 0.25rem 0 1.25rem; }
+/* The band spans the wheels and their unit, so the unit reads as part of the value, with room to breathe. */
+.wheels-wrap { position: relative; display: flex; align-items: flex-start; justify-content: center; gap: 1.25rem;
+  width: fit-content; margin: 0.25rem auto 1.25rem; padding-inline: 1rem; }
 .wheels { position: relative; display: flex; align-items: flex-start; justify-content: center; gap: 0.25rem; }
 /* The selection band behind the centre row. */
-.wheels::before {
-  content: ''; position: absolute; inset-inline: -0.75rem; top: calc(5.5rem); height: 2.75rem;
+.wheels-wrap::before {
+  content: ''; position: absolute; inset-inline: 0; top: 5.5rem; height: 2.75rem;
   border-radius: 0.875rem; background: var(--fill-strong); box-shadow: inset 0 0 0 1px var(--hairline); pointer-events: none;
 }
 .wheel {
   position: relative; height: 13.75rem; overflow-y: auto; overscroll-behavior: contain;
   scroll-snap-type: y mandatory; scrollbar-width: none; touch-action: pan-y;
-  padding-block: 5.5rem; perspective: 34rem; outline: none; border-radius: 0.875rem;
+  overflow-x: hidden; padding-block: 5.5rem; outline: none; border-radius: 0.875rem;
   -webkit-mask: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
   mask: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
 }
@@ -784,11 +786,13 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   font-size: 1.375rem; font-weight: 500; color: var(--label-2); font-variant-numeric: tabular-nums;
   backface-visibility: hidden; cursor: pointer; -webkit-user-select: none; user-select: none;
 }
-.wheel .opt.sel { color: var(--label); font-weight: 700; }
+/* Same weight for every row (a bolder centre would widen and seem to shift); only the colour changes. */
+.wheel .opt { font-weight: 600; }
+.wheel .opt.sel { color: var(--label); }
 .wheel-sep { height: 13.75rem; display: grid; place-items: center; font-size: 1.25rem; font-weight: 700; color: var(--label-2); padding-inline: 0.125rem; }
 .wheel-col { display: flex; flex-direction: column; align-items: center; }
 .wheel-caption { font-size: 0.75rem; color: var(--label-2); margin-top: 0.25rem; }
-.wheels-unit { font-size: 0.9375rem; font-weight: 600; color: var(--label-2); }
+.wheels-unit { position: relative; height: 13.75rem; display: grid; place-items: center; font-size: 0.9375rem; font-weight: 600; color: var(--label-2); }
 
 /* ---------- stats ---------- */
 
@@ -932,3 +936,5 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 /* Tab pages carry no heading: just clear the status bar. */
 .top-space { height: calc(var(--sat) + 1rem); }
 .navbar.bare { justify-content: flex-end; }
+.choice:disabled { opacity: 0.35; cursor: not-allowed; }
+.choice:disabled:active { background: transparent; }

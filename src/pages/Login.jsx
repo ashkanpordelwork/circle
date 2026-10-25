@@ -46,7 +46,7 @@ export default function Login() {
     <h1 className="title-lg">مربی من</h1>
     <p className="lead">برنامه تمرینی‌ات را از مربی بگیر و تمرین‌هایت را ثبت کن.</p>
     <Segmented label="ورود یا ثبت‌نام" value={mode} onChange={setMode}
-      options={[{ value: 'login', label: 'ورود' }, { value: 'signup', label: 'ثبت‌نام (بار اول)' }]} />
+      options={[{ value: 'login', label: 'ورود' }, { value: 'signup', label: 'ثبت‌نام' }]} />
     <form onSubmit={submit} noValidate className="panel glass">
       <div className="field">
         <label htmlFor="ph">شماره موبایل</label>
@@ -69,7 +69,7 @@ export default function Login() {
         <input id="cd" className="input code" autoCapitalize="characters" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} />
         <div className="caption">مربی‌ها این را خالی می‌گذارند.</div>
       </div>}
-      <button className="btn glass interactive prominent block mt" disabled={busy}>{busy ? 'صبر کن…' : mode === 'login' ? 'ورود' : 'ساخت حساب'}</button>
+      <button className="btn glass interactive prominent block mt" disabled={busy}>{busy ? 'کمی صبر کن…' : mode === 'login' ? 'ورود' : 'ساخت حساب'}</button>
     </form>
     {mode === 'login' && <p className="footnote" style={{ textAlign: 'center' }}>رمز را فراموش کرده‌ای؟ به مربی‌ات بگو.</p>}
   </main>

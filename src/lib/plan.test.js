@@ -17,7 +17,7 @@ describe('plan helpers', () => {
   })
   it('toPayload turns blanks into null and clamps sets', () => {
     const p = toPayload([{ id: 'r', name: '  ', days: [3, 3, 9], items: [{ exercise_id: 'e', sets: '99', reps: '', weight: '', rest_sec: '60', note: '' }] }])
-    expect(p[0].name).toBe('روتین')
+    expect(p[0].name).toBe('برنامه')
     expect(p[0].days).toEqual([3])
     expect(p[0].items[0]).toMatchObject({ sets: 20, reps: '10', weight: null, rest_sec: 60 })
   })

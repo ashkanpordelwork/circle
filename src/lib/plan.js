@@ -34,7 +34,7 @@ export function toPayload(draft) {
   const num = toNumber
   return draft.map(r => ({
     id: r.id,
-    name: r.name.trim() || 'روتین',
+    name: r.name.trim() || 'برنامه',
     days: [...new Set(r.days)].filter(d => d >= 0 && d <= 6),
     items: r.items.map(i => ({
       exercise_id: i.exercise_id,
