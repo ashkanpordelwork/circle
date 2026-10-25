@@ -24,7 +24,7 @@ export default function Weight() {
     } catch (err) { toast(errorText(err), 'error') }
   }
   const delta = list && list.length > 1 ? Number(list[0].weight) - Number(list[1].weight) : null
-  return <Page title="وزن بدن">
+  return <Page>
     <div className="hstack" style={{ marginBottom: '1.25rem' }}>
       <WeightField value={w} onChange={setW} title="وزن امروز" fine min={30} max={250} hint={list?.[0]?.weight} hintLabel="آخرین وزن"
         placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلوگرم" className="grow" />

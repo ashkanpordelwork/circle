@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { overview, isoMinus, daysBetween } from '../../lib/dashboard.js'
-import { todayISO, fmtDate, DAY_SHORT } from '../../lib/plan.js'
+import { todayISO, DAY_SHORT } from '../../lib/plan.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
-import { useMe } from '../../App.jsx'
 
 const fa = n => Number(n).toLocaleString('fa-IR')
 const ago = (date, today) => {
@@ -26,7 +25,6 @@ function Ring({ value }) {
 }
 
 export default function Dashboard() {
-  const me = useMe()
   const nav = useNavigate()
   const toast = useToast()
   const [o, setO] = useState(null)
@@ -45,15 +43,14 @@ export default function Dashboard() {
     })()
   }, [])
 
-  const hello = `سلام ${me.coach.full_name || 'مربی'} · ${fmtDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}`
-  if (o === null) return <Page title="داشبورد" subtitle={hello}><Loading /></Page>
-  if (!o || !o.total) return <Page title="داشبورد" subtitle={hello}>
+  if (o === null) return <Page><Loading /></Page>
+  if (!o || !o.total) return <Page>
     <Empty icon="group" title="هنوز شاگردی ندارید">اولین شاگرد را اضافه کنید تا آمار تمرین‌ها اینجا نمایش داده شود.</Empty>
     <button className="btn glass interactive prominent block" onClick={() => nav('/students')}><Icon name="person_add" />افزودن شاگرد</button>
   </Page>
 
   const peak = Math.max(1, ...o.perDay.map(d => d.count))
-  return <Page title="داشبورد" subtitle={hello}>
+  return <Page>
     <section className="card hero" aria-label="این هفته">
       <div className="hstack between" style={{ alignItems: 'flex-start' }}>
         <div>

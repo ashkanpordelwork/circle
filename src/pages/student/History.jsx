@@ -20,7 +20,7 @@ export default function History() {
       } catch (e) { toast(errorText(e), 'error'); setData({ workouts: [], sets: [] }) }
     })()
   }, [])
-  return <Page title="سابقه تمرین" subtitle={data ? `${data.workouts.length.toLocaleString('fa-IR')} جلسه` : null}>
+  return <Page>
     {!data ? <Loading /> : !data.workouts.length ? <Empty icon="history" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، اینجا می‌بینی چه زدی.</Empty>
       : <div className="group glass-lite">{data.workouts.map(w => {
         const sets = data.sets.filter(s => s.workout_id === w.id)

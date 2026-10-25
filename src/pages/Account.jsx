@@ -13,7 +13,7 @@ export default function Account() {
   const phone = phoneOfEmail(me.session.user.email)
   const [theme, setTheme] = useState(getThemePref)
   const pickTheme = t => { setTheme(t); setThemePref(t) }
-  return <Page title="حساب">
+  return <Page>
     <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
         <div className="tile-icon"><Icon name="person" filled /></div>

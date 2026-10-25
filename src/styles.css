@@ -928,3 +928,7 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 .kv span { color: var(--label-2); font-size: 0.8125rem; }
 .kv b { font-weight: 650; text-align: left; }
 .stat .l .pill { font-size: 0.6875rem; padding-block: 0.05rem; margin-inline-start: 0.25rem; }
+
+/* Tab pages carry no heading: just clear the status bar. */
+.top-space { height: calc(var(--sat) + 1rem); }
+.navbar.bare { justify-content: flex-end; }

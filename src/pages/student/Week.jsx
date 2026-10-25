@@ -13,7 +13,7 @@ export default function Week() {
   const [info, setInfo] = useState(null)
   useEffect(() => { loadPlan().then(setPlan).catch(e => { toast(errorText(e), 'error'); setPlan([]) }) }, [])
   const today = new Date().getDay()
-  return <Page title="برنامه هفته">
+  return <Page>
     {!plan ? <Loading /> : !plan.length ? <Empty icon="calendar_month" title="هنوز برنامه‌ای نداری">وقتی مربی برنامه را بفرستد، روزهای هفته اینجا پر می‌شود.</Empty>
       : WEEK.map(d => {
         const rs = routinesForDay(plan, d)

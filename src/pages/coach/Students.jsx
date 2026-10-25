@@ -7,7 +7,6 @@ import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.j
 import Sheet from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
-import { useMe } from '../../App.jsx'
 
 function AddStudent({ onClose, onAdded }) {
   const toast = useToast()
@@ -39,7 +38,6 @@ function AddStudent({ onClose, onAdded }) {
 }
 
 export default function Students() {
-  const me = useMe()
   const nav = useNavigate()
   const toast = useToast()
   const [list, setList] = useState(null)
@@ -60,7 +58,7 @@ export default function Students() {
   const shown = (list || []).filter(s => !q || (s.full_name + (s.phone || '')).toLowerCase().includes(q.toLowerCase()))
   const addBtn = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
 
-  return <Page title="شاگردان" subtitle={`سلام ${me.coach.full_name || 'مربی'}`} actions={addBtn}>
+  return <Page actions={addBtn}>
     {list && list.length > 5 && <div className="field">
       <input className="input" placeholder="جستجوی نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" /></div>}
     {!list ? <Loading /> : !list.length ? <>

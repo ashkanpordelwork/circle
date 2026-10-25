@@ -36,6 +36,8 @@ export function ToastProvider({ children }) {
 
 // The large title sits in the page; once it scrolls under the bar, the bar becomes a material and
 // shows the title small. Back, when there is one, sits at the start (the right, in RTL).
+// Without a title (the tab pages: the tab bar already names them) there is no heading at all, and
+// no bar either unless the page has a button to put in it.
 export function Page({ title, subtitle, back, actions, children, noTabbar }) {
   const nav = useNavigate()
   const sentinel = useRef(null)
@@ -45,20 +47,22 @@ export function Page({ title, subtitle, back, actions, children, noTabbar }) {
     if (sentinel.current) io.observe(sentinel.current)
     return () => io.disconnect()
   }, [])
+  const bar = title || back || actions
   return <div className={'page' + (noTabbar ? ' no-tabbar' : '')}>
-    <header className={'navbar' + (scrolled ? ' scrolled' : '')}>
+    {!bar && <div className="top-space" />}
+    {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '') + (title ? '' : ' bare')}>
       <div className="side">
         {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
           <Icon name="chevron_right" /></button>}
       </div>
-      <div className="small-title" aria-hidden={!scrolled}>{title}</div>
+      {title && <div className="small-title" aria-hidden={!scrolled}>{title}</div>}
       <div className="side end">{actions}</div>
-    </header>
-    <div className="large-title">
+    </header>}
+    {title ? <div className="large-title">
       <h1 className="title-lg">{title}</h1>
       {subtitle && <div className="footnote">{subtitle}</div>}
       <div ref={sentinel} />
-    </div>
+    </div> : <div ref={sentinel} />}
     {children}
   </div>
 }

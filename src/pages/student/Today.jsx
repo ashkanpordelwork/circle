@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { routinesForDay, DAY_NAMES, WEEK, fmtDate, todayISO, fmtTarget } from '../../lib/plan.js'
+import { routinesForDay, DAY_NAMES, WEEK, todayISO, fmtTarget } from '../../lib/plan.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 import { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
@@ -23,13 +23,12 @@ export default function Today() {
     })()
   }, [])
   const today = new Date().getDay()
-  const title = `سلام ${me.student.full_name}`
-  if (!plan) return <Page title={title} subtitle={fmtDate(todayISO())}><Loading /></Page>
+  if (!plan) return <Page><Loading /></Page>
   const todays = routinesForDay(plan, today)
   const next = !todays.length ? WEEK.map((_, k) => (today + k + 1) % 7).find(d => routinesForDay(plan, d).length) : undefined
   const done = new Set(doneToday.map(w => w.routine_id))
 
-  return <Page title={title} subtitle={fmtDate(todayISO())}>
+  return <Page>
     {me.student.note?.trim() && <div className="card glass-lite">
       <div className="card-head"><div className="tile-icon orange"><Icon name="sticky_note_2" filled /></div><div className="headline">از طرف مربی</div></div>
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
