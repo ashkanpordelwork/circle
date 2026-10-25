@@ -8,7 +8,7 @@ import { Page, Loading, useToast, errorText, haptic } from '../../components/ui.
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
-import { loadPlan } from './data.js'
+import { loadPlan, sessionTitle } from './data.js'
 
 export default function LogWorkout() {
   const { routineId } = useParams()
@@ -49,14 +49,14 @@ export default function LogWorkout() {
     if (!doneCount) return toast('حداقل یک ست را تیک بزن.', 'warning')
     setBusy(true)
     try {
-      const w = await must(supabase.from('workouts').insert({ student_id: me.student.id, routine_id: routine.id, routine_name: routine.name, date: todayISO(), note }).select().single())
+      const w = await must(supabase.from('workouts').insert({ student_id: me.student.id, routine_id: routine.id, routine_name: sessionTitle(routine), date: todayISO(), note }).select().single())
       await must(supabase.from('workout_sets').insert(logToRows(w.id, log)))
       toast('آفرین! تمرین ثبت شد', 'success')
       nav('/')
     } catch (e) { toast(errorText(e), 'error'); setBusy(false) }
   }
 
-  return <Page title={routine.name} subtitle={`${doneCount.toLocaleString('fa-IR')} از ${totalSets.toLocaleString('fa-IR')} ست`} back noTabbar>
+  return <Page title={sessionTitle(routine)} subtitle={`${doneCount.toLocaleString('fa-IR')} از ${totalSets.toLocaleString('fa-IR')} ست`} back noTabbar>
     {log.map((ex, e) => {
       const plan = routine.items[e]
       const wNeeded = needsWeight(plan, exerciseById(ex.exercise_id)?.e)

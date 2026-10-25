@@ -4,6 +4,8 @@ import { scope } from '../../lib/scope.js'
 import { supabase, must } from '../../lib/supabase.js'
 import { overview, isoMinus, daysBetween } from '../../lib/dashboard.js'
 import { todayISO, DAY_NAMES } from '../../lib/plan.js'
+import { weekLabel } from '../../lib/program.js'
+import { fmtJ } from '../../lib/jalali.js'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 
@@ -28,10 +30,20 @@ function Ring({ value }) {
 // One student's week: what they have done, what they missed, what is next.
 const STATUS = {
   behind: ['red', 'error'], noplan: ['gray', 'edit_note'], idle: ['orange', 'hourglass_top'],
-  today: ['', 'today'], ontrack: ['', 'trending_up'], done: ['', 'check']
+  today: ['', 'today'], ontrack: ['', 'trending_up'], done: ['', 'check'],
+  unwritten: ['orange', 'edit_note'], ended: ['orange', 'calendar_month'], waiting: ['gray', 'calendar_month']
 }
 function weekLine(x) {
   if (x.status === 'noplan') return 'هنوز برنامه‌ای ندارد'
+  if (x.status === 'unwritten') return `${weekLabel(x.program.week)} هنوز نوشته نشده`
+  if (x.status === 'ended') return 'برنامه تمام شده؛ برنامه بعدی را بنویسید'
+  if (x.status === 'waiting') return `برنامه از ${fmtJ(x.program.next.start_date, false)} شروع می‌شود`
+  if (x.program) {
+    const p = x.program, tail = p.ending ? '، برنامه رو به پایان است' : ''
+    if (x.status === 'behind') return `${fa(p.remaining)} جلسه مانده و ${fa(p.daysLeft)} روز فرصت${tail}`
+    if (x.status === 'done') return `جلسه‌های ${weekLabel(p.week)} انجام شد${tail}`
+    return `${weekLabel(p.week)}: ${fa(x.done)} از ${fa(x.planned)} جلسه، ${fa(p.daysLeft)} روز مانده${tail}`
+  }
   const days = x.missed.map(d => DAY_NAMES[new Date(d + 'T12:00:00').getDay()])
   if (x.status === 'behind') return `${fa(x.missed.length)} جلسه عقب: ${[...new Set(days)].join('، ')}`
   if (x.status === 'idle') return x.idleDays == null ? 'هنوز تمرینی ثبت نکرده' : `${fa(x.idleDays)} روز بدون تمرین`
@@ -46,7 +58,7 @@ function WeekRow({ x, onOpen }) {
     <div className="content"><div className="title-text">{x.student.full_name}</div>
       <div className={'sub' + (x.status === 'behind' ? ' danger' : '')}>{weekLine(x)}</div></div>
     {x.sessions.length > 0 && <div className="pips" aria-label={`${fa(x.done)} از ${fa(x.planned)} جلسه`}>
-      {x.sessions.map((s, i) => <span key={i} className={s.state} title={DAY_NAMES[new Date(s.date + 'T12:00:00').getDay()]} />)}</div>}
+      {x.sessions.map((s, i) => <span key={i} className={s.state} title={s.date ? DAY_NAMES[new Date(s.date + 'T12:00:00').getDay()] : s.name} />)}</div>}
     <Disclosure />
   </button>
 }
@@ -59,13 +71,15 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [students, workouts, routines] = await Promise.all([
+        const [students, workouts, routines, programs] = await Promise.all([
           must(supabase.from('students').select('id, full_name, user_id, active').eq('coach_id', scope.uid).order('full_name')),
           must(supabase.from('workouts').select('id, student_id, routine_name, date, created_at, workout_sets(count), students!inner(coach_id)').eq('students.coach_id', scope.uid).gte('date', isoMinus(today, 60)).order('date', { ascending: false }).limit(1000)),
-          must(supabase.from('routines').select('student_id, name, days, students!inner(coach_id)').eq('students.coach_id', scope.uid))
+          must(supabase.from('routines').select('student_id, name, days, program_id, week, session, students!inner(coach_id)').eq('students.coach_id', scope.uid)),
+          // Before migration 0006 there are no programs: weekday plans only.
+          supabase.from('programs').select('id, student_id, start_date, weeks, per_week, students!inner(coach_id)').eq('students.coach_id', scope.uid).then(r => r.data || [])
         ])
         const names = Object.fromEntries(students.map(s => [s.id, s.full_name]))
-        setO({ ...overview({ students, workouts, routines, today }), names })
+        setO({ ...overview({ students, workouts, routines, programs, today }), names })
       } catch (e) { toast(errorText(e), 'error'); setO(false) }
     })()
   }, [])

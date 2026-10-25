@@ -57,4 +57,21 @@ describe('coach dashboard', () => {
     expect(o.board[2].today).toEqual(['سینه'])
     expect(o.board[1].idleDays).toBe(15)
   })
+  it('students on a monthly program: by what is left of their program week', () => {
+    const ss = [1, 2, 3, 4].map(n => ({ id: 's' + n, full_name: 'ش' + n, user_id: 'u' + n, active: true }))
+    // today is Sunday 25 Oct; programs started Friday 23 Oct, so week 1 runs to Thursday 29 Oct (5 days left)
+    const prog = id => ({ id: 'p' + id, student_id: 's' + id, start_date: '2026-10-23', weeks: 4, per_week: 3 })
+    const sess = (id, n) => Array.from({ length: n }, (_, k) => ({ id: `r${id}${k}`, student_id: 's' + id, program_id: 'p' + id, week: 1, session: k + 1, name: 'جلسه' }))
+    const programs = [prog(1), prog(2), prog(3), { id: 'p4', student_id: 's4', start_date: '2026-08-01', weeks: 4, per_week: 3 }]
+    const routines = [...sess(1, 3), ...sess(2, 7)]
+    const workouts = [{ id: 1, student_id: 's1', date: '2026-10-24' }]
+    const o = overview({ students: ss, workouts, routines, programs, today })
+    const by = Object.fromEntries(o.board.map(x => [x.student.id, x]))
+    expect([by.s1.status, by.s1.done, by.s1.planned, by.s1.program.daysLeft]).toEqual(['ontrack', 1, 3, 5])
+    expect(by.s1.sessions.map(x => x.state)).toEqual(['done', 'upcoming', 'upcoming'])
+    expect([by.s2.status, by.s2.sessions.filter(x => x.state === 'missed').length]).toEqual(['behind', 2])   // 7 left, 5 days
+    expect(by.s3.status).toBe('unwritten')   // the week has no sessions yet
+    expect(by.s4.status).toBe('ended')
+    expect(o.board.map(x => x.student.id)).toEqual(['s2', 's3', 's4', 's1'])
+  })
 })

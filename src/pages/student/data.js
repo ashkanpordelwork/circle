@@ -1,8 +1,10 @@
-// The signed-in student's plan, loaded once per screen.
+// The signed-in student's plan, loaded once per screen: their monthly programs (if any) and every
+// session — program sessions carry program_id / week / session, weekday ones their days.
 import { supabase, must } from '../../lib/supabase.js'
 import { toDraft } from '../../lib/plan.js'
 import { loadExercises } from '../../lib/exercises.js'
 import { scope } from '../../lib/scope.js'
+import { weekLabel, sessionLabel } from '../../lib/program.js'
 
 export async function loadPlan() {
   await loadExercises()
@@ -10,3 +12,18 @@ export async function loadPlan() {
   const items = routines.length ? await must(supabase.from('routine_items').select('*').in('routine_id', routines.map(r => r.id))) : []
   return toDraft(routines, items).map((r, i) => ({ ...r, position: i }))
 }
+
+// Before migration 0006 there is no programs table: weekday plans only.
+export async function loadPrograms() {
+  const { data, error } = await supabase.from('programs').select('*').eq('student_id', scope.student).order('start_date')
+  return error ? [] : data
+}
+
+// Sessions of the programs, and the weekday plan (used only while there is no program at all).
+export async function loadStudentPlan() {
+  const [plan, programs] = await Promise.all([loadPlan(), loadPrograms()])
+  return { programs, sessions: plan.filter(r => r.program_id), weekdays: programs.length ? [] : plan.filter(r => !r.program_id) }
+}
+
+// What a session is called on the student's screens: «هفته ۲، جلسه ۱», or the weekday plan's name.
+export const sessionTitle = r => (r.program_id ? `${weekLabel(r.week)}، ${sessionLabel(r.session)}` : r.name)
