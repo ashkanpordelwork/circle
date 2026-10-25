@@ -1,7 +1,7 @@
 // The coach's overview, computed from plain rows so it can be tested.
 //   students  [{ id, full_name, user_id, active }]
 //   workouts  [{ id, student_id, routine_name, date: 'YYYY-MM-DD', sets? }]   (any recent window)
-//   routines  [{ student_id, days: [getDay numbers] }]
+//   routines  [{ student_id, name, days: [getDay numbers] }]
 //   today     'YYYY-MM-DD'
 const DAY = 86400000
 const toDate = iso => new Date(iso + 'T12:00:00')
@@ -23,7 +23,6 @@ export function overview({ students, workouts, routines, today }) {
   const soFar = weekDays.filter(d => d <= today)
   const week = workouts.filter(w => w.date >= sat && w.date <= today)
   const month = workouts.filter(w => daysBetween(w.date, today) >= 0 && daysBetween(w.date, today) < 30)
-  const perDay = weekDays.map(d => ({ date: d, count: week.filter(w => w.date === d).length, future: d > today }))
 
   // Planned sessions so far this week for students who can train, against the ones done.
   let planned = 0
@@ -42,6 +41,28 @@ export function overview({ students, workouts, routines, today }) {
     .filter(x => x.days == null || x.days >= 7)
     .sort((a, b) => (b.days ?? 1e9) - (a.days ?? 1e9))
 
+  // This week, student by student: every planned session in day order, with the workouts done so
+  // far crediting the earliest ones. A session before today with no credit was missed.
+  const board = live.map(s => {
+    const rs = routines.filter(r => r.student_id === s.id)
+    const sessions = []
+    for (const d of weekDays) for (const r of rs) if ((r.days || []).includes(toDate(d).getDay())) sessions.push({ date: d, name: r.name || '' })
+    let credit = week.filter(w => w.student_id === s.id).length
+    const done = credit
+    for (const x of sessions) {
+      if (credit > 0) { x.state = 'done'; credit-- }
+      else x.state = x.date < today ? 'missed' : x.date === today ? 'today' : 'upcoming'
+    }
+    const missed = sessions.filter(x => x.state === 'missed')
+    const idleDays = lastBy[s.id] ? daysBetween(lastBy[s.id], today) : null
+    const status = !rs.length ? 'noplan' : missed.length ? 'behind' : (idleDays == null || idleDays >= 7) && sessions.some(x => x.state !== 'done') ? 'idle'
+      : sessions.some(x => x.state === 'today') ? 'today' : sessions.every(x => x.state === 'done') ? 'done' : 'ontrack'
+    return { student: s, status, sessions, done, planned: sessions.length, missed: missed.map(x => x.date), today: sessions.filter(x => x.state === 'today').map(x => x.name), idleDays }
+  })
+  const rank = { behind: 0, noplan: 1, idle: 2, today: 3, ontrack: 4, done: 5 }
+  board.sort((a, b) => rank[a.status] - rank[b.status] || b.missed.length - a.missed.length || (b.idleDays ?? 1e9) - (a.idleDays ?? 1e9))
+  const sessions = board.flatMap(x => x.sessions)
+
   const recent = [...workouts].sort((a, b) => (b.date + (b.created_at || '')).localeCompare(a.date + (a.created_at || ''))).slice(0, 6)
   return {
     total: students.length,
@@ -50,8 +71,11 @@ export function overview({ students, workouts, routines, today }) {
     activeThisWeek: new Set(week.map(w => w.student_id)).size,
     week: week.length,
     month: month.length,
-    perDay,
     adherence,
+    board,
+    sessionsDone: sessions.filter(x => x.state === 'done').length,
+    sessionsPlanned: sessions.length,
+    behind: board.filter(x => x.status === 'behind').length,
     idle,
     recent
   }

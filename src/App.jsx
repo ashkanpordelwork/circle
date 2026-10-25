@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, configured } from './lib/supabase.js'
 import { loadExercises } from './lib/exercises.js'
-import { Loading } from './components/ui.jsx'
+import { Loading, Page } from './components/ui.jsx'
+import IntakeSummary from './components/IntakeSummary.jsx'
 import Icon from './components/Icon.jsx'
 import GlassDrop from './components/GlassDrop.jsx'
 import Login, { NotRegistered, NotConfigured } from './pages/Login.jsx'
@@ -77,23 +78,36 @@ export default function App() {
       <Route path="/log/:routineId" element={<LogWorkout />} />
       <Route path="/history" element={<History />} />
       <Route path="/weight" element={<Weight />} />
-      <Route path="/intake" element={<EditIntake />} />
+      <Route path="/intake" element={<IntakeView />} />
+      <Route path="/intake/edit" element={<EditIntake />} />
       <Route path="/account" element={<Account />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
-    {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake' && <TabBar tabs={me.role === 'coach'
+    {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake/edit' && <TabBar tabs={me.role === 'coach'
       ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب']]
-      : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب']]} />}
+      : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب', '/intake']]} />}
   </Me.Provider>
 }
 
-// The student revisits their answers from «حساب».
+// The student reads their answers from «حساب», laid out like the coach sees them…
+function IntakeView() {
+  const me = useMe()
+  const nav = useNavigate()
+  if (!me.intake?.completed_at) return <Navigate to="/account" replace />
+  return <Page title="پرسشنامه من" back="/account"
+    actions={<button className="btn glass interactive small" onClick={() => nav('/intake/edit')}><Icon name="edit_note" />ویرایش</button>}>
+    <IntakeSummary intake={me.intake} own />
+    <div className="section-footer">اگر چیزی تغییر کرد (مثلاً آسیب جدید)، ویرایشش کن تا مربی بداند.</div>
+  </Page>
+}
+
+// …and changes them with the same steps they answered first.
 function EditIntake() {
   const me = useMe()
   const nav = useNavigate()
-  if (me.intake?.skipped) return <Navigate to="/account" replace />
-  return <Intake student={me.student} initial={me.intake?.answers} onCancel={() => nav('/account')} onDone={a => { me.setIntake(a); nav('/account') }} />
+  if (!me.intake?.completed_at) return <Navigate to="/account" replace />
+  return <Intake student={me.student} initial={me.intake?.answers} onCancel={() => nav('/intake')} onDone={a => { me.setIntake(a); nav('/intake', { replace: true }) }} />
 }
 
 // A floating glass capsule; a droplet of glass sits under the current tab and slides to the next.

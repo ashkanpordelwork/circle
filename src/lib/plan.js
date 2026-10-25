@@ -11,7 +11,6 @@ export const toNumber = v => {
 // Persian week: Saturday first. Values are JavaScript getDay() numbers (0 = Sunday).
 export const WEEK = [6, 0, 1, 2, 3, 4, 5]
 export const DAY_NAMES = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه']
-export const DAY_SHORT = ['یک', 'دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه']
 
 export const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim())
 

@@ -9,7 +9,7 @@ export default function Account() {
   const me = useMe()
   const name = me.role === 'coach' ? me.coach.full_name : me.student.full_name
   const phone = phoneOfEmail(me.session.user.email)
-  return <Page>
+  return <Page fill>
     <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
         <div className="tile-icon"><Icon name="person" filled /></div>
@@ -26,8 +26,8 @@ export default function Account() {
         <div className="content"><div className="title-text">پرسشنامه من</div><div className="sub">هدف، آسیب‌ها، بیماری‌ها و تغذیه</div></div>
         <Disclosure />
       </Link>
-    </div><div className="section-footer">اگر چیزی تغییر کرد (مثلاً آسیب جدید)، اینجا به‌روزش کن تا مربی بداند.</div></div>}
-    <div className="section"><div className="group glass-lite">
+    </div></div>}
+    <div className="section page-end"><div className="group glass-lite">
       <button className="row pressable" onClick={() => supabase.auth.signOut()} style={{ color: 'var(--red)', justifyContent: 'center' }}>
         <Icon name="logout" mirror /><span className="title-text">خروج از حساب</span>
       </button>

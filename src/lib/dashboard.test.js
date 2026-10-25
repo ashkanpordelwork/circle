@@ -27,7 +27,7 @@ describe('coach dashboard', () => {
     expect(weekStart('2026-10-30')).toBe('2026-10-24')   // Friday
     expect(weekStart('2026-10-31')).toBe('2026-10-31')   // next Saturday
   })
-  it('counts, the week by day, adherence and who went quiet', () => {
+  it('counts, adherence and who went quiet', () => {
     const o = overview({ students, workouts, routines, today })
     expect(o.total).toBe(4)
     expect(o.live).toBe(2)
@@ -35,13 +35,26 @@ describe('coach dashboard', () => {
     expect(o.week).toBe(1)
     expect(o.month).toBe(4)
     expect(o.activeThisWeek).toBe(1)
-    // Saturday 24 → Friday 30; only Saturday and Sunday have happened.
-    expect(o.perDay.map(d => d.date)).toEqual(['2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'])
-    expect(o.perDay.map(d => d.count)).toEqual([0, 1, 0, 0, 0, 0, 0])
-    expect(o.perDay.map(d => d.future)).toEqual([false, false, true, true, true, true, true])
     // so far: Ali's Sunday and Sara's Saturday are planned, Ali's Sunday is done
     expect(o.adherence).toBeCloseTo(1 / 2)
     expect(o.idle.map(x => [x.student.id, x.days])).toEqual([['b', 12]])
     expect(o.recent[0].id).toBe(1)
+  })
+  it('this week, student by student: who is behind comes first', () => {
+    const rs = [{ student_id: 'a', name: 'پا', days: [0, 2, 4] }, { student_id: 'b', name: 'کل بدن', days: [6] }]
+    const o = overview({ students, workouts, routines: rs, today })
+    expect(o.board.map(x => [x.student.id, x.status])).toEqual([['b', 'behind'], ['a', 'ontrack']])
+    const [sara, ali] = o.board
+    expect(sara.missed).toEqual(['2026-10-24'])
+    expect(ali.sessions.map(x => x.state)).toEqual(['done', 'upcoming', 'upcoming'])
+    expect([o.sessionsDone, o.sessionsPlanned, o.behind]).toEqual([1, 4, 1])
+  })
+  it('a session due today, no plan at all, and a quiet student whose sessions are still ahead', () => {
+    const ss = [{ id: 'a', full_name: 'علی', user_id: 'u1', active: true }, { id: 'e', full_name: 'نیما', user_id: 'u5', active: true }, { id: 'f', full_name: 'لیلا', user_id: 'u6', active: true }]
+    const rs = [{ student_id: 'a', name: 'سینه', days: [0] }, { student_id: 'f', name: 'پا', days: [3] }]
+    const o = overview({ students: ss, workouts: [{ id: 9, student_id: 'f', date: isoMinus(today, 15) }, { id: 8, student_id: 'a', date: isoMinus(today, 3) }], routines: rs, today })
+    expect(o.board.map(x => [x.student.id, x.status])).toEqual([['e', 'noplan'], ['f', 'idle'], ['a', 'today']])
+    expect(o.board[2].today).toEqual(['سینه'])
+    expect(o.board[1].idleDays).toBe(15)
   })
 })

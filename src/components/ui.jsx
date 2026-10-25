@@ -38,7 +38,7 @@ export function ToastProvider({ children }) {
 // shows the title small. Back, when there is one, sits at the start (the right, in RTL).
 // Without a title (the tab pages: the tab bar already names them) there is no heading at all, and
 // no bar either unless the page has a button to put in it.
-export function Page({ title, subtitle, back, actions, children, noTabbar }) {
+export function Page({ title, subtitle, back, actions, children, noTabbar, fill }) {
   const nav = useNavigate()
   const sentinel = useRef(null)
   const [scrolled, setScrolled] = useState(false)
@@ -48,7 +48,7 @@ export function Page({ title, subtitle, back, actions, children, noTabbar }) {
     return () => io.disconnect()
   }, [])
   const bar = title || back || actions
-  return <div className={'page' + (noTabbar ? ' no-tabbar' : '')}>
+  return <div className={'page' + (noTabbar ? ' no-tabbar' : '') + (fill ? ' fill' : '')}>
     {!bar && <div className="top-space" />}
     {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '') + (title ? '' : ' bare')}>
       <div className="side">
