@@ -1,9 +1,7 @@
 import { supabase } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
 import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
-import { useState } from 'react'
-import { Page, Segmented } from '../components/ui.jsx'
-import { getThemePref, setThemePref } from '../lib/theme.js'
+import { Page } from '../components/ui.jsx'
 import Icon, { Disclosure } from '../components/Icon.jsx'
 import { Link } from 'react-router-dom'
 
@@ -11,8 +9,6 @@ export default function Account() {
   const me = useMe()
   const name = me.role === 'coach' ? me.coach.full_name : me.student.full_name
   const phone = phoneOfEmail(me.session.user.email)
-  const [theme, setTheme] = useState(getThemePref)
-  const pickTheme = t => { setTheme(t); setThemePref(t) }
   return <Page>
     <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
@@ -31,12 +27,6 @@ export default function Account() {
         <Disclosure />
       </Link>
     </div><div className="section-footer">اگر چیزی تغییر کرد (مثلاً آسیب جدید)، اینجا به‌روزش کن تا مربی بداند.</div></div>}
-    <div className="section">
-      <div className="section-title">ظاهر</div>
-      <Segmented label="ظاهر برنامه" value={theme} onChange={pickTheme}
-        options={[{ value: 'dark', label: 'تیره' }, { value: 'light', label: 'روشن' }, { value: 'auto', label: 'خودکار' }]} />
-      <div className="section-footer">{theme === 'auto' ? 'مثل تنظیمات گوشی، روشن یا تیره می‌شود.' : 'این انتخاب روی همین دستگاه ذخیره می‌شود.'}</div>
-    </div>
     <div className="section"><div className="group glass-lite">
       <button className="row pressable" onClick={() => supabase.auth.signOut()} style={{ color: 'var(--red)', justifyContent: 'center' }}>
         <Icon name="logout" mirror /><span className="title-text">خروج از حساب</span>
