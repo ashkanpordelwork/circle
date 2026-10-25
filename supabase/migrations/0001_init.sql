@@ -221,6 +221,14 @@ create policy "student logs weight" on public.body_weights for all
   using (public.is_student(student_id)) with check (public.is_student(student_id));
 create policy "coach reads weight" on public.body_weights for select using (public.coaches_student(student_id));
 
+-- Access for the API roles, granted here rather than relied on from the project's "Automatically
+-- expose new tables" setting, so the schema works whichever way that box was ticked. Row level
+-- security above still decides which rows each user reaches.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.coaches, public.students, public.routines, public.routine_items,
+  public.workouts, public.workout_sets, public.body_weights to authenticated;
+revoke all on public.coach_emails from anon, authenticated;
+
 -- A student may not move their own row to another coach or rename themselves; the coach owns it.
 revoke update on public.students from authenticated;
 grant update (full_name, email, note, active) on public.students to authenticated;
