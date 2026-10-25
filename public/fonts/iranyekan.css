@@ -1,0 +1,5 @@
+/* IRANYekan (FaNum: Persian digits built in). Each file covers a band of weights, so the
+   in-between weights the styles use (550, 650, 800) map to the nearest cut. */
+@font-face{font-family:IRANYekan;font-style:normal;font-weight:100 449;font-display:swap;src:url(iranyekan-regular.woff2) format('woff2')}
+@font-face{font-family:IRANYekan;font-style:normal;font-weight:450 599;font-display:swap;src:url(iranyekan-medium.woff2) format('woff2')}
+@font-face{font-family:IRANYekan;font-style:normal;font-weight:600 900;font-display:swap;src:url(iranyekan-bold.woff2) format('woff2')}

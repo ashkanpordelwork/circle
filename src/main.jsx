@@ -5,11 +5,14 @@ import App from './App.jsx'
 import { ToastProvider } from './components/ui.jsx'
 import './styles.css'
 import { installGlass } from './lib/glass.js'
+import { applyTheme, watchSystemTheme } from './lib/theme.js'
 
 // iOS Safari only applies :active while a touch listener exists; press feedback depends on it.
 document.addEventListener('touchstart', () => {}, { passive: true })
 // Liquid Glass reacts to touch: swell, wobble back, a sheen under the finger.
 installGlass()
+applyTheme()
+watchSystemTheme()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode><BrowserRouter basename={import.meta.env.BASE_URL}><ToastProvider><App /></ToastProvider></BrowserRouter></StrictMode>

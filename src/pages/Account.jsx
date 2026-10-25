@@ -1,13 +1,17 @@
 import { supabase } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
 import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
-import { Page } from '../components/ui.jsx'
+import { useState } from 'react'
+import { Page, Segmented } from '../components/ui.jsx'
+import { getThemePref, setThemePref } from '../lib/theme.js'
 import Icon from '../components/Icon.jsx'
 
 export default function Account() {
   const me = useMe()
   const name = me.role === 'coach' ? me.coach.full_name : me.student.full_name
   const phone = phoneOfEmail(me.session.user.email)
+  const [theme, setTheme] = useState(getThemePref)
+  const pickTheme = t => { setTheme(t); setThemePref(t) }
   return <Page title="حساب">
     <div className="section"><div className="group glass-lite">
       <div className="row with-leading">
@@ -19,6 +23,12 @@ export default function Account() {
         <span className="pill ok">{me.role === 'coach' ? 'مربی' : 'شاگرد'}</span>
       </div>
     </div></div>
+    <div className="section">
+      <div className="section-title">ظاهر</div>
+      <Segmented label="ظاهر برنامه" value={theme} onChange={pickTheme}
+        options={[{ value: 'dark', label: 'تیره' }, { value: 'light', label: 'روشن' }, { value: 'auto', label: 'خودکار' }]} />
+      <div className="section-footer">{theme === 'auto' ? 'مثل تنظیمات گوشی، روشن یا تیره می‌شود.' : 'این انتخاب روی همین دستگاه ذخیره می‌شود.'}</div>
+    </div>
     <div className="section">
       <div className="section-title">نصب روی گوشی</div>
       <div className="group glass-lite">
