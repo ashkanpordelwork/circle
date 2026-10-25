@@ -12,6 +12,7 @@ import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import { IntField, RepsField, WeightField, TempoField } from '../../components/Wheel.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
+import { profile, alertLine } from '../../lib/intake.js'
 
 
 /* ---------- one exercise, edited in a sheet ---------- */
@@ -84,7 +85,7 @@ function RoutineCard({ r, onChange, onRemove }) {
   </div>
 }
 
-function PlanTab({ student, onSaved }) {
+function PlanTab({ student, onSaved, alerts, onAlerts }) {
   const toast = useToast()
   const [draft, setDraft] = useState(null)
   const [note, setNote] = useState(student.note || '')
@@ -115,6 +116,11 @@ function PlanTab({ student, onSaved }) {
     } catch (e) { toast(errorText(e), 'error') } finally { setBusy(false) }
   }
   return <>
+    {alerts && <button className="alert-strip pressable" onClick={onAlerts}>
+      <Icon name="warning" filled />
+      <div className="grow"><div className="title-text">هنگام انتخاب حرکت مراقب باشید</div><div className="sub">{alerts}</div></div>
+      <Disclosure />
+    </button>}
     <div className="section">
       <div className="section-title">یادداشت برای شاگرد</div>
       <textarea className="input" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} placeholder="در صفحه «امروز» شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…"
@@ -183,6 +189,66 @@ function ProgressTab({ student }) {
   </>
 }
 
+/* ---------- the student's questionnaire ---------- */
+
+const faN = n => Number(n).toLocaleString('fa-IR')
+const Quote = ({ children }) => children ? <div className="quote">«{children}»</div> : null
+
+function ProfileTab({ student, intake }) {
+  if (intake === undefined) return <Loading />
+  if (!intake?.completed_at) return <Empty icon="assignment" title="هنوز پرسشنامه را پر نکرده">
+    {student.user_id ? 'شاگرد دفعه بعد که وارد برنامه شود، پرسشنامه را پر می‌کند.' : 'بعد از ثبت‌نام، اولین کار شاگرد پر کردن پرسشنامه است.'}</Empty>
+  const p = profile(intake.answers)
+  return <>
+    <div className="caption profile-stamp">آخرین به‌روزرسانی: {fmtDate(intake.completed_at.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+
+    {p.alerts.length ? <section className="card alert-card" aria-label="نکات ایمنی">
+      <div className="card-head"><div className="tile-icon red"><Icon name="warning" filled /></div>
+        <div className="grow"><div className="headline">نکات ایمنی</div><div className="caption">قبل از نوشتن برنامه بخوانید</div></div></div>
+      {p.alerts.map(x => <div key={x.kind} className="alert-item">
+        <div className="alert-title">{x.title}</div>
+        {x.items.length > 0 && <div className="hstack wrap">{x.items.map(l => <span key={l} className="pill bad">{l}</span>)}</div>}
+        <Quote>{x.note}</Quote>
+      </div>)}
+      {p.conditionsNote && <div className="alert-item"><div className="alert-title">داروها و توضیحات</div><Quote>{p.conditionsNote}</Quote></div>}
+    </section>
+      : <div className="group glass-lite section"><div className="row with-leading">
+        <div className="tile-icon"><Icon name="check" /></div>
+        <div className="content"><div className="title-text">آسیب یا بیماری خاصی گزارش نکرده</div>
+          {p.conditionsNote && <div className="sub">«{p.conditionsNote}»</div>}</div>
+      </div></div>}
+
+    <div className="section-title">بدن</div>
+    <div className="stats">
+      <div className="stat glass-lite"><div className="v">{p.age ? faN(p.age) : '—'}</div><div className="l">سال{p.sex ? ' · ' + p.sex : ''}</div></div>
+      <div className="stat glass-lite"><div className="v">{p.height ? faN(p.height) : '—'}</div><div className="l">قد (سانتی‌متر)</div></div>
+      <div className="stat glass-lite"><div className="v">{p.weight ? fmtNum(p.weight) : '—'}</div><div className="l">وزن هنگام شروع (کیلو)</div></div>
+      <div className="stat glass-lite"><div className="v">{p.bmi ? fmtNum(p.bmi.value) : '—'}</div>
+        <div className="l">BMI {p.bmi && <span className={'pill ' + (p.bmi.ok ? 'ok' : '')}>{p.bmi.band}</span>}</div></div>
+    </div>
+
+    <section className="card glass-lite" aria-label="هدف">
+      <div className="card-head"><div className="tile-icon"><Icon name="flag" /></div><div className="headline">هدف</div></div>
+      <div className="hstack wrap">{p.goals.map(g => <span key={g} className="pill ok">{g}</span>)}</div>
+      <Quote>{p.goalsNote}</Quote>
+    </section>
+
+    <section className="card glass-lite" aria-label="سابقه تمرین">
+      <div className="card-head"><div className="tile-icon blue"><Icon name="fitness_center" /></div><div className="headline">سابقه تمرین</div></div>
+      <div className="kv"><span>تجربه</span><b>{p.experience || '—'}</b></div>
+      <div className="kv"><span>زمان در دسترس</span><b>{p.days ? `${faN(p.days)} روز در هفته` : '—'}</b></div>
+      <Quote>{p.experienceNote}</Quote>
+    </section>
+
+    <section className="card glass-lite" aria-label="تغذیه">
+      <div className="card-head"><div className="tile-icon orange"><Icon name="restaurant" /></div><div className="headline">محدودیت غذایی</div></div>
+      {p.diet.length ? <div className="hstack wrap">{p.diet.map(d => <span key={d} className="pill">{d}</span>)}</div>
+        : <div className="subhead secondary">محدودیتی ندارد</div>}
+      <Quote>{p.dietNote}</Quote>
+    </section>
+  </>
+}
+
 /* ---------- settings ---------- */
 
 function SettingsTab({ student, onSaved, onRemoved }) {
@@ -238,6 +304,12 @@ export default function StudentPage() {
   const toast = useToast()
   const [student, setStudent] = useState(null)
   const [tab, setTab] = useState('plan')
+  const [intake, setIntake] = useState(undefined)
+  useEffect(() => {
+    // No intakes table yet (migration 0004 not run) reads as "not filled", not as an error.
+    supabase.from('intakes').select('answers, completed_at').eq('student_id', id).maybeSingle()
+      .then(({ data }) => setIntake(data || null))
+  }, [id])
   useEffect(() => {
     supabase.from('students').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
       if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav('/students') } else setStudent(data)
@@ -247,8 +319,9 @@ export default function StudentPage() {
   const status = !student.active ? 'دسترسی بسته' : student.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'
   return <Page title={student.full_name} back="/students" subtitle={<><span className="latin">{student.phone ? fmtPhone(student.phone) : ''}</span> · {status}</>}>
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
-      options={[{ value: 'plan', label: 'برنامه' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت و تنظیمات' }]} />
-    {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} />}
+      options={[{ value: 'plan', label: 'برنامه' }, { value: 'profile', label: 'پرونده' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت' }]} />
+    {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}
+    {tab === 'profile' && <ProfileTab student={student} intake={intake} />}
     {tab === 'progress' && <ProgressTab student={student} />}
     {tab === 'settings' && <SettingsTab student={student} onSaved={setStudent} onRemoved={() => nav('/students')} />}
   </Page>

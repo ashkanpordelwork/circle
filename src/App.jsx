@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, configured } from './lib/supabase.js'
 import { loadExercises } from './lib/exercises.js'
 import { Loading } from './components/ui.jsx'
@@ -15,6 +15,7 @@ import LogWorkout from './pages/student/LogWorkout.jsx'
 import History from './pages/student/History.jsx'
 import Weight from './pages/student/Weight.jsx'
 import Account from './pages/Account.jsx'
+import Intake from './pages/student/Intake.jsx'
 
 // Who is signed in: { session, role: 'coach' | 'student' | 'none', coach?, student? }
 const Me = createContext(null)
@@ -27,7 +28,11 @@ async function resolveRole(session) {
     supabase.from('students').select('*').eq('user_id', uid).maybeSingle()
   ])
   if (coach) return { session, role: 'coach', coach }
-  if (student) return { session, role: 'student', student }
+  if (student) {
+    // Before migration 0004 there is no intakes table: the questionnaire is skipped, not a wall.
+    const { data: intake, error } = await supabase.from('intakes').select('answers, completed_at').eq('student_id', student.id).maybeSingle()
+    return { session, role: 'student', student, intake: error ? { skipped: true } : intake }
+  }
   return { session, role: 'none' }
 }
 
@@ -53,8 +58,13 @@ export default function App() {
   if (me === undefined) return <Loading />
   if (me === null) return <Login />
   if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
+  const setIntake = answers => setMe(m => ({ ...m, intake: { answers, completed_at: new Date().toISOString() } }))
+  // A new student answers the questionnaire once before seeing the plan.
+  if (me.role === 'student' && !me.intake?.completed_at && !me.intake?.skipped) {
+    return <Intake student={me.student} initial={me.intake?.answers} onDone={setIntake} />
+  }
 
-  return <Me.Provider value={{ ...me, reload }}>
+  return <Me.Provider value={{ ...me, reload, setIntake }}>
     {me.role === 'coach' ? <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/students" element={<Students />} />
@@ -67,14 +77,23 @@ export default function App() {
       <Route path="/log/:routineId" element={<LogWorkout />} />
       <Route path="/history" element={<History />} />
       <Route path="/weight" element={<Weight />} />
+      <Route path="/intake" element={<EditIntake />} />
       <Route path="/account" element={<Account />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
-    {!loc.pathname.startsWith('/log/') && <TabBar tabs={me.role === 'coach'
+    {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake' && <TabBar tabs={me.role === 'coach'
       ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب']]
       : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب']]} />}
   </Me.Provider>
+}
+
+// The student revisits their answers from «حساب».
+function EditIntake() {
+  const me = useMe()
+  const nav = useNavigate()
+  if (me.intake?.skipped) return <Navigate to="/account" replace />
+  return <Intake student={me.student} initial={me.intake?.answers} onCancel={() => nav('/account')} onDone={a => { me.setIntake(a); nav('/account') }} />
 }
 
 // A floating glass capsule; a droplet of glass sits under the current tab and slides to the next.

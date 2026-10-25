@@ -1,4 +1,4 @@
-import { fmtPhone } from '../lib/phone.js'
+import { fmtPhone, normPhone } from '../lib/phone.js'
 import { useToast } from './ui.jsx'
 import Icon from './Icon.jsx'
 
@@ -7,7 +7,8 @@ export const appUrl = () => window.location.origin + import.meta.env.BASE_URL
 export const inviteText = s =>
   `سلام ${s.full_name}! برنامه تمرینی‌ات آماده است.\n` +
   `۱. وارد این سایت شو: ${appUrl()}\n` +
-  `۲. «ثبت‌نام» را بزن، شماره ${fmtPhone(s.phone)} و یک رمز دلخواه وارد کن.\n` +
+  // The number in one piece: with spaces, its groups get reordered inside Persian text.
+  `۲. «ثبت‌نام» را بزن، شماره ${normPhone(s.phone)} و یک رمز دلخواه وارد کن.\n` +
   `۳. کد دعوت: ${s.invite_code}`
 
 // What the coach sends a new student: link, number and code in one message.

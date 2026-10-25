@@ -4,7 +4,8 @@ import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
 import { useState } from 'react'
 import { Page, Segmented } from '../components/ui.jsx'
 import { getThemePref, setThemePref } from '../lib/theme.js'
-import Icon from '../components/Icon.jsx'
+import Icon, { Disclosure } from '../components/Icon.jsx'
+import { Link } from 'react-router-dom'
 
 export default function Account() {
   const me = useMe()
@@ -23,6 +24,13 @@ export default function Account() {
         <span className="pill ok">{me.role === 'coach' ? 'مربی' : 'شاگرد'}</span>
       </div>
     </div></div>
+    {me.role === 'student' && !me.intake?.skipped && <div className="section"><div className="group glass-lite">
+      <Link to="/intake" className="row pressable with-leading">
+        <div className="tile-icon blue"><Icon name="assignment" /></div>
+        <div className="content"><div className="title-text">پرسشنامه من</div><div className="sub">هدف، آسیب‌ها، بیماری‌ها و تغذیه</div></div>
+        <Disclosure />
+      </Link>
+    </div><div className="section-footer">اگر چیزی تغییر کرد (مثلاً آسیب جدید)، اینجا به‌روزش کن تا مربی بداند.</div></div>}
     <div className="section">
       <div className="section-title">ظاهر</div>
       <Segmented label="ظاهر برنامه" value={theme} onChange={pickTheme}
