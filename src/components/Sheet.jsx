@@ -141,12 +141,12 @@ export default function Sheet({ onClose, title, children, label }) {
 
   return createPortal(<Ctx.Provider value={{ close }}>
     <div ref={scrim} className="scrim" onClick={() => close()} />
-    <div ref={panel} className="sheet" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}
+    <div ref={panel} className="sheet glass" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
       <div className="grabber" data-drag-handle aria-hidden="true" />
       {title !== undefined && <div className="sheet-head" data-drag-handle>
         <h2 className="title">{title}</h2>
-        <button className="icon-btn pressable" onClick={() => close()} aria-label="بستن"><Icon name="close" /></button>
+        <button className="icon-btn glass interactive" onClick={() => close()} aria-label="بستن"><Icon name="close" /></button>
       </div>}
       <div ref={body} className="sheet-body">{children}</div>
     </div>

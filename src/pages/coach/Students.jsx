@@ -33,7 +33,7 @@ function AddStudent({ onClose, onAdded }) {
       <div className="field"><label htmlFor="p">شماره موبایل</label>
         <input id="p" className="input ltr" type="tel" inputMode="tel" placeholder="0912 123 4567" value={phone} onChange={e => setPhone(e.target.value)} aria-invalid={phoneBad} />
         {phoneBad && <div className="caption" style={{ color: 'var(--red)' }}>شماره ۱۱ رقمی با ۰۹ شروع می‌شود.</div>}</div>
-      <button className="btn primary block pressable" disabled={busy}><Icon name="person_add" />افزودن شاگرد</button>
+      <button className="btn glass interactive prominent block" disabled={busy}><Icon name="person_add" />افزودن شاگرد</button>
     </form>}
   </Sheet>
 }
@@ -58,17 +58,17 @@ export default function Students() {
     })()
   }, [])
   const shown = (list || []).filter(s => !q || (s.full_name + (s.phone || '')).toLowerCase().includes(q.toLowerCase()))
-  const addBtn = <button className="icon-btn pressable" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
+  const addBtn = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
 
   return <Page title="شاگردان" subtitle={`سلام ${me.coach.full_name || 'مربی'}`} actions={addBtn}>
     {list && list.length > 5 && <div className="field">
       <input className="input" placeholder="جستجوی نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" /></div>}
     {!list ? <Loading /> : !list.length ? <>
       <Empty icon="group" title="هنوز شاگردی ندارید">اولین شاگرد را با شماره موبایلش اضافه کنید.</Empty>
-      <button className="btn primary block pressable" onClick={() => setAdding(true)}><Icon name="person_add" />شاگرد جدید</button>
+      <button className="btn glass interactive prominent block" onClick={() => setAdding(true)}><Icon name="person_add" />شاگرد جدید</button>
     </> : <div className="section">
       <div className="section-title">{list.length.toLocaleString('fa-IR')} شاگرد</div>
-      <div className="group">{shown.map(s => <button key={s.id} className="row with-leading pressable" onClick={() => nav('/s/' + s.id)}>
+      <div className="group glass-lite">{shown.map(s => <button key={s.id} className="row with-leading pressable" onClick={() => nav('/s/' + s.id)}>
         <div className={'tile-icon' + (s.user_id && s.active ? '' : ' gray')}><Icon name="person" filled /></div>
         <div className="content">
           <div className="title-text">{s.full_name}</div>

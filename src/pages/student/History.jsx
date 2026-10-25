@@ -21,7 +21,7 @@ export default function History() {
   }, [])
   return <Page title="سابقه تمرین" subtitle={data ? `${data.workouts.length.toLocaleString('fa-IR')} جلسه` : null}>
     {!data ? <Loading /> : !data.workouts.length ? <Empty icon="history" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، اینجا می‌بینی چه زدی.</Empty>
-      : <div className="group">{data.workouts.map(w => {
+      : <div className="group glass-lite">{data.workouts.map(w => {
         const sets = data.sets.filter(s => s.workout_id === w.id)
         const sum = summarize(sets)
         const isOpen = open === w.id

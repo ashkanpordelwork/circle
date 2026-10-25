@@ -26,11 +26,11 @@ export default function Weight() {
   const delta = list && list.length > 1 ? Number(list[0].weight) - Number(list[1].weight) : null
   return <Page title="وزن بدن">
     <form className="hstack" onSubmit={save} style={{ marginBottom: '1.25rem' }}>
-      <input className="input grow" style={{ background: 'var(--bg-elevated)' }} inputMode="decimal" placeholder="وزن امروز (کیلو)" value={showNum(w)} onChange={e => setW(readNum(e.target.value))} aria-label="وزن امروز به کیلوگرم" />
-      <button className="btn primary pressable"><Icon name="add" />ثبت</button>
+      <input className="input grow" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} inputMode="decimal" placeholder="وزن امروز (کیلو)" value={showNum(w)} onChange={e => setW(readNum(e.target.value))} aria-label="وزن امروز به کیلوگرم" />
+      <button className="btn glass interactive prominent"><Icon name="add" />ثبت</button>
     </form>
     {!list ? <Loading /> : !list.length ? <Empty icon="monitor_weight" title="هنوز وزنی ثبت نکرده‌ای">هر چند روز یک بار وزنت را ثبت کن تا روند را ببینی.</Empty> : <>
-      <div className="card">
+      <div className="card glass-lite">
         <div className="hstack between">
           <div><div className="caption">آخرین وزن · {fmtDate(list[0].date, { day: 'numeric', month: 'long' })}</div>
             <div className="title-lg tnum">{fmtNum(list[0].weight)} <span className="subhead secondary">کیلو</span></div></div>
@@ -39,7 +39,7 @@ export default function Weight() {
         <WeightChart points={[...list].reverse()} />
       </div>
       <div className="section-title">همه ثبت‌ها</div>
-      <div className="group">{list.map(b => <div key={b.id} className="row">
+      <div className="group glass-lite">{list.map(b => <div key={b.id} className="row">
         <div className="content">{fmtDate(b.date, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
         <div className="tnum" style={{ fontWeight: 650 }}>{fmtNum(b.weight)} کیلو</div>
       </div>)}</div>

@@ -31,32 +31,32 @@ export default function Today() {
   const done = new Set(doneToday.map(w => w.routine_id))
 
   return <Page title={title} subtitle={fmtDate(todayISO())}>
-    {me.student.note?.trim() && <div className="card">
+    {me.student.note?.trim() && <div className="card glass-lite">
       <div className="card-head"><div className="tile-icon orange"><Icon name="sticky_note_2" filled /></div><div className="headline">از طرف مربی</div></div>
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
 
     {!plan.length ? <Empty icon="hourglass_top" title="برنامه‌ات در راه است">مربی هنوز برنامه را نفرستاده. به محض آماده شدن همین‌جا می‌بینی.</Empty>
-      : !todays.length ? <div className="card">
+      : !todays.length ? <div className="card glass-lite">
         <div className="card-head"><div className="tile-icon blue"><Icon name="bedtime" filled /></div>
           <div><div className="headline">امروز روز استراحت است</div>
             {next !== undefined && <div className="footnote">جلسه بعد: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}</div></div>
-        <button className="btn block pressable" onClick={() => nav('/week')}><Icon name="calendar_month" />برنامه هفته</button>
+        <button className="btn glass interactive block" onClick={() => nav('/week')}><Icon name="calendar_month" />برنامه هفته</button>
       </div>
-      : todays.map(r => <section key={r.id} className="card accent" aria-label={r.name}>
+      : todays.map(r => <section key={r.id} className="card hero" aria-label={r.name}>
         <div className="hstack between">
           <div><div className="caption">تمرین امروز</div><h2 className="title">{r.name}</h2></div>
-          {done.has(r.id) && <span className="pill" style={{ background: 'rgba(255,255,255,.22)', color: 'inherit' }}><Icon name="check" />انجام شد</span>}
+          {done.has(r.id) && <span className="pill on-hero"><Icon name="check" />انجام شد</span>}
         </div>
         <div className="footnote" style={{ margin: '0.25rem 0 1rem' }}>{r.items.length.toLocaleString('fa-IR')} حرکت · حدود {Math.max(15, Math.round(r.items.reduce((m, i) => m + i.sets * 2.2, 0))).toLocaleString('fa-IR')} دقیقه</div>
-        <div className="group" style={{ background: 'var(--bg-elevated)', color: 'var(--label)' }}>
+        <div className="group" style={{ background: 'rgba(255,255,255,0.16)', boxShadow: 'inset 0 1px 0.5px rgba(255,255,255,0.4)' }}>
           {r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
             <Thumb id={it.exercise_id} />
             <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
               <div className="sub">{fmtTarget(it)}</div></div>
           </div>)}
         </div>
-        <button className="btn block pressable mt" style={{ background: 'var(--bg-elevated)', color: 'var(--accent)' }} onClick={() => nav('/log/' + r.id)}>
+        <button className="btn glass interactive block mt" style={{ '--glass-tint': 'rgba(255,255,255,0.92)', color: '#15803d' }} onClick={() => nav('/log/' + r.id)}>
           <Icon name="fitness_center" />{done.has(r.id) ? 'ثبت دوباره' : 'شروع تمرین'}</button>
       </section>)}
   </Page>

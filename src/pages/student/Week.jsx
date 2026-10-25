@@ -20,13 +20,13 @@ export default function Week() {
         const rs = routinesForDay(plan, d)
         return <div key={d} className="section">
           <div className="section-title" style={d === today ? { color: 'var(--accent)', fontWeight: 700 } : null}>{DAY_NAMES[d]}{d === today ? ' · امروز' : ''}</div>
-          {!rs.length ? <div className="group"><div className="row with-leading"><div className="tile-icon gray"><Icon name="bedtime" /></div>
+          {!rs.length ? <div className="group glass-lite"><div className="row with-leading"><div className="tile-icon gray"><Icon name="bedtime" /></div>
             <div className="content"><div className="title-text secondary">استراحت</div></div></div></div>
-            : rs.map(r => <div key={r.id} className="group" style={{ marginBottom: '0.5rem' }}>
+            : rs.map(r => <div key={r.id} className="group glass-lite" style={{ marginBottom: '0.5rem' }}>
               <div className="row with-leading">
                 <div className="tile-icon"><Icon name="fitness_center" /></div>
                 <div className="content"><div className="title-text">{r.name}</div><div className="sub">{r.items.length.toLocaleString('fa-IR')} حرکت</div></div>
-                <button className="btn small primary pressable" onClick={() => nav('/log/' + r.id)}>شروع</button>
+                <button className="btn glass interactive prominent small" onClick={() => nav('/log/' + r.id)}>شروع</button>
               </div>
               {r.items.map((it, i) => <button key={i} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setInfo(it.exercise_id)}>
                 <Thumb id={it.exercise_id} />

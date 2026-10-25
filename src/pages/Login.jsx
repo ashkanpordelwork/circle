@@ -47,7 +47,7 @@ export default function Login() {
     <p className="lead">برنامه تمرینی‌ات را از مربی بگیر و تمرین‌هایت را ثبت کن.</p>
     <Segmented label="ورود یا ثبت‌نام" value={mode} onChange={setMode}
       options={[{ value: 'login', label: 'ورود' }, { value: 'signup', label: 'ثبت‌نام (بار اول)' }]} />
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate className="panel glass">
       <div className="field">
         <label htmlFor="ph">شماره موبایل</label>
         <input id="ph" className="input ltr" type="tel" inputMode="tel" autoComplete="username" placeholder="0912 123 4567"
@@ -59,7 +59,7 @@ export default function Login() {
         <div className="hstack">
           <input id="pw" className="input ltr grow" type={show ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             value={password} onChange={e => setPassword(e.target.value)} />
-          <button type="button" className="icon-btn pressable" onClick={() => setShow(!show)} aria-label={show ? 'پنهان کردن رمز' : 'نمایش رمز'}>
+          <button type="button" className="icon-btn glass interactive" onClick={() => setShow(!show)} aria-label={show ? 'پنهان کردن رمز' : 'نمایش رمز'}>
             <Icon name={show ? 'visibility_off' : 'visibility'} /></button>
         </div>
         {mode === 'signup' && <div className="caption">حداقل ۶ کاراکتر. دفعه‌های بعد با همین رمز وارد می‌شوی.</div>}
@@ -69,7 +69,7 @@ export default function Login() {
         <input id="cd" className="input code" autoCapitalize="characters" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} />
         <div className="caption">مربی‌ها این را خالی می‌گذارند.</div>
       </div>}
-      <button className="btn primary block pressable mt" disabled={busy}>{busy ? 'صبر کن…' : mode === 'login' ? 'ورود' : 'ساخت حساب'}</button>
+      <button className="btn glass interactive prominent block mt" disabled={busy}>{busy ? 'صبر کن…' : mode === 'login' ? 'ورود' : 'ساخت حساب'}</button>
     </form>
     {mode === 'login' && <p className="footnote" style={{ textAlign: 'center' }}>رمز را فراموش کرده‌ای؟ به مربی‌ات بگو.</p>}
   </main>
@@ -94,12 +94,12 @@ export function NotRegistered({ email }) {
     <div className="mark"><Icon name="key" /></div>
     <h1 className="title" style={{ textAlign: 'center' }}>یک قدم مانده</h1>
     <p className="lead">کد دعوتی را که مربی برایت فرستاده وارد کن تا برنامه‌ات باز شود.</p>
-    {phone && <form onSubmit={claim}>
+    {phone && <form onSubmit={claim} className="panel glass">
       <div className="field">
         <label htmlFor="cl">کد دعوت برای <span className="latin">{fmtPhone(phone)}</span></label>
         <input id="cl" className="input code" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} autoFocus />
       </div>
-      <button className="btn primary block pressable" disabled={busy || !code.trim()}>تأیید کد</button>
+      <button className="btn glass interactive prominent block" disabled={busy || !code.trim()}>تأیید کد</button>
     </form>}
     <p className="footnote" style={{ textAlign: 'center' }}>اگر مربی هستی، صاحب برنامه باید شماره‌ات را در لیست مربی‌ها ثبت کند.</p>
     <button className="btn plain pressable" onClick={() => supabase.auth.signOut()}><Icon name="logout" mirror />خروج</button>

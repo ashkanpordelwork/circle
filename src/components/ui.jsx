@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import Sheet, { useSheet } from './Sheet.jsx'
+import GlassDrop from './GlassDrop.jsx'
 
 /* ---------- feedback ---------- */
 
@@ -25,7 +26,7 @@ export function ToastProvider({ children }) {
   }, [])
   return <ToastCtx.Provider value={show}>
     {children}
-    {t && <div key={t.key} className={'toast ' + t.kind} role={t.kind === 'error' ? 'alert' : 'status'}>
+    {t && <div key={t.key} className={'toast glass ' + t.kind} role={t.kind === 'error' ? 'alert' : 'status'}>
       <Icon name={TOAST_ICON[t.kind]} filled />{t.text}
     </div>}
   </ToastCtx.Provider>
@@ -47,7 +48,7 @@ export function Page({ title, subtitle, back, actions, children, noTabbar }) {
   return <div className={'page' + (noTabbar ? ' no-tabbar' : '')}>
     <header className={'navbar' + (scrolled ? ' scrolled' : '')}>
       <div className="side">
-        {back && <button className="btn plain pressable" onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
+        {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
           <Icon name="chevron_right" /></button>}
       </div>
       <div className="small-title" aria-hidden={!scrolled}>{title}</div>
@@ -64,13 +65,14 @@ export function Page({ title, subtitle, back, actions, children, noTabbar }) {
 
 /* ---------- segmented control ---------- */
 
-// The thumb slides to the chosen segment; in RTL the first segment is on the right.
+// A glass track with a droplet under the chosen segment; the droplet slides and stretches on a
+// spring (GlassDrop) and can be redirected mid-flight.
 export function Segmented({ options, value, onChange, label }) {
+  const box = useRef(null)
   const i = Math.max(0, options.findIndex(o => o.value === value))
-  const n = options.length
-  return <div className="seg" role="tablist" aria-label={label}>
-    <div className="seg-thumb" style={{ width: `calc((100% - 0.25rem) / ${n})`, transform: `translateX(calc(${-i} * 100%))` }} />
-    {options.map(o => <button key={o.value} role="tab" aria-selected={o.value === value} className="pressable" onClick={() => onChange(o.value)}>{o.label}</button>)}
+  return <div ref={box} className="seg glass" role="tablist" aria-label={label}>
+    <GlassDrop container={box} selector="button" index={i} className="seg-thumb" />
+    {options.map(o => <button key={o.value} role="tab" aria-selected={o.value === value} onClick={() => onChange(o.value)}>{o.label}</button>)}
   </div>
 }
 
@@ -81,8 +83,8 @@ function ConfirmBody({ text, okText, danger, onOk }) {
   return <>
     {text && <p className="subhead secondary" style={{ marginTop: 0 }}>{text}</p>}
     <div className="stack mt">
-      <button className={'btn block pressable ' + (danger ? 'danger' : 'primary')} onClick={() => { onOk(); close() }}>{okText}</button>
-      <button className="btn block pressable" onClick={() => close()}>انصراف</button>
+      <button className={'btn block glass interactive ' + (danger ? 'danger' : 'prominent')} onClick={() => { onOk(); close() }}>{okText}</button>
+      <button className="btn glass interactive block" onClick={() => close()}>انصراف</button>
     </div>
   </>
 }

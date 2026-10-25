@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { supabase, configured } from './lib/supabase.js'
 import { loadExercises } from './lib/exercises.js'
 import { Loading } from './components/ui.jsx'
 import Icon from './components/Icon.jsx'
+import GlassDrop from './components/GlassDrop.jsx'
 import Login, { NotRegistered, NotConfigured } from './pages/Login.jsx'
 import Students from './pages/coach/Students.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
@@ -52,9 +53,6 @@ export default function App() {
   if (me === null) return <Login />
   if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
 
-  const tab = (to, icon, label, end) => <NavLink to={to} end={end} className="pressable">
-    {({ isActive }) => <><Icon name={icon} filled={isActive} /><span>{label}</span></>}
-  </NavLink>
   return <Me.Provider value={{ ...me, reload }}>
     {me.role === 'coach' ? <Routes>
       <Route path="/" element={<Students />} />
@@ -71,17 +69,21 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
-    {!loc.pathname.startsWith('/log/') && <nav className="tabbar" aria-label="بخش‌ها">
-      {me.role === 'coach' ? <>
-        {tab('/', 'group', 'شاگردان', true)}
-        {tab('/account', 'person', 'حساب')}
-      </> : <>
-        {tab('/', 'today', 'امروز', true)}
-        {tab('/week', 'calendar_month', 'برنامه هفته')}
-        {tab('/history', 'history', 'سابقه')}
-        {tab('/weight', 'monitor_weight', 'وزن')}
-        {tab('/account', 'person', 'حساب')}
-      </>}
-    </nav>}
+    {!loc.pathname.startsWith('/log/') && <TabBar tabs={me.role === 'coach'
+      ? [['/', 'group', 'شاگردان'], ['/account', 'person', 'حساب']]
+      : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب']]} />}
   </Me.Provider>
+}
+
+// A floating glass capsule; a droplet of glass sits under the current tab and slides to the next.
+function TabBar({ tabs }) {
+  const loc = useLocation()
+  const box = useRef(null)
+  const index = tabs.findIndex(([to]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)))
+  return <nav ref={box} className="tabbar glass" aria-label="بخش‌ها">
+    <GlassDrop container={box} selector="a" index={index} className="drop" />
+    {tabs.map(([to, icon, label]) => <NavLink key={to} to={to} end={to === '/'}>
+      {({ isActive }) => <><Icon name={icon} filled={isActive} /><span>{label}</span></>}
+    </NavLink>)}
+  </nav>
 }

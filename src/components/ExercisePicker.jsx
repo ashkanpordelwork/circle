@@ -22,19 +22,19 @@ function Body({ onPick, added }) {
         <input className="input" style={{ paddingInlineStart: '2.5rem' }} placeholder="جستجو: squat، سینه، دمبل…" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی حرکت" />
         <Icon name="search" style={{ position: 'absolute', insetInlineStart: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--label-3)', fontSize: '1.25rem' }} />
       </div>
-      <button className="btn primary small pressable" onClick={() => close()}>تمام</button>
+      <button className="btn glass interactive prominent small" onClick={() => close()}>تمام</button>
     </div>
     <div className="chips" data-no-drag>
-      <button className={'chip pressable' + (!muscle ? ' on' : '')} onClick={() => setMuscle('')}>همه عضلات</button>
-      {Object.entries(MUSCLES).map(([k, v]) => <button key={k} className={'chip pressable' + (muscle === k ? ' on' : '')} onClick={() => setMuscle(muscle === k ? '' : k)}>{v}</button>)}
+      <button className={'chip glass-lite pressable' + (!muscle ? ' on' : '')} onClick={() => setMuscle('')}>همه عضلات</button>
+      {Object.entries(MUSCLES).map(([k, v]) => <button key={k} className={'chip glass-lite pressable' + (muscle === k ? ' on' : '')} onClick={() => setMuscle(muscle === k ? '' : k)}>{v}</button>)}
     </div>
     <div className="chips" data-no-drag style={{ marginBottom: '0.5rem' }}>
-      <button className={'chip pressable' + (!equipment ? ' on' : '')} onClick={() => setEquipment('')}>همه تجهیزات</button>
-      {Object.entries(EQUIPMENT).map(([k, v]) => <button key={k} className={'chip pressable' + (equipment === k ? ' on' : '')} onClick={() => setEquipment(equipment === k ? '' : k)}>{v}</button>)}
+      <button className={'chip glass-lite pressable' + (!equipment ? ' on' : '')} onClick={() => setEquipment('')}>همه تجهیزات</button>
+      {Object.entries(EQUIPMENT).map(([k, v]) => <button key={k} className={'chip glass-lite pressable' + (equipment === k ? ' on' : '')} onClick={() => setEquipment(equipment === k ? '' : k)}>{v}</button>)}
     </div>
     {!all ? <Loading /> : <>
       <div className="caption" style={{ padding: '0 0.25rem 0.375rem' }}>{found.length.toLocaleString('fa-IR')} حرکت</div>
-      <div className="group">{found.slice(0, limit).map(x => <button key={x.id} className="row pressable" style={{ '--sep-inset': '5.25rem' }}
+      <div className="group glass-lite">{found.slice(0, limit).map(x => <button key={x.id} className="row pressable" style={{ '--sep-inset': '5.25rem' }}
         onClick={() => { onPick(x.id); haptic(8) }}>
         <Thumb id={x.id} />
         <div className="content">
@@ -43,7 +43,7 @@ function Body({ onPick, added }) {
         </div>
         <Icon name={has.has(x.id) ? 'check_circle' : 'add'} filled={has.has(x.id)} style={{ color: 'var(--accent)' }} />
       </button>)}</div>
-      {found.length > limit && <button className="btn block pressable mt" onClick={() => setLimit(l => l + 40)}>نمایش بیشتر</button>}
+      {found.length > limit && <button className="btn glass interactive block mt" onClick={() => setLimit(l => l + 40)}>نمایش بیشتر</button>}
     </>}
   </>
 }

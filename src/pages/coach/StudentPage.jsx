@@ -38,12 +38,12 @@ function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
     <div className="field mt"><label>نکته برای شاگرد</label>
       <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
     <div className="hstack">
-      <button className="btn grow pressable" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالا</button>
-      <button className="btn grow pressable" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین</button>
+      <button className="btn glass interactive grow" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالا</button>
+      <button className="btn glass interactive grow" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین</button>
     </div>
     <div className="stack mt">
-      <button className="btn primary block pressable" onClick={() => close()}>تمام</button>
-      <button className="btn danger block pressable" onClick={() => { onRemove(); close() }}><Icon name="delete" />حذف از روتین</button>
+      <button className="btn glass interactive prominent block" onClick={() => close()}>تمام</button>
+      <button className="btn glass interactive danger block" onClick={() => { onRemove(); close() }}><Icon name="delete" />حذف از روتین</button>
     </div>
     {info && <ExerciseInfo id={item.exercise_id} onClose={() => setInfo(false)} />}
   </>
@@ -59,7 +59,7 @@ function RoutineCard({ r, onChange, onRemove }) {
   const setItem = (i, next) => update(cur => ({ items: cur.items.map((x, k) => (k === i ? next : x)) }))
   const move = (i, dir) => { update(cur => { const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items } }); setEditing(i + dir) }
   const add = id => update(cur => ({ items: [...cur.items, { exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', note: '' }] }))
-  return <div className="card">
+  return <div className="card glass-lite">
     <div className="card-head">
       <div className="tile-icon"><Icon name="fitness_center" /></div>
       <input className="input grow headline" style={{ background: 'transparent', paddingInline: '0.25rem', minHeight: '2.5rem' }} value={r.name} maxLength={80}
@@ -68,7 +68,7 @@ function RoutineCard({ r, onChange, onRemove }) {
     </div>
     <div className="days" role="group" aria-label="روزهای این روتین">{WEEK.map(d => <button key={d} className={'day pressable' + (r.days.includes(d) ? ' on' : '')}
       aria-pressed={r.days.includes(d)} aria-label={DAY_NAMES[d]} onClick={() => toggleDay(d)}>{DAY_SHORT[d]}</button>)}</div>
-    {r.items.length > 0 && <div className="group mt" style={{ background: 'var(--fill)', boxShadow: 'none' }}>
+    {r.items.length > 0 && <div className="group mt" style={{ background: 'var(--fill)' }}>
       {r.items.map((it, i) => <button key={i + it.exercise_id} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setEditing(i)}>
         <Thumb id={it.exercise_id} />
         <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right' }}>{exerciseName(it.exercise_id)}</div>
@@ -76,7 +76,7 @@ function RoutineCard({ r, onChange, onRemove }) {
         <Disclosure />
       </button>)}
     </div>}
-    <button className="btn block pressable mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
+    <button className="btn glass interactive block mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
     {picking && <ExercisePicker added={r.items.map(i => i.exercise_id)} onPick={add} onClose={() => setPicking(false)} />}
     {editing != null && r.items[editing] && <Sheet title="تنظیم حرکت" onClose={() => setEditing(null)}>
       <ItemEditor item={r.items[editing]} index={editing} count={r.items.length} onChange={next => setItem(editing, next)}
@@ -118,15 +118,15 @@ function PlanTab({ student, onSaved }) {
   return <>
     <div className="section">
       <div className="section-title">یادداشت برای شاگرد</div>
-      <textarea className="input" style={{ background: 'var(--bg-elevated)' }} placeholder="در صفحه «امروز» شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…"
+      <textarea className="input" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} placeholder="در صفحه «امروز» شاگرد نمایش داده می‌شود — نکته، رژیم، هدف…"
         value={note} onChange={e => setNote(e.target.value)} maxLength={2000} />
     </div>
     <div className="section-title">روتین‌ها</div>
     {draft.map(r => <RoutineCard key={r.id} r={r} onChange={fn => setRoutine(r.id, fn)} onRemove={() => setRemoving(r)} />)}
     {!draft.length && <Empty icon="calendar_month" title="هنوز روتینی ندارد">یک روتین بسازید، روزهایش را انتخاب کنید و حرکت اضافه کنید.</Empty>}
-    <button className="btn block pressable" onClick={() => setDraft(d => [...d, { id: newId(), name: 'روتین ' + (d.length + 1).toLocaleString('fa-IR'), days: [], items: [] }])}>
+    <button className="btn glass interactive block" onClick={() => setDraft(d => [...d, { id: newId(), name: 'روتین ' + (d.length + 1).toLocaleString('fa-IR'), days: [], items: [] }])}>
       <Icon name="add" />روتین جدید</button>
-    {dirty && <div className="float-bar"><button className="btn primary block pressable" disabled={busy} onClick={save}>
+    {dirty && <div className="float-bar"><button className="btn glass interactive prominent block" disabled={busy} onClick={save}>
       <Icon name="check" />{busy ? 'در حال ذخیره…' : 'ذخیره و ارسال برای شاگرد'}</button></div>}
     {removing && <Confirm title={`«${removing.name}» حذف شود؟`} text="بعد از ذخیره از برنامه شاگرد برداشته می‌شود. تمرین‌های ثبت‌شده‌اش باقی می‌ماند." okText="حذف روتین" danger
       onOk={() => setDraft(d => d.filter(r => r.id !== removing.id))} onClose={() => setRemoving(null)} />}
@@ -154,15 +154,15 @@ function ProgressTab({ student }) {
   const monthAgo = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)
   return <>
     <div className="stats">
-      <div className="stat"><div className="v">{data.workouts.length.toLocaleString('fa-IR')}</div><div className="l">تمرین ثبت‌شده</div></div>
-      <div className="stat"><div className="v">{data.workouts.filter(w => w.date >= monthAgo).length.toLocaleString('fa-IR')}</div><div className="l">در ۳۰ روز اخیر</div></div>
-      <div className="stat"><div className="v" style={{ fontSize: '1.125rem' }}>{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'long' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
-      <div className="stat"><div className="v">{data.weights[0] ? fmtNum(data.weights[0].weight) : '—'}</div><div className="l">وزن فعلی (کیلو)</div></div>
+      <div className="stat glass-lite"><div className="v">{data.workouts.length.toLocaleString('fa-IR')}</div><div className="l">تمرین ثبت‌شده</div></div>
+      <div className="stat glass-lite"><div className="v">{data.workouts.filter(w => w.date >= monthAgo).length.toLocaleString('fa-IR')}</div><div className="l">در ۳۰ روز اخیر</div></div>
+      <div className="stat glass-lite"><div className="v" style={{ fontSize: '1.125rem' }}>{data.workouts[0] ? fmtDate(data.workouts[0].date, { day: 'numeric', month: 'long' }) : '—'}</div><div className="l">آخرین تمرین</div></div>
+      <div className="stat glass-lite"><div className="v">{data.weights[0] ? fmtNum(data.weights[0].weight) : '—'}</div><div className="l">وزن فعلی (کیلو)</div></div>
     </div>
-    {data.weights.length > 1 && <div className="card"><div className="headline">وزن بدن</div><WeightChart points={[...data.weights].reverse()} /></div>}
+    {data.weights.length > 1 && <div className="card glass-lite"><div className="headline">وزن بدن</div><WeightChart points={[...data.weights].reverse()} /></div>}
     <div className="section-title">تمرین‌ها</div>
     {!data.workouts.length ? <Empty icon="history" title="هنوز تمرینی ثبت نشده">وقتی شاگرد تمرینی ثبت کند، اینجا می‌بینید.</Empty>
-      : <div className="group">{data.workouts.map(w => {
+      : <div className="group glass-lite">{data.workouts.map(w => {
         const sets = data.sets.filter(s => s.workout_id === w.id)
         const sum = summarize(sets)
         const isOpen = open === w.id
@@ -204,10 +204,10 @@ function SettingsTab({ student, onSaved, onRemoved }) {
     }} />
     <div className="section">
       <div className="section-title">مشخصات</div>
-      <div className="card" style={{ marginBottom: 0 }}>
+      <div className="card glass-lite" style={{ marginBottom: 0 }}>
         <div className="field"><label>نام</label><input className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} /></div>
         <div className="field"><label>شماره موبایل</label><input className="input ltr" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-        <button className="btn primary block pressable" disabled={!dirty} onClick={() => {
+        <button className="btn glass interactive prominent block" disabled={!dirty} onClick={() => {
           if (!name.trim() || !isPhone(phone)) return toast('نام و شماره موبایل معتبر لازم است.', 'warning')
           patch({ full_name: name.trim(), phone: normPhone(phone) }, 'ذخیره شد')
         }}>ذخیره</button>
@@ -215,7 +215,7 @@ function SettingsTab({ student, onSaved, onRemoved }) {
       {student.user_id && <div className="section-footer">شاگرد با شماره‌ای که ثبت‌نام کرده وارد می‌شود؛ تغییر شماره اینجا روی ورودش اثری ندارد.</div>}
     </div>
     <div className="section">
-      <div className="group">
+      <div className="group glass-lite">
         <button className="row pressable" onClick={() => patch({ active: !student.active }, student.active ? 'دسترسی بسته شد' : 'دسترسی باز شد')}>
           <Icon name="lock" style={{ color: 'var(--accent)' }} /><div className="content"><div className="title-text" style={{ color: 'var(--accent)' }}>{student.active ? 'بستن دسترسی' : 'باز کردن دسترسی'}</div></div>
         </button>

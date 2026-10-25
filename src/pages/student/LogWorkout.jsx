@@ -12,14 +12,14 @@ import { loadPlan } from './data.js'
 // The rest timer: a floating capsule with a ring that empties as the rest runs out.
 function Rest({ total, left, onSkip, onAdd }) {
   const r = 18, c = 2 * Math.PI * r
-  return <div className="float-bar no-tabbar"><div className="rest" role="timer" aria-live="off">
+  return <div className="float-bar no-tabbar"><div className="rest glass" role="timer" aria-live="off">
     <svg className="ring" viewBox="0 0 44 44" aria-hidden="true">
       <circle className="track" cx="22" cy="22" r={r} />
       <circle className="bar" cx="22" cy="22" r={r} strokeDasharray={c} strokeDashoffset={c * (1 - left / total)} />
     </svg>
     <div className="time">{faDigits(Math.floor(left / 60))}:{faDigits(String(left % 60).padStart(2, '0'))}<div className="caption" style={{ fontWeight: 500 }}>استراحت</div></div>
-    <button className="btn small pressable" onClick={onAdd}>+۱۵ ث</button>
-    <button className="btn small primary pressable" onClick={onSkip}>رد کردن</button>
+    <button className="btn glass interactive small" onClick={onAdd}>+۱۵ ث</button>
+    <button className="btn glass interactive prominent small" onClick={onSkip}>رد کردن</button>
   </div></div>
 }
 
@@ -87,7 +87,7 @@ export default function LogWorkout() {
   return <Page title={routine.name} subtitle={`${doneCount.toLocaleString('fa-IR')} از ${totalSets.toLocaleString('fa-IR')} ست`} back noTabbar>
     {log.map((ex, e) => {
       const plan = routine.items[e]
-      return <div key={e} className="card">
+      return <div key={e} className="card glass-lite">
         <button className="row pressable" style={{ padding: 0, marginBottom: '0.75rem' }} onClick={() => setInfo(ex.exercise_id)}>
           <Thumb id={ex.exercise_id} />
           <div className="content"><div className="title-text latin ellipsis" style={{ textAlign: 'right', fontWeight: 650 }}>{exerciseName(ex.exercise_id)}</div>
@@ -109,9 +109,9 @@ export default function LogWorkout() {
     })}
     <div className="section">
       <div className="section-title">یادداشت برای مربی</div>
-      <textarea className="input" style={{ background: 'var(--bg-elevated)' }} placeholder="اختیاری — حس تمرین، درد، هر چیزی که مربی باید بداند" value={note} onChange={e => setNote(e.target.value)} maxLength={1000} />
+      <textarea className="input" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} placeholder="اختیاری — حس تمرین، درد، هر چیزی که مربی باید بداند" value={note} onChange={e => setNote(e.target.value)} maxLength={1000} />
     </div>
-    <button className="btn primary block pressable" disabled={busy} onClick={save}><Icon name="check_circle" />{busy ? 'در حال ثبت…' : 'پایان و ثبت تمرین'}</button>
+    <button className="btn glass interactive prominent block" disabled={busy} onClick={save}><Icon name="check_circle" />{busy ? 'در حال ثبت…' : 'پایان و ثبت تمرین'}</button>
     {/* Room below the last button for the rest capsule, so nothing hides behind it. */}
     {rest && <div style={{ height: '5.5rem' }} aria-hidden="true" />}
     {rest && <Rest total={rest.total} left={left} onSkip={() => setRest(null)} onAdd={() => setRest(r => ({ total: r.total + 15, endsAt: r.endsAt + 15000 }))} />}
