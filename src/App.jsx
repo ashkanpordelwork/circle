@@ -7,6 +7,7 @@ import Icon from './components/Icon.jsx'
 import GlassDrop from './components/GlassDrop.jsx'
 import Login, { NotRegistered, NotConfigured } from './pages/Login.jsx'
 import Students from './pages/coach/Students.jsx'
+import Dashboard from './pages/coach/Dashboard.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
 import Today from './pages/student/Today.jsx'
 import Week from './pages/student/Week.jsx'
@@ -55,7 +56,8 @@ export default function App() {
 
   return <Me.Provider value={{ ...me, reload }}>
     {me.role === 'coach' ? <Routes>
-      <Route path="/" element={<Students />} />
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/students" element={<Students />} />
       <Route path="/s/:id" element={<StudentPage />} />
       <Route path="/account" element={<Account />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -70,7 +72,7 @@ export default function App() {
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
     {!loc.pathname.startsWith('/log/') && <TabBar tabs={me.role === 'coach'
-      ? [['/', 'group', 'شاگردان'], ['/account', 'person', 'حساب']]
+      ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب']]
       : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب']]} />}
   </Me.Provider>
 }
@@ -79,11 +81,12 @@ export default function App() {
 function TabBar({ tabs }) {
   const loc = useLocation()
   const box = useRef(null)
-  const index = tabs.findIndex(([to]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)))
+  // A tab may also own other paths (a student's page belongs to «شاگردان»).
+  const index = tabs.findIndex(([to, , , also]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to) || (also && loc.pathname.startsWith(also))))
   return <nav ref={box} className="tabbar glass" aria-label="بخش‌ها">
     <GlassDrop container={box} selector="a" index={index} className="drop" />
-    {tabs.map(([to, icon, label]) => <NavLink key={to} to={to} end={to === '/'}>
-      {({ isActive }) => <><Icon name={icon} filled={isActive} /><span>{label}</span></>}
+    {tabs.map(([to, icon, label], i) => <NavLink key={to} to={to} end={to === '/'} className={i === index ? 'active' : ''} aria-current={i === index ? 'page' : undefined}>
+      <Icon name={icon} filled={i === index} /><span>{label}</span>
     </NavLink>)}
   </nav>
 }

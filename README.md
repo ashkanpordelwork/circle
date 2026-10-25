@@ -21,7 +21,8 @@
 1. در `supabase.com` یک پروژه بسازید (`New project`).
 2. `SQL Editor` ← `New query` ← محتوای `supabase/migrations/0001_init.sql` ← `Run`.
 3. ویرایشگر را پاک کنید ← محتوای `supabase/migrations/0002_phone_login.sql` ← `Run`.
-4. از دکمه **Connect** بالای صفحه، `Project URL` و کلید `anon` (یا `publishable`) را بردارید.
+4. همین کار را با `supabase/migrations/0003_tempo.sql` تکرار کنید (تمپوی حرکات).
+5. از دکمه **Connect** بالای صفحه، `Project URL` و کلید `anon` (یا `publishable`) را بردارید.
 
 ### ۲. Supabase: ورود با شماره و رمز
 

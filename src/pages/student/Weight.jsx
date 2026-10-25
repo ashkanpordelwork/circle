@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, must } from '../../lib/supabase.js'
-import { fmtDate, fmtNum, todayISO, toNumber, showNum, readNum } from '../../lib/plan.js'
+import { fmtDate, fmtNum, todayISO, toNumber } from '../../lib/plan.js'
+import { WeightField } from '../../components/Wheel.jsx'
 import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
@@ -14,8 +15,7 @@ export default function Weight() {
   const load = () => supabase.from('body_weights').select('*').order('date', { ascending: false }).limit(90)
     .then(({ data, error }) => { if (error) toast(errorText(error), 'error'); setList(data || []) })
   useEffect(() => { load() }, [])
-  const save = async e => {
-    e.preventDefault()
+  const save = async () => {
     const v = toNumber(w)
     if (!(v >= 20 && v <= 400)) return toast('یک وزن معتبر وارد کن.', 'warning')
     try {
@@ -25,10 +25,11 @@ export default function Weight() {
   }
   const delta = list && list.length > 1 ? Number(list[0].weight) - Number(list[1].weight) : null
   return <Page title="وزن بدن">
-    <form className="hstack" onSubmit={save} style={{ marginBottom: '1.25rem' }}>
-      <input className="input grow" style={{ background: 'var(--lite-fill)', boxShadow: 'inset 0 1px 0.5px var(--glass-specular)' }} inputMode="decimal" placeholder="وزن امروز (کیلو)" value={showNum(w)} onChange={e => setW(readNum(e.target.value))} aria-label="وزن امروز به کیلوگرم" />
-      <button className="btn glass interactive prominent"><Icon name="add" />ثبت</button>
-    </form>
+    <div className="hstack" style={{ marginBottom: '1.25rem' }}>
+      <WeightField value={w} onChange={setW} title="وزن امروز" fine min={30} max={250} hint={list?.[0]?.weight} hintLabel="آخرین وزن"
+        placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلوگرم" className="grow" />
+      <button className="btn glass interactive prominent" disabled={w === ''} onClick={save}><Icon name="add" />ثبت</button>
+    </div>
     {!list ? <Loading /> : !list.length ? <Empty icon="monitor_weight" title="هنوز وزنی ثبت نکرده‌ای">هر چند روز یک بار وزنت را ثبت کن تا روند را ببینی.</Empty> : <>
       <div className="card glass-lite">
         <div className="hstack between">

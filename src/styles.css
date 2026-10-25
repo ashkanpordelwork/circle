@@ -536,7 +536,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 }
 .chip.glass-lite { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--hairline); }
 /* Wins over the graphite fill wherever the chip sits. */
-.chips .chip.on { background: var(--lime); color: var(--on-accent); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 14px var(--lime-glow); }
+.chips .chip.on, .chip.glass-lite.on { background: var(--lime); color: var(--on-accent); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 14px var(--lime-glow); }
 
 /* ---------- weekday picker ---------- */
 
@@ -596,7 +596,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; background: #fff; }
 .frames { position: relative; aspect-ratio: 4 / 3; background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: inset 0 0 0 0.5px var(--separator); }
-.frames img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity 260ms ease; }
+.frames img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 260ms ease; }
 
 /* ---------- tab bar: a floating glass capsule with a droplet on the current tab ---------- */
 
@@ -745,14 +745,50 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.55), 0 4px 14px var(--lime-glow);
 }
 .check.on .icon { animation: pop 420ms cubic-bezier(0.3, 1.7, 0.5, 1); }
+/* Locked until the set's weight is in; then it lights up, inviting the tick. */
+.check:disabled { opacity: 0.38; cursor: default; }
+.check.ready {
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 18px var(--accent-soft);
+  animation: ready-in 360ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes ready-in { from { transform: scale(0.85); } }
 @keyframes pop { from { transform: scale(0.4); } }
 
-.rest { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.5rem 0.5rem 0.75rem; border-radius: 999px; --glass-tint: var(--glass-fill-strong); box-shadow: inset 0 1px 0.5px var(--glass-specular), var(--glass-shadow-lg); }
-.rest .ring { width: 2.75rem; height: 2.75rem; flex: none; }
-.rest .ring circle { fill: none; stroke-width: 4; }
-.rest .ring .track { stroke: var(--fill-strong); }
-.rest .ring .bar { stroke: var(--lime); stroke-linecap: round; transition: stroke-dashoffset 1s linear; transform: rotate(-90deg); transform-origin: center; }
-.rest .time { flex: 1; font-weight: 800; font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- number wheels (components/Wheel.jsx) ---------- */
+
+/* A field that opens wheels: looks like an input, behaves like a button. */
+.input.pick { display: grid; place-items: center; cursor: pointer; color: var(--label); font-weight: 600; text-align: center; }
+.input.pick .ph { color: var(--label-3); font-weight: 500; }
+.input.pick.static { cursor: default; color: var(--label-3); font-size: 0.8125rem; font-weight: 500; }
+.wheels-wrap { position: relative; display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin: 0.25rem 0 1.25rem; }
+.wheels { position: relative; display: flex; align-items: flex-start; justify-content: center; gap: 0.25rem; }
+/* The selection band behind the centre row. */
+.wheels::before {
+  content: ''; position: absolute; inset-inline: -0.75rem; top: calc(5.5rem); height: 2.75rem;
+  border-radius: 0.875rem; background: var(--fill-strong); box-shadow: inset 0 0 0 1px var(--hairline); pointer-events: none;
+}
+.wheel {
+  position: relative; height: 13.75rem; overflow-y: auto; overscroll-behavior: contain;
+  scroll-snap-type: y mandatory; scrollbar-width: none; touch-action: pan-y;
+  padding-block: 5.5rem; perspective: 34rem; outline: none; border-radius: 0.875rem;
+  -webkit-mask: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  mask: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+}
+.wheel::-webkit-scrollbar { display: none; }
+.wheel:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.wheel .opt {
+  height: 2.75rem; display: grid; place-items: center; scroll-snap-align: center;
+  font-size: 1.375rem; font-weight: 500; color: var(--label-2); font-variant-numeric: tabular-nums;
+  backface-visibility: hidden; cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+.wheel .opt.sel { color: var(--label); font-weight: 700; }
+.wheel-sep { height: 13.75rem; display: grid; place-items: center; font-size: 1.25rem; font-weight: 700; color: var(--label-2); padding-inline: 0.125rem; }
+.wheel-col { display: flex; flex-direction: column; align-items: center; }
+.wheel-caption { font-size: 0.75rem; color: var(--label-2); margin-top: 0.25rem; }
+.wheels-unit { font-size: 0.9375rem; font-weight: 600; color: var(--label-2); }
 
 /* ---------- stats ---------- */
 
@@ -814,3 +850,30 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   .glass, .glass-lite, .input { outline: 1px solid var(--label-2); }
   body::before { display: none; }
 }
+.tempo-line { display: flex; align-items: center; gap: 0.25rem; color: var(--accent); }
+.tempo-line .icon { font-size: 0.9375rem; }
+
+/* ---------- coach dashboard ---------- */
+
+.hero-number { font-size: 3rem; line-height: 1.15; font-weight: 700; margin: 0.25rem 0 0.125rem; }
+.ring-stat { position: relative; width: 4.5rem; height: 4.5rem; margin: 0 auto 0.25rem; }
+.ring-stat svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-stat circle { fill: none; stroke-width: 6; }
+.ring-stat .track { stroke: rgba(255, 255, 255, 0.1); }
+.ring-stat .bar { stroke: var(--lime); stroke-linecap: round; transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+.ring-stat .v { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1.25rem; direction: ltr; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.bar-track { width: 100%; max-width: 1.75rem; height: 4.5rem; border-radius: 0.625rem; background: rgba(255, 255, 255, 0.06); display: flex; align-items: flex-end; overflow: hidden; }
+.bar-fill { width: 100%; min-height: 0; border-radius: 0.625rem; background: rgba(182, 242, 76, 0.45); transition: height 700ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+.bar-col.today .bar-fill { background: linear-gradient(180deg, var(--lime-hi), var(--lime)); box-shadow: 0 0 14px var(--lime-glow); }
+.bar-n { font-size: 0.6875rem; color: #fff; min-height: 1rem; line-height: 1rem; }
+.bar-d { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.55); }
+.bar-col.today .bar-d { color: var(--lime); font-weight: 700; }
+button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; font: inherit; }
+.stat-icon { width: 2rem; height: 2rem; border-radius: 0.75rem; display: grid; place-items: center; margin-bottom: 0.5rem;
+  color: var(--tile, var(--accent)); background: color-mix(in srgb, var(--tile, var(--accent)) 13%, var(--surface-2)); }
+.stat-icon .icon { font-size: 1.125rem; }
+.stat-icon.orange { --tile: #f97316; }
+.stat-icon.blue { --tile: var(--blue); }
+.stat .of { font-size: 0.875rem; font-weight: 500; color: var(--label-2); }

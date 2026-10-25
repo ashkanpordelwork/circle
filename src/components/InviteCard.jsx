@@ -14,11 +14,13 @@ export const inviteText = s =>
 export default function InviteCard({ student, onNewCode }) {
   const toast = useToast()
   const text = inviteText(student)
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(text); toast('متن دعوت کپی شد', 'success') }
-    catch { toast('کپی نشد؛ متن را دستی انتخاب کن', 'warning') }
+  // The phone's share sheet (WhatsApp, Telegram, SMS…). Where there is none (a desktop browser),
+  // the text goes to the clipboard instead, ready to paste.
+  const share = async () => {
+    if (navigator.share) return navigator.share({ text }).catch(() => {})
+    try { await navigator.clipboard.writeText(text); toast('متن دعوت آماده است؛ در پیام‌رسان بچسبان', 'success') }
+    catch { toast('اشتراک‌گذاری در این مرورگر ممکن نیست', 'warning') }
   }
-  const share = () => navigator.share({ text }).catch(() => {})
   if (student.user_id) return <div className="section"><div className="group glass-lite">
     <div className="row with-leading"><div className="tile-icon"><Icon name="check" /></div>
       <div className="content"><div className="title-text">ثبت‌نام کرده</div>
@@ -30,8 +32,7 @@ export default function InviteCard({ student, onNewCode }) {
     <div className="latin tnum" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.3em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
     <div className="subhead" style={{ whiteSpace: 'pre-wrap', background: 'var(--fill)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '0.75rem' }}>{text}</div>
     <div className="hstack wrap">
-      {navigator.share && <button className="btn glass interactive prominent grow" onClick={share}><Icon name="share" />ارسال</button>}
-      <button className="btn glass interactive grow" onClick={copy}><Icon name="content_copy" />کپی متن</button>
+      <button className="btn glass interactive prominent grow" onClick={share}><Icon name="share" />ارسال دعوت</button>
       {onNewCode && <button className="btn plain pressable" onClick={onNewCode}><Icon name="refresh" />کد جدید</button>}
     </div>
   </div>

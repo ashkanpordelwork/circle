@@ -29,15 +29,6 @@ export default function Account() {
         options={[{ value: 'dark', label: 'تیره' }, { value: 'light', label: 'روشن' }, { value: 'auto', label: 'خودکار' }]} />
       <div className="section-footer">{theme === 'auto' ? 'مثل تنظیمات گوشی، روشن یا تیره می‌شود.' : 'این انتخاب روی همین دستگاه ذخیره می‌شود.'}</div>
     </div>
-    <div className="section">
-      <div className="section-title">نصب روی گوشی</div>
-      <div className="group glass-lite">
-        <div className="row with-leading"><div className="tile-icon blue"><Icon name="smartphone" /></div>
-          <div className="content"><div className="title-text">اندروید (کروم)</div><div className="sub">منوی ⋮ ← «افزودن به صفحه اصلی»</div></div></div>
-        <div className="row with-leading"><div className="tile-icon gray"><Icon name="share" /></div>
-          <div className="content"><div className="title-text">آیفون (سافاری)</div><div className="sub">دکمه اشتراک ← Add to Home Screen</div></div></div>
-      </div>
-    </div>
     <div className="section"><div className="group glass-lite">
       <button className="row pressable" onClick={() => supabase.auth.signOut()} style={{ color: 'var(--red)', justifyContent: 'center' }}>
         <Icon name="logout" mirror /><span className="title-text">خروج از حساب</span>

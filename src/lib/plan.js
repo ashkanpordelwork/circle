@@ -25,7 +25,7 @@ export function toDraft(routines, items) {
   return [...routines].sort((a, b) => a.position - b.position).map(r => ({
     id: r.id, name: r.name, days: [...(r.days || [])],
     items: items.filter(i => i.routine_id === r.id).sort((a, b) => a.position - b.position)
-      .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', note: i.note || '' }))
+      .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '' }))
   }))
 }
 
@@ -42,6 +42,7 @@ export function toPayload(draft) {
       reps: toLatinDigits(i.reps || '10').trim().slice(0, 20),
       weight: num(i.weight),
       rest_sec: num(i.rest_sec),
+      tempo: normTempo(i.tempo),
       note: (i.note || '').slice(0, 500)
     }))
   }))
@@ -49,8 +50,28 @@ export function toPayload(draft) {
 
 export const draftKey = (draft, note) => JSON.stringify(toPayload(draft)) + '|' + (note || '')
 
-// The logging form for one routine: one row per planned set, prefilled with the plan's numbers
-// (the lower end of a range like "8-10"), or with what the student lifted last time when known.
+// Tempo: four phases in seconds — lowering, pause at the bottom, lifting, pause at the top.
+// "X" is explosive. Stored as "3010"; anything else becomes "" (no tempo).
+export const normTempo = t => {
+  const v = toLatinDigits(String(t ?? '')).toUpperCase().replace(/[^0-9X]/g, '')
+  return v.length === 4 ? v : ''
+}
+export const TEMPO_PHASES = ['پایین آوردن', 'مکث پایین', 'بالا بردن', 'مکث بالا']
+export const fmtTempo = t => (normTempo(t) ? [...normTempo(t)].map(c => (c === 'X' ? 'X' : faDigits(c))).join('-') : '')
+// "۳ ثانیه پایین آوردن · بدون مکث · ۱ ثانیه بالا بردن · بدون مکث" — the tempo in words.
+export const tempoWords = t => {
+  const v = normTempo(t)
+  if (!v) return ''
+  return [...v].map((c, i) => {
+    if (c === 'X') return TEMPO_PHASES[i] + ' انفجاری'
+    if (c === '0') return i % 2 ? 'بدون ' + TEMPO_PHASES[i] : TEMPO_PHASES[i] + ' سریع'
+    return `${faDigits(c)} ثانیه ${TEMPO_PHASES[i]}`
+  }).join(' · ')
+}
+
+// The logging form for one routine: one row per planned set. Reps start at the plan's number (the
+// lower end of a range like "8-10"); the weight starts empty, so the student enters what they
+// actually lifted — last time's weight, or the plan's, is only a hint (and where the picker opens).
 export function blankLog(routine, lastSets = []) {
   return routine.items.map(it => {
     const prev = lastSets.filter(s => s.exercise_id === it.exercise_id)
@@ -59,11 +80,18 @@ export function blankLog(routine, lastSets = []) {
       exercise_id: it.exercise_id,
       sets: Array.from({ length: it.sets }, (_, k) => {
         const p = prev.find(s => s.set_index === k + 1)
-        return { done: false, reps: p?.reps ?? (Number.isNaN(reps) ? '' : reps), weight: p?.weight ?? it.weight ?? '' }
+        const hint = p?.weight ?? (it.weight === '' ? null : it.weight) ?? null
+        return { done: false, reps: p?.reps ?? (Number.isNaN(reps) ? '' : reps), weight: '', hint }
       })
     }
   })
 }
+
+// A set can be ticked only once its weight is entered. Bodyweight work (no weight planned for a
+// bodyweight exercise) needs reps instead.
+export const needsWeight = (item, equipment) => !(equipment === 'body only' && (item.weight === '' || item.weight == null))
+export const canTick = (set, weightNeeded) =>
+  weightNeeded ? toNumber(set.weight) != null : toNumber(set.reps) != null
 
 // Only ticked sets are saved.
 export function logToRows(workoutId, log) {
@@ -115,7 +143,8 @@ export const readNum = s => toLatinDigits(s).replace(/٫/g, '.')
 
 // A planned exercise: "۳ × ۸-۱۲ · ۶۰ کیلو".
 export const fmtTarget = it =>
-  `${faDigits(it.sets)} × ${faDigits(it.reps || '—')}` + (it.weight !== '' && it.weight != null ? ` · ${kg(it.weight)}` : '')
+  `${faDigits(it.sets)} × ${faDigits(it.reps || '—')}` + (it.weight !== '' && it.weight != null ? ` · ${kg(it.weight)}` : '') +
+  (normTempo(it.tempo) ? ` · تمپو ${fmtTempo(it.tempo)}` : '')
 
 // One logged set: "۶۰ کیلو × ۱۰", or "۱۰ تکرار" with no weight (bodyweight).
 export const setText = s => (s.weight != null ? `${kg(s.weight)} × ${faDigits(s.reps ?? '—')}` : `${faDigits(s.reps ?? '—')} تکرار`)

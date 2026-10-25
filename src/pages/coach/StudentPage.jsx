@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { loadExercises } from '../../lib/exercises.js'
-import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum, showNum, readNum } from '../../lib/plan.js'
+import { WEEK, DAY_NAMES, DAY_SHORT, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum } from '../../lib/plan.js'
 import { isPhone, normPhone, fmtPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
@@ -10,6 +10,7 @@ import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
 import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
+import { IntField, RepsField, WeightField, TempoField } from '../../components/Wheel.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
 
 
@@ -19,10 +20,6 @@ function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
   const { close } = useSheet()
   const [info, setInfo] = useState(false)
   const set = (k, v) => onChange({ ...item, [k]: v })
-  const field = (k, label, mode = 'numeric', placeholder) => <div className="field">
-    <label>{label}</label>
-    <input className="input num" inputMode={mode} placeholder={placeholder} value={showNum(item[k] ?? '')} onChange={e => set(k, readNum(e.target.value))} />
-  </div>
   return <>
     <button className="row pressable" style={{ padding: 0, marginBottom: '1rem' }} onClick={() => setInfo(true)}>
       <Thumb id={item.exercise_id} />
@@ -30,11 +27,13 @@ function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
       <Disclosure />
     </button>
     <div className="inline-fields">
-      {field('sets', 'ست')}
-      {field('reps', 'تکرار', 'text', '8-12')}
-      {field('weight', 'وزن (کیلو)', 'decimal')}
-      {field('rest_sec', 'استراحت (ث)')}
+      <div className="field"><label>ست</label><IntField value={item.sets} onChange={v => set('sets', v)} title="تعداد ست" min={1} max={20} unit="ست" /></div>
+      <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
+      <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
+      <div className="field"><label>استراحت (ث)</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
     </div>
+    <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
+      <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
     <div className="field mt"><label>نکته برای شاگرد</label>
       <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
     <div className="hstack">
@@ -58,7 +57,7 @@ function RoutineCard({ r, onChange, onRemove }) {
   const toggleDay = d => update(cur => ({ days: cur.days.includes(d) ? cur.days.filter(x => x !== d) : [...cur.days, d] }))
   const setItem = (i, next) => update(cur => ({ items: cur.items.map((x, k) => (k === i ? next : x)) }))
   const move = (i, dir) => { update(cur => { const items = [...cur.items]; const [x] = items.splice(i, 1); items.splice(i + dir, 0, x); return { items } }); setEditing(i + dir) }
-  const add = id => update(cur => ({ items: [...cur.items, { exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', note: '' }] }))
+  const add = id => update(cur => ({ items: [...cur.items, { exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', tempo: '', note: '' }] }))
   return <div className="card glass-lite">
     <div className="card-head">
       <div className="tile-icon"><Icon name="fitness_center" /></div>
@@ -241,16 +240,16 @@ export default function StudentPage() {
   const [tab, setTab] = useState('plan')
   useEffect(() => {
     supabase.from('students').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
-      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav('/') } else setStudent(data)
+      if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav('/students') } else setStudent(data)
     })
   }, [id])
   if (!student) return <Loading />
   const status = !student.active ? 'دسترسی بسته' : student.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'
-  return <Page title={student.full_name} back="/" subtitle={<><span className="latin">{student.phone ? fmtPhone(student.phone) : ''}</span> · {status}</>}>
+  return <Page title={student.full_name} back="/students" subtitle={<><span className="latin">{student.phone ? fmtPhone(student.phone) : ''}</span> · {status}</>}>
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
       options={[{ value: 'plan', label: 'برنامه' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت و تنظیمات' }]} />
     {tab === 'plan' && <PlanTab student={student} onSaved={setStudent} />}
     {tab === 'progress' && <ProgressTab student={student} />}
-    {tab === 'settings' && <SettingsTab student={student} onSaved={setStudent} onRemoved={() => nav('/')} />}
+    {tab === 'settings' && <SettingsTab student={student} onSaved={setStudent} onRemoved={() => nav('/students')} />}
   </Page>
 }
