@@ -5,10 +5,10 @@ import { loadExercises } from '../../lib/exercises.js'
 import { WEEK, DAY_NAMES, toDraft, toPayload, draftKey, newId, summarize, setText, fmtTarget, fmtDate, fmtNum } from '../../lib/plan.js'
 import { isPhone, normPhone } from '../../lib/phone.js'
 import { Page, Loading, Empty, Confirm, Segmented, useToast, errorText } from '../../components/ui.jsx'
-import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
-import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
+import { Thumb, ExName, ExerciseDetails } from '../../components/ExerciseInfo.jsx'
+import Screen, { useScreen } from '../../components/Screen.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import { IntField, RepsField, WeightField, TempoField } from '../../components/Wheel.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
@@ -16,37 +16,51 @@ import { profile, alertLine } from '../../lib/intake.js'
 import IntakeSummary from '../../components/IntakeSummary.jsx'
 
 
-/* ---------- one exercise, edited in a sheet ---------- */
+/* ---------- one exercise, edited on its own page ---------- */
 
-function ItemEditor({ item, index, count, onChange, onMove, onRemove }) {
-  const { close } = useSheet()
+// A page, not a sheet: the wheels for sets, reps and weight open as sheets on top of it, and a sheet
+// is never stacked on another. How the exercise is done unfolds in place.
+function ItemEditor({ item, index, count, routineName, onChange, onMove, onRemove, onClose }) {
+  return <Screen title="تنظیم حرکت" subtitle={routineName} onClose={onClose} actions={<ScreenDone />}>
+    <ItemFields item={item} index={index} count={count} onChange={onChange} onMove={onMove} onRemove={onRemove} />
+  </Screen>
+}
+function ScreenDone() {
+  const { close } = useScreen()
+  return <button className="btn glass interactive prominent small" onClick={close}>تمام</button>
+}
+function ItemFields({ item, index, count, onChange, onMove, onRemove }) {
   const [info, setInfo] = useState(false)
   const set = (k, v) => onChange({ ...item, [k]: v })
   return <>
-    <button className="row pressable" style={{ padding: 0, marginBottom: '1rem' }} onClick={() => setInfo(true)}>
-      <Thumb id={item.exercise_id} />
-      <div className="content"><ExName id={item.exercise_id} /><div className="sub">نمایش حرکت و روش اجرا</div></div>
-      <Disclosure />
-    </button>
-    <div className="inline-fields">
-      <div className="field"><label>ست</label><IntField value={item.sets} onChange={v => set('sets', v)} title="تعداد ست" min={1} max={20} unit="ست" /></div>
-      <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
-      <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
-      <div className="field"><label>استراحت</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" suffix="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
+    <div className="group glass-lite section">
+      <button className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setInfo(v => !v)} aria-expanded={info}>
+        <Thumb id={item.exercise_id} />
+        <div className="content"><ExName id={item.exercise_id} /><div className="sub">{info ? 'بستن روش اجرا' : 'نمایش حرکت و روش اجرا'}</div></div>
+        <Icon name={info ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
+      </button>
+      {info && <div className="inline-info"><ExerciseDetails id={item.exercise_id} showEn={false} /></div>}
     </div>
-    <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
-      <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
-    <div className="field mt"><label>نکته برای شاگرد</label>
-      <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
-    <div className="hstack">
-      <button className="btn glass interactive grow" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالا</button>
-      <button className="btn glass interactive grow" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین</button>
+    <div className="card glass-lite">
+      <div className="inline-fields">
+        <div className="field"><label>ست</label><IntField value={item.sets} onChange={v => set('sets', v)} title="تعداد ست" min={1} max={20} unit="ست" /></div>
+        <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
+        <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
+        <div className="field"><label>استراحت</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" suffix="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
+      </div>
+      <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>
+        <TempoField value={item.tempo || ''} onChange={v => set('tempo', v)} /></div>
+      <div className="field mt" style={{ marginBottom: 0 }}><label>نکته برای شاگرد</label>
+        <input className="input" placeholder="مثلاً آرام پایین بیا" value={item.note} onChange={e => set('note', e.target.value)} maxLength={500} /></div>
     </div>
-    <div className="stack mt">
-      <button className="btn glass interactive prominent block" onClick={() => close()}>تمام</button>
-      <button className="btn glass interactive danger block" onClick={() => { onRemove(); close() }}><Icon name="delete" />حذف از برنامه</button>
-    </div>
-    {info && <ExerciseInfo id={item.exercise_id} onClose={() => setInfo(false)} />}
+    {count > 1 && <div className="section">
+      <div className="section-title">جای حرکت در برنامه ({(index + 1).toLocaleString('fa-IR')} از {count.toLocaleString('fa-IR')})</div>
+      <div className="hstack">
+        <button className="btn glass interactive grow" disabled={index === 0} onClick={() => onMove(-1)}><Icon name="arrow_upward" />بالاتر</button>
+        <button className="btn glass interactive grow" disabled={index === count - 1} onClick={() => onMove(1)}><Icon name="arrow_downward" />پایین‌تر</button>
+      </div>
+    </div>}
+    <button className="btn glass interactive danger block" onClick={onRemove}><Icon name="delete" />حذف از برنامه</button>
   </>
 }
 
@@ -78,11 +92,10 @@ function RoutineCard({ r, onChange, onRemove }) {
       </button>)}
     </div>}
     <button className="btn glass interactive block mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
-    {picking && <ExercisePicker added={r.items.map(i => i.exercise_id)} onPick={add} onClose={() => setPicking(false)} />}
-    {editing != null && r.items[editing] && <Sheet title="تنظیم حرکت" onClose={() => setEditing(null)}>
-      <ItemEditor item={r.items[editing]} index={editing} count={r.items.length} onChange={next => setItem(editing, next)}
-        onMove={dir => move(editing, dir)} onRemove={() => update(cur => ({ items: cur.items.filter((_, k) => k !== editing) }))} />
-    </Sheet>}
+    {picking && <ExercisePicker added={r.items.map(i => i.exercise_id)} onPick={add} routineName={r.name} onClose={() => setPicking(false)} />}
+    {editing != null && r.items[editing] && <ItemEditor item={r.items[editing]} index={editing} count={r.items.length} routineName={r.name}
+      onChange={next => setItem(editing, next)} onMove={dir => move(editing, dir)} onClose={() => setEditing(null)}
+      onRemove={() => { const i = editing; setEditing(null); update(cur => ({ items: cur.items.filter((_, k) => k !== i) })) }} />}
   </div>
 }
 

@@ -52,7 +52,7 @@ export function Page({ title, subtitle, back, actions, children, noTabbar, fill 
     {!bar && <div className="top-space" />}
     {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '') + (title ? '' : ' bare')}>
       <div className="side">
-        {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
+        {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'function' ? back() : typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
           <Icon name="chevron_right" /></button>}
       </div>
       {title && <div className="small-title" aria-hidden={!scrolled}>{title}</div>}

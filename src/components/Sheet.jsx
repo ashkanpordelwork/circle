@@ -13,10 +13,13 @@ import Icon from './Icon.jsx'
 // The scrim's dimming follows the sheet's position, so the background comes back as it leaves.
 // With reduced motion it cross-fades instead.
 
-const Ctx = createContext({ close: () => {} })
+const Ctx = createContext({ close: () => {}, inSheet: false })
 export const useSheet = () => useContext(Ctx)
 
 export default function Sheet({ onClose, title, children, label }) {
+  // One sheet at a time: anything that needs a second layer belongs on a page (Screen.jsx).
+  const parent = useContext(Ctx)
+  if (import.meta.env.DEV && parent.inSheet) console.error(`Sheet «${title}» opened inside another sheet; use a Screen for the outer one.`)
   const panel = useRef(null), scrim = useRef(null), body = useRef(null)
   const st = useRef({ y: 0, h: 0, anim: null, closing: false, drag: null })
   const opener = useRef(typeof document !== 'undefined' ? document.activeElement : null)
@@ -139,7 +142,7 @@ export default function Sheet({ onClose, title, children, label }) {
     else springTo(0, v, SPRING.sheet)
   }
 
-  return createPortal(<Ctx.Provider value={{ close }}>
+  return createPortal(<Ctx.Provider value={{ close, inSheet: true }}>
     <div ref={scrim} className="scrim" onClick={() => close()} />
     <div ref={panel} className="sheet glass" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>

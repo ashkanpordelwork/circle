@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadExercises, searchExercises, MUSCLES, EQUIPMENT } from '../lib/exercises.js'
-import Sheet, { useSheet } from './Sheet.jsx'
+import Screen, { useScreen } from './Screen.jsx'
 import Icon from './Icon.jsx'
 import { Loading, haptic } from './ui.jsx'
 import { Thumb, ExName } from './ExerciseInfo.jsx'
 
 function Body({ onPick, added }) {
-  const { close } = useSheet()
   const [all, setAll] = useState(null)
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('')
@@ -22,7 +21,6 @@ function Body({ onPick, added }) {
         <input className="input" style={{ paddingInlineStart: '2.5rem' }} placeholder="جستجو: squat، سینه، دمبل…" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی حرکت" />
         <Icon name="search" style={{ position: 'absolute', insetInlineStart: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--label-3)', fontSize: '1.25rem' }} />
       </div>
-      <button className="btn glass interactive prominent small" onClick={() => close()}>تمام</button>
     </div>
     <div className="chips" data-no-drag>
       <button className={'chip glass-lite pressable' + (!muscle ? ' on' : '')} onClick={() => setMuscle('')}>همه عضلات</button>
@@ -48,7 +46,13 @@ function Body({ onPick, added }) {
   </>
 }
 
-// Stays open, so several exercises can be added in a row; each tap is confirmed in place.
-export default function ExercisePicker({ onPick, onClose, added = [] }) {
-  return <Sheet title="افزودن حرکت" onClose={onClose}><Body onPick={onPick} added={added} /></Sheet>
+// A full page: a long list with search and filters. It stays open, so several exercises can be
+// added in a row; each tap is confirmed in place, and «تمام» goes back to the plan.
+export default function ExercisePicker({ onPick, onClose, added = [], routineName }) {
+  return <Screen title="افزودن حرکت" subtitle={routineName ? `به «${routineName}»` : null} onClose={onClose}
+    actions={<DoneButton />}><Body onPick={onPick} added={added} /></Screen>
+}
+function DoneButton() {
+  const { close } = useScreen()
+  return <button className="btn glass interactive prominent small" onClick={close}>تمام</button>
 }

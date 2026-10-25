@@ -38,11 +38,12 @@ export function Frames({ id }) {
   return <div className="frames">{x.img.map((p, i) => <img key={p} src={imageUrl(p)} alt={i === 0 ? exerciseName(id) : ''} style={{ opacity: i === k ? 1 : 0 }} />)}</div>
 }
 
-export default function ExerciseInfo({ id, onClose }) {
+// Photos, muscles and the steps; shown in a sheet on its own, or inline inside a page.
+export function ExerciseDetails({ id, showEn = true }) {
   const x = exerciseById(id)
   const en = exerciseNameEn(id)
-  return <Sheet title={exerciseName(id)} label={exerciseName(id)} onClose={onClose}>
-    {en !== exerciseName(id) && <div className="en-name latin" style={{ marginTop: '-0.25rem', marginBottom: '0.75rem' }}>{en}</div>}
+  return <>
+    {showEn && en !== exerciseName(id) && <div className="en-name latin" style={{ marginTop: '-0.25rem', marginBottom: '0.75rem' }}>{en}</div>}
     <Frames id={id} />
     {x && <>
       <div className="hstack wrap" style={{ margin: '1rem 0' }}>
@@ -56,5 +57,9 @@ export default function ExerciseInfo({ id, onClose }) {
         ? <ol className="steps">{x.st.map((s, i) => <li key={i}><span className="n tnum" aria-hidden="true">{(i + 1).toLocaleString('fa-IR')}</span><span>{s}</span></li>)}</ol>
         : <div className="subhead" style={{ color: 'var(--label-2)' }}>توضیحی برای این حرکت ثبت نشده است.</div>}
     </>}
-  </Sheet>
+  </>
+}
+
+export default function ExerciseInfo({ id, onClose }) {
+  return <Sheet title={exerciseName(id)} label={exerciseName(id)} onClose={onClose}><ExerciseDetails id={id} /></Sheet>
 }
