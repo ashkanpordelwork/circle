@@ -51,11 +51,13 @@ export default function CoachAccount() {
     <section className="card glass-lite coach-card">
       <div className="avatar" aria-hidden="true">{name ? [...name][0] : <Icon name="person" filled />}</div>
       <div className="grow">
-        <div className="headline">{name || 'نام شما'}</div>
-        <div className="sub latin" style={{ textAlign: 'right' }}>{phone ? fmtPhone(phone) : me.session.user.email}</div>
+        {name ? <div className="headline ellipsis">{name}</div>
+          : <button className="name-add pressable" onClick={() => setEditing(true)}>افزودن نام</button>}
+        <div className="sub latin nowrap" style={{ textAlign: 'right' }}>{phone ? fmtPhone(phone) : me.session.user.email}</div>
         {coach.created_at && <div className="caption">عضو از {fmtDate(coach.created_at.slice(0, 10), { month: 'long' })} {fmtDate(coach.created_at.slice(0, 10), { year: 'numeric' })}</div>}
       </div>
-      <button className="btn glass interactive small" onClick={() => setEditing(true)}><Icon name="edit_note" />{name ? 'ویرایش' : 'افزودن نام'}</button>
+      {/* A small edit icon, so the name and number keep the card's width. */}
+      <button className="icon-btn glass interactive" onClick={() => setEditing(true)} aria-label={name ? 'ویرایش نام' : 'افزودن نام'}><Icon name="edit_note" /></button>
     </section>
     {!name && <div className="section-footer" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
 

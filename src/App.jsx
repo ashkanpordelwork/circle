@@ -88,7 +88,8 @@ export default function App() {
     <Route path="/s/:id" element={<StudentPage />} />
   </>
   const tabs = me.role === 'coach'
-    ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ...(me.admin ? [['/admin', 'admin_panel_settings', 'مدیریت']] : []), ['/account', 'person', 'حساب']]
+    // A coach who is also the admin reaches the admin panel from «حساب»; the tab bar stays the coach's.
+    ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
       : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب', '/intake']]

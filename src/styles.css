@@ -846,6 +846,11 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 
 .coach-card { display: flex; align-items: center; gap: 1rem; }
 .coach-card .grow { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.coach-card { align-items: flex-start; }
+.coach-card .icon-btn { width: 2.5rem; height: 2.5rem; }
+.coach-card .icon-btn .icon { font-size: 1.25rem; }
+.name-add { border: 0; background: none; padding: 0; font: inherit; font-size: 1rem; font-weight: 600; color: var(--accent); text-align: start; cursor: pointer; }
+.nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .avatar { width: 4rem; height: 4rem; flex-shrink: 0; border-radius: var(--radius-lg); display: grid; place-items: center;
   font-size: 1.5rem; font-weight: 700; color: var(--on-accent); background: var(--lime);
   }
