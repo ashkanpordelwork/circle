@@ -901,6 +901,9 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
   border: 0; border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1.5rem; color: var(--label);
   background: var(--red-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 28%, transparent); }
 .alert-strip > .icon { color: var(--red); font-size: 1.5rem; }
+/* Not a warning, a to-do: the invite a student still needs. */
+.alert-strip.invite { background: color-mix(in srgb, var(--orange) 8%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--orange) 24%, transparent); }
+.alert-strip.invite > .icon:first-child { color: var(--orange); }
 .alert-strip .title-text { font-size: 0.875rem; font-weight: 600; }
 .alert-strip .sub { font-size: 0.875rem; color: var(--label-2); }
 .alert-card { background: color-mix(in srgb, var(--red) 7%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 26%, transparent); }

@@ -14,6 +14,7 @@ import IntakeSummary from '../../components/IntakeSummary.jsx'
 import ProgramTab from './ProgramTab.jsx'
 import { useMe } from '../../App.jsx'
 import { CoachPicker, adminError } from '../admin/Admin.jsx'
+import Screen from '../../components/Screen.jsx'
 
 
 
@@ -165,6 +166,7 @@ export default function StudentPage() {
   const toast = useToast()
   const [student, setStudent] = useState(null)
   const [tab, setTab] = useState('plan')
+  const [settings, setSettings] = useState(false)
   const [intake, setIntake] = useState(undefined)
   useEffect(() => {
     // No intakes table yet (migration 0004 not run) reads as "not filled", not as an error.
@@ -173,7 +175,7 @@ export default function StudentPage() {
   }, [id])
   const me = useMe()
   // An admin may open any coach's student; their own list is not where they came from then.
-  const home = me.role === 'coach' ? '/students' : '/admin/students'
+  const home = me.role === 'coach' ? '/' : '/admin/students'
   useEffect(() => {
     supabase.from('students').select('*, coaches(full_name)').eq('id', id).maybeSingle().then(({ data, error }) => {
       if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav(home) } else setStudent(data)
@@ -181,15 +183,22 @@ export default function StudentPage() {
   }, [id])
   if (!student) return <Loading />
   const other = student.coach_id !== me.session.user.id
-  // Phone and sign-up state live under «تنظیمات»; only a closed account is worth saying up here,
-  // and, for an admin looking at someone else's student, whose student it is.
+  // Phone and sign-up state live behind the settings button; only a closed account is worth saying
+  // up here, and, for an admin looking at someone else's student, whose student it is.
   const sub = [other && `مربی: ${student.coaches?.full_name?.trim() || '—'}`, !student.active && 'دسترسی بسته است'].filter(Boolean).join('، ')
-  return <Page title={student.full_name} back={other ? true : '/students'} subtitle={sub || null}>
+  const gear = <button className="icon-btn glass interactive" onClick={() => setSettings(true)} aria-label="تنظیمات شاگرد"><Icon name="manage_accounts" /></button>
+  return <Page title={student.full_name} back={other ? true : '/'} subtitle={sub || null} actions={gear}>
+    {/* Until they sign up, the invite is the one thing to do: in plain sight, not under a button. */}
+    {!student.user_id && student.active && <button className="alert-strip invite pressable" onClick={() => setSettings(true)}>
+      <Icon name="key" /><div className="grow"><div className="title-text">هنوز ثبت‌نام نکرده</div><div className="sub">کد دعوت را ببینید و برایش بفرستید</div></div><Disclosure />
+    </button>}
     <Segmented label="بخش‌ها" value={tab} onChange={setTab}
-      options={[{ value: 'plan', label: 'برنامه' }, { value: 'profile', label: 'پرونده' }, { value: 'progress', label: 'پیشرفت' }, { value: 'settings', label: student.user_id ? 'تنظیمات' : 'دعوت' }]} />
+      options={[{ value: 'plan', label: 'برنامه' }, { value: 'progress', label: 'پیشرفت' }, { value: 'profile', label: 'پرونده' }]} />
     {tab === 'plan' && <ProgramTab student={student} intake={intake} onSaved={x => setStudent(cur => ({ ...cur, ...x }))} alerts={intake?.completed_at ? alertLine(profile(intake.answers)) : ''} onAlerts={() => setTab('profile')} />}
     {tab === 'profile' && <ProfileTab student={student} intake={intake} />}
     {tab === 'progress' && <ProgressTab student={student} />}
-    {tab === 'settings' && <SettingsTab student={student} onSaved={s => setStudent(x => ({ ...x, ...s }))} onRemoved={() => nav(home)} />}
+    {settings && <Screen title={student.user_id ? 'تنظیمات شاگرد' : 'دعوت و تنظیمات'} subtitle={student.full_name} onClose={() => setSettings(false)}>
+      <SettingsTab student={student} onSaved={s => setStudent(x => ({ ...x, ...s }))} onRemoved={() => { setSettings(false); nav(home, { replace: true }) }} />
+    </Screen>}
   </Page>
 }

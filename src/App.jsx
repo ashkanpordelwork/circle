@@ -8,7 +8,6 @@ import Icon from './components/Icon.jsx'
 import GlassDrop from './components/GlassDrop.jsx'
 import Login, { NotRegistered, NotConfigured, Stopped } from './pages/Login.jsx'
 import Students from './pages/coach/Students.jsx'
-import Dashboard from './pages/coach/Dashboard.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
 import Today from './pages/student/Today.jsx'
 import LogWorkout from './pages/student/LogWorkout.jsx'
@@ -87,14 +86,15 @@ export default function App() {
   </>
   const tabs = me.role === 'coach'
     // A coach who is also the admin reaches the admin panel from «حساب»; the tab bar stays the coach's.
-    ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
+    ? [['/', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
       : [['/', 'today', 'امروز'], ['/progress', 'monitoring', 'پیشرفت'], ['/account', 'person', 'حساب', '/intake']]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/students" element={<Students />} />
+      {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
+      <Route path="/" element={<Students />} />
+      <Route path="/students" element={<Navigate to="/" replace />} />
       <Route path="/s/:id" element={<StudentPage />} />
       <Route path="/account" element={<Account />} />
       {adminRoutes}
@@ -147,7 +147,7 @@ function TabBar({ tabs }) {
   const loc = useLocation()
   const box = useRef(null)
   // A tab may also own other paths (a student's page belongs to «شاگردان»).
-  const index = tabs.findIndex(([to, , , also]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to) || (also && loc.pathname.startsWith(also))))
+  const index = tabs.findIndex(([to, , , also]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)) || (also && loc.pathname.startsWith(also)))
   return <nav ref={box} className="tabbar glass" aria-label="بخش‌ها">
     <GlassDrop container={box} selector="a" index={index} className="drop" />
     {tabs.map(([to, icon, label], i) => <NavLink key={to} to={to} end={to === '/'} className={i === index ? 'active' : ''} aria-current={i === index ? 'page' : undefined}>

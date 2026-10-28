@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase, must } from '../lib/supabase.js'
 import { useMe } from '../App.jsx'
 import { phoneOfEmail, fmtPhone } from '../lib/phone.js'
@@ -34,7 +33,6 @@ function NameSheet({ coach, onSaved, onClose }) {
 // The coach's own page: who they are, and the tools around it. (Their numbers live on the dashboard.)
 export default function CoachAccount() {
   const me = useMe()
-  const nav = useNavigate()
   const toast = useToast()
   const [coach, setCoach] = useState(me.coach)
   const [editing, setEditing] = useState(false)
@@ -62,11 +60,7 @@ export default function CoachAccount() {
     {!name && <div className="section-footer" style={{ marginTop: '-0.75rem', marginBottom: '2.5rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
 
     <div className="section">
-      <div className="section-title">ابزارها</div>
-      <div className="group glass-lite">
-        <button className="row pressable with-leading" onClick={() => nav('/students', { state: { add: true } })}>
-          <div className="tile-icon"><Icon name="person_add" /></div>
-          <div className="content"><div className="title-text">شاگرد جدید</div><div className="sub">ثبت شماره و گرفتن کد دعوت</div></div><Disclosure /></button>
+            <div className="group glass-lite">
         <button className="row pressable with-leading" onClick={shareApp}>
           <div className="tile-icon blue"><Icon name="share" /></div>
           <div className="content"><div className="title-text">ارسال لینک اپ</div><div className="sub latin" style={{ textAlign: 'right' }}>{appUrl().replace(/^https?:\/\//, '')}</div></div><Disclosure /></button>
