@@ -34,6 +34,18 @@ export function filterUsers(users, filter = 'all', q = '') {
   })
 }
 
+// The admin's one list of people: every account, every student who has not signed up yet, and
+// every coach number waiting for its first sign-in. Each item carries its roles for the filters
+// («waiting» marks the last two) and the text a search looks through.
+export function peopleOf({ users, students, waiting }) {
+  const coachName = Object.fromEntries(users.map(u => [u.id, u.coach_name?.trim() || '']))
+  const items = users.map(u => ({ key: u.id, kind: 'user', u, roles: rolesOf(u), name: nameOf(u), hay: [u.coach_name, u.student_name, u.student_coach, u.phone, u.email].join(' ') }))
+  for (const st of students) if (!st.user_id) items.push({ key: st.id, kind: 'student', s: st, roles: st.active ? ['student', 'waiting'] : ['student'], name: st.full_name, coach: coachName[st.coach_id], hay: [st.full_name, st.phone, coachName[st.coach_id]].join(' ') })
+  for (const p of waiting) items.push({ key: 'p' + p, kind: 'phone', p, roles: ['coach', 'waiting'], name: faPhone(p).replace(/ /g, ''), hay: p })
+  return items
+}
+export const inFilter = (x, f) => f === 'all' || (f === 'coach' ? x.roles.some(r => r === 'coach' || r === 'coach_off') : x.roles.includes(f))
+
 // "۳ ساعت پیش" — how long ago, in the largest unit that fits.
 export function ago(ts, now = Date.now()) {
   if (!ts) return 'هرگز'
@@ -63,7 +75,7 @@ export const inGroup = (ev, g) => {
 // names: { [uuid]: name } for the people an admin action was about.
 export function describe(ev, names = {}) {
   const who = ev.who || 'کسی'
-  const to = ev.student_id ? '/s/' + ev.student_id : ev.coach_id ? '/admin/c/' + ev.coach_id : null
+  const to = ev.student_id ? '/s/' + ev.student_id : ev.coach_id ? '/admin/u/' + ev.coach_id : null
   switch (ev.kind) {
     case 'signup': return { icon: 'how_to_reg', tone: 'blue', text: `${who} ثبت‌نام کرد`, to }
     case 'login': return { icon: 'login', tone: 'gray', text: `${who} وارد شد`, to }

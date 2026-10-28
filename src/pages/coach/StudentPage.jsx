@@ -175,7 +175,7 @@ export default function StudentPage() {
   }, [id])
   const me = useMe()
   // An admin may open any coach's student; their own list is not where they came from then.
-  const home = me.role === 'coach' ? '/' : '/admin/students'
+  const home = me.role === 'coach' ? '/' : '/admin/people?f=student'
   useEffect(() => {
     supabase.from('students').select('*, coaches(full_name)').eq('id', id).maybeSingle().then(({ data, error }) => {
       if (error || !data) { toast(error ? errorText(error) : 'شاگرد پیدا نشد', 'error'); nav(home) } else setStudent(data)

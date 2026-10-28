@@ -14,7 +14,7 @@ import LogWorkout from './pages/student/LogWorkout.jsx'
 import Progress from './pages/student/Progress.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
-import { AdminHome, AdminCoaches, AdminCoach, AdminStudents, AdminUsers, AdminUser, AdminActivity } from './pages/admin/Admin.jsx'
+import { AdminHome, AdminPeople, AdminUser, AdminActivity } from './pages/admin/Admin.jsx'
 import { setScope } from './lib/scope.js'
 
 // Who is signed in: { session, role: 'coach' | 'student' | 'admin' | 'stopped' | 'none', admin, coach?, student? }
@@ -76,10 +76,12 @@ export default function App() {
   // The admin's pages sit beside whatever else this person is; an admin opens any student's page.
   const adminRoutes = me.admin && <>
     <Route path="/admin" element={<AdminHome />} />
-    <Route path="/admin/coaches" element={<AdminCoaches />} />
-    <Route path="/admin/c/:id" element={<AdminCoach />} />
-    <Route path="/admin/students" element={<AdminStudents />} />
-    <Route path="/admin/users" element={<AdminUsers />} />
+    <Route path="/admin/people" element={<AdminPeople />} />
+    {/* Coaches, students and accounts were three lists, and a coach had a page apart from their account. */}
+    <Route path="/admin/coaches" element={<Navigate to="/admin/people?f=coach" replace />} />
+    <Route path="/admin/students" element={<Navigate to="/admin/people?f=student" replace />} />
+    <Route path="/admin/users" element={<Navigate to="/admin/people" replace />} />
+    <Route path="/admin/c/:id" element={<AdminUser />} />
     <Route path="/admin/u/:id" element={<AdminUser />} />
     <Route path="/admin/activity" element={<AdminActivity />} />
     <Route path="/s/:id" element={<StudentPage />} />

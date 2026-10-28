@@ -8,7 +8,7 @@ import { supabase, must } from '../../lib/supabase.js'
 import { useMe } from '../../App.jsx'
 import { isPhone, normPhone } from '../../lib/phone.js'
 import { fmtDate } from '../../lib/plan.js'
-import { rolesOf, ROLE_LABEL, nameOf, filterUsers, ago, describe, byDay, inGroup, faPhone } from '../../lib/admin.js'
+import { rolesOf, ROLE_LABEL, nameOf, ago, describe, byDay, inGroup, faPhone, peopleOf, inFilter } from '../../lib/admin.js'
 import { Page, Loading, Empty, Confirm, useToast, errorText } from '../../components/ui.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
@@ -74,10 +74,10 @@ export function AdminHome() {
   if (!data) return <Page><Empty icon="admin_panel_settings" title="پنل مدیریت در دسترس نیست">migration شماره ۵ را در Supabase اجرا کنید.</Empty></Page>
   const { st, ev, names } = data
   const attention = [
-    st.no_role > 0 && { icon: 'person_remove', tone: 'orange', title: `${fa(st.no_role)} حساب بدون نقش`, sub: 'ثبت‌نام کرده‌اند ولی نه مربی‌اند نه شاگرد', to: '/admin/users?f=none' },
-    st.coaches_off > 0 && { icon: 'block', tone: 'red', title: `${fa(st.coaches_off)} مربی غیرفعال`, sub: 'دسترسی‌شان بسته است', to: '/admin/coaches' },
-    st.coach_phones_waiting > 0 && { icon: 'hourglass_top', tone: 'gray', title: `${fa(st.coach_phones_waiting)} مربی در انتظار ثبت‌نام`, sub: 'شماره داده شده، هنوز حساب نساخته‌اند', to: '/admin/coaches' },
-    st.students_waiting > 0 && { icon: 'key', tone: 'gray', title: `${fa(st.students_waiting)} شاگرد در انتظار ثبت‌نام`, sub: 'کد دعوت گرفته‌اند ولی هنوز وارد نشده‌اند', to: '/admin/students?f=waiting' }
+    st.no_role > 0 && { icon: 'person_remove', tone: 'orange', title: `${fa(st.no_role)} حساب بدون نقش`, sub: 'ثبت‌نام کرده‌اند ولی نه مربی‌اند نه شاگرد', to: '/admin/people?f=none' },
+    st.coaches_off > 0 && { icon: 'block', tone: 'red', title: `${fa(st.coaches_off)} مربی غیرفعال`, sub: 'دسترسی‌شان بسته است', to: '/admin/people?f=coach' },
+    st.coach_phones_waiting > 0 && { icon: 'hourglass_top', tone: 'gray', title: `${fa(st.coach_phones_waiting)} مربی در انتظار ثبت‌نام`, sub: 'شماره داده شده، هنوز حساب نساخته‌اند', to: '/admin/people?f=waiting' },
+    st.students_waiting > 0 && { icon: 'key', tone: 'gray', title: `${fa(st.students_waiting)} شاگرد در انتظار ثبت‌نام`, sub: 'کد دعوت گرفته‌اند ولی هنوز وارد نشده‌اند', to: '/admin/people?f=waiting' }
   ].filter(Boolean)
   return <Page>
     <section className="card hero" aria-label="کل سیستم">
@@ -87,13 +87,13 @@ export function AdminHome() {
     </section>
 
     <div className="stats">
-      <button className="stat glass-lite pressable" onClick={() => nav('/admin/coaches')}>
+      <button className="stat glass-lite pressable" onClick={() => nav('/admin/people?f=coach')}>
         <div className="stat-icon"><Icon name="badge" /></div><div className="v">{fa(st.coaches)}</div><div className="l">مربی فعال</div></button>
-      <button className="stat glass-lite pressable" onClick={() => nav('/admin/students')}>
+      <button className="stat glass-lite pressable" onClick={() => nav('/admin/people?f=student')}>
         <div className="stat-icon blue"><Icon name="group" filled /></div><div className="v">{fa(st.students_linked)}</div><div className="l">شاگرد فعال</div></button>
       <button className="stat glass-lite pressable" onClick={() => nav('/admin/activity?g=training')}>
         <div className="stat-icon"><Icon name="fitness_center" /></div><div className="v">{fa(st.workouts_7d)}</div><div className="l">تمرین در ۷ روز</div></button>
-      <button className="stat glass-lite pressable" onClick={() => nav('/admin/users')}>
+      <button className="stat glass-lite pressable" onClick={() => nav('/admin/people')}>
         <div className="stat-icon orange"><Icon name="how_to_reg" /></div><div className="v">{fa(st.signups_7d)}</div><div className="l">ثبت‌نام در ۷ روز</div></button>
     </div>
 
@@ -105,9 +105,7 @@ export function AdminHome() {
     <div className="section">
       <div className="section-title">مدیریت</div>
       <div className="group glass-lite">
-        <Row icon="badge" title="مربی‌ها" sub="دسترسی، شاگردها، افزودن مربی" onClick={() => nav('/admin/coaches')} />
-        <Row icon="group" tone="blue" title="شاگردها" sub={`${fa(st.students)} شاگرد در کل سیستم`} onClick={() => nav('/admin/students')} />
-        <Row icon="manage_accounts" tone="orange" title="همه حساب‌ها" sub="نقش‌ها، مدیرها، حذف حساب" onClick={() => nav('/admin/users')} />
+        <Row icon="group" title="افراد" sub={`${fa(st.coaches)} مربی، ${fa(st.students)} شاگرد، ${fa(st.users)} حساب`} onClick={() => nav('/admin/people')} />
         <Row icon="history" tone="gray" title="گزارش فعالیت" sub={`${fa(st.workouts)} تمرین، ${fa(st.sets)} ست ثبت‌شده`} onClick={() => nav('/admin/activity')} />
       </div>
     </div>
@@ -146,38 +144,6 @@ function PhoneForm({ text, okText, phone, setPhone, busy, setBusy, onSubmit }) {
   </form>
 }
 
-export function AdminCoaches() {
-  const nav = useNavigate()
-  const toast = useToast()
-  const [adding, setAdding] = useState(false)
-  const [revoking, setRevoking] = useState(null)
-  const [data, reload] = useLoad(async () => {
-    const [users, waiting] = await Promise.all([rpc('admin_users'), rpc('admin_waiting_coaches')])
-    return { coaches: users.filter(u => u.coach_active != null).sort((a, b) => Number(b.coach_active) - Number(a.coach_active) || b.coach_students - a.coach_students), waiting }
-  })
-  const add = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="افزودن مربی"><Icon name="person_add" /></button>
-  return <Page title="مربی‌ها" back="/admin" actions={add}>
-    {data === null ? <Loading /> : !data ? null : <>
-      {!data.coaches.length ? <Empty icon="badge" title="هنوز مربی‌ای نیست">با دکمه بالا شماره یک مربی را اضافه کنید.</Empty>
-        : <div className="section"><div className="group glass-lite">{data.coaches.map(c =>
-          <Row key={c.id} icon="badge" tone={c.coach_active ? '' : 'gray'} title={nameOf(c)}
-            sub={`${fa(c.coach_students)} شاگرد، آخرین ورود ${ago(c.last_sign_in_at)}`}
-            trailing={<>{!c.coach_active && <span className="pill bad">غیرفعال</span>}{c.is_admin && <span className="pill ok">مدیر</span>}<Disclosure /></>}
-            onClick={() => nav('/admin/c/' + c.id)} />)}</div></div>}
-      {data.waiting.length > 0 && <div className="section">
-        <div className="section-title">در انتظار ثبت‌نام</div>
-        <div className="group glass-lite">{data.waiting.map(p => <Row key={p} icon="hourglass_top" tone="gray" title={<span className="latin">{faPhone(p)}</span>}
-          sub="با اولین ثبت‌نام، مربی می‌شود" trailing={<button className="btn plain small pressable" onClick={() => setRevoking(p)}>لغو</button>} />)}</div>
-      </div>}
-    </>}
-    {adding && <PhoneSheet title="افزودن مربی" okText="مربی شود" onClose={() => setAdding(false)}
-      text="اگر این شماره حساب دارد، همین حالا مربی می‌شود؛ اگر ندارد، با اولین ثبت‌نام."
-      onSubmit={async p => { await rpc('admin_grant_coach', { p_phone: p }); toast('دسترسی مربی داده شد', 'success'); reload() }} />}
-    {revoking && <Confirm title="لغو دسترسی مربی؟" text={`شماره ${faPhone(revoking)} دیگر با ثبت‌نام مربی نمی‌شود.`} okText="لغو دسترسی" danger
-      onOk={async () => { try { await rpc('admin_revoke_waiting_coach', { p_phone: revoking }); reload() } catch (e) { toast(adminError(e), 'error') } }} onClose={() => setRevoking(null)} />}
-  </Page>
-}
-
 function NameSheet({ initial, onSave, onClose }) {
   return <Sheet title="نام مربی" onClose={onClose}><NameForm initial={initial} onSave={onSave} /></Sheet>
 }
@@ -210,84 +176,6 @@ function CoachPickerBody({ text, coaches, onPick }) {
   </>
 }
 
-export function AdminCoach() {
-  const { id } = useParams()
-  const nav = useNavigate()
-  const toast = useToast()
-  const me = useMe()
-  const [sheet, setSheet] = useState(null)
-  const [data, reload] = useLoad(async () => {
-    const [users, students] = await Promise.all([rpc('admin_users'),
-      must(supabase.from('students').select('id, full_name, active, user_id, phone').eq('coach_id', id).order('full_name'))])
-    return { u: users.find(x => x.id === id) || null, students }
-  }, [id])
-  if (data === null) return <Page back="/admin/coaches"><Loading /></Page>
-  if (!data?.u) return <Page back="/admin/coaches"><Empty icon="badge" title="این مربی پیدا نشد" /></Page>
-  const { u, students } = data
-  const self = u.id === me.session.user.id
-  const run = (fn, ok) => async () => { try { await fn(); if (ok) toast(ok, 'success'); reload() } catch (e) { toast(adminError(e), 'error') } }
-  const name = nameOf(u)
-  return <Page title={name} back="/admin/coaches">
-    <section className="card glass-lite coach-card">
-      <div className="avatar" aria-hidden="true">{u.coach_name?.trim() ? [...u.coach_name.trim()][0] : <Icon name="person" filled />}</div>
-      <div className="grow">
-        <div className="sub latin" style={{ textAlign: 'right' }}>{faPhone(u.phone) || u.email}</div>
-        <div className="caption">عضو از {day(u.created_at)}</div>
-        <div className="caption">آخرین ورود: {ago(u.last_sign_in_at)}</div>
-      </div>
-      <span className={'pill ' + (u.coach_active ? 'ok' : 'bad')}>{u.coach_active ? 'فعال' : 'غیرفعال'}</span>
-    </section>
-
-    <div className="section">
-      <div className="section-title">{fa(students.length)} شاگرد</div>
-      {!students.length ? <div className="group glass-lite"><div className="row"><div className="content sub">این مربی هنوز شاگردی ندارد.</div></div></div>
-        : <div className="group glass-lite">{students.map(s => <Row key={s.id} icon="person" tone={s.active && s.user_id ? '' : 'gray'} title={s.full_name}
-          sub={!s.active ? 'دسترسی بسته' : s.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'} onClick={() => nav('/s/' + s.id)} />)}</div>}
-      {students.length > 0 && <button className="btn glass interactive block mt" onClick={() => setSheet('moveAll')}><Icon name="swap_horiz" />انتقال همه به مربی دیگر</button>}
-    </div>
-
-    <div className="section">
-      <div className="section-title">دسترسی‌ها</div>
-      <div className="group glass-lite">
-        <Row icon="edit_note" title="تغییر نام" onClick={() => setSheet('name')} />
-        {u.coach_active
-          ? <Row icon="block" tone="red" title="بستن دسترسی مربی" sub="شاگردها و برنامه‌ها می‌مانند و شاگردها به تمرین ادامه می‌دهند" onClick={() => setSheet('off')} />
-          : <Row icon="play_arrow" title="باز کردن دسترسی مربی" onClick={run(() => rpc('admin_set_coach_active', { p_coach: u.id, p_active: true }), 'دسترسی باز شد')} />}
-        {u.phone && !self && (u.is_admin
-          ? <Row icon="admin_panel_settings" tone="red" title="برداشتن از مدیرها" onClick={run(() => rpc('admin_set_admin', { p_phone: u.phone, p_on: false }), 'از مدیرها برداشته شد')} />
-          : <Row icon="admin_panel_settings" tone="orange" title="مدیر کردن" sub="دسترسی کامل به همه سیستم" onClick={() => setSheet('admin')} />)}
-        <Row icon="person_remove" tone="red" title="حذف نقش مربی" sub={students.length ? 'اول شاگردها را منتقل کنید' : 'حساب می‌ماند، فقط مربی نیست'}
-          disabled={students.length > 0} onClick={students.length ? undefined : () => setSheet('remove')} />
-      </div>
-    </div>
-    {u.id !== me.session.user.id && <button className="btn glass interactive block" onClick={() => nav('/admin/u/' + u.id)}><Icon name="manage_accounts" />مدیریت حساب</button>}
-
-    {sheet === 'name' && <NameSheet initial={u.coach_name} onClose={() => setSheet(null)}
-      onSave={async n => { await rpc('admin_rename_coach', { p_coach: u.id, p_name: n }); reload() }} />}
-    {sheet === 'off' && <Confirm title={`دسترسی ${name} بسته شود؟`} okText="بستن دسترسی" danger onClose={() => setSheet(null)}
-      text="دیگر نمی‌تواند وارد پنل مربی شود. شاگردها، برنامه‌ها و سوابق دست نمی‌خورند و هر وقت بخواهید باز می‌شود."
-      onOk={run(() => rpc('admin_set_coach_active', { p_coach: u.id, p_active: false }), 'دسترسی بسته شد')} />}
-    {sheet === 'admin' && <Confirm title={`${name} مدیر شود؟`} okText="مدیر شود" onClose={() => setSheet(null)}
-      text="مدیر همه حساب‌ها، شاگردها، برنامه‌ها و فعالیت‌ها را می‌بیند و می‌تواند هر دسترسی را تغییر دهد."
-      onOk={run(() => rpc('admin_set_admin', { p_phone: u.phone, p_on: true }), 'مدیر شد')} />}
-    {sheet === 'remove' && <Confirm title="نقش مربی حذف شود؟" okText="حذف نقش مربی" danger onClose={() => setSheet(null)}
-      text="حساب باقی می‌ماند ولی دیگر مربی نیست. هر وقت بخواهید می‌توانید دوباره مربی‌اش کنید."
-      onOk={async () => { try { await rpc('admin_remove_coach', { p_coach: u.id }); toast('نقش مربی حذف شد', 'success'); nav('/admin/coaches') } catch (e) { toast(adminError(e), 'error') } }} />}
-    {sheet === 'moveAll' && <CoachPicker title="انتقال همه شاگردها" exclude={u.id} onClose={() => setSheet(null)}
-      text={`${fa(students.length)} شاگرد با برنامه و سوابقشان به این مربی منتقل می‌شوند.`}
-      onPick={async c => { for (const s of students) await rpc('admin_move_student', { p_student: s.id, p_coach: c.id }); toast(`به ${nameOf(c)} منتقل شدند`, 'success'); reload() }} />}
-  </Page>
-}
-
-/* ---------- students ---------- */
-
-const STUDENT_FILTERS = [['all', 'همه'], ['active', 'فعال'], ['waiting', 'منتظر ثبت‌نام'], ['off', 'دسترسی بسته']]
-
-function AddStudentSheet({ onClose, onAdded }) {
-  const [coach, setCoach] = useState(null)
-  const [coaches] = useLoad(() => rpc('admin_users').then(us => us.filter(u => u.coach_active)))
-  return <Sheet title="شاگرد جدید" onClose={onClose}><AddStudentForm coaches={coaches} coach={coach} setCoach={setCoach} onAdded={onAdded} /></Sheet>
-}
 function AddStudentForm({ coaches, coach, setCoach, onAdded }) {
   const toast = useToast()
   const [name, setName] = useState('')
@@ -316,67 +204,76 @@ function AddStudentForm({ coaches, coach, setCoach, onAdded }) {
   </form>
 }
 
-export function AdminStudents() {
+/* ---------- people: every coach, student and account in one list ---------- */
+
+// One list instead of three («مربی‌ها», «شاگردها», «همه حساب‌ها»): accounts, students who have not
+// signed up yet, and coach numbers waiting for their first sign-in, narrowed by a filter.
+const PEOPLE_FILTERS = [['all', 'همه'], ['coach', 'مربی'], ['student', 'شاگرد'], ['waiting', 'منتظر ثبت‌نام'], ['none', 'بدون نقش'], ['admin', 'مدیر']]
+const digitsOf = q => q.trim().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\s+/g, '').toLowerCase()
+
+function AddSheet({ onClose, onAdded }) {
+  const [mode, setMode] = useState(null)
+  const [coaches] = useLoad(() => rpc('admin_users').then(us => us.filter(u => u.coach_active)))
+  const [coach, setCoach] = useState(null)
+  const [phone, setPhone] = useState('')
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+  return <Sheet title={mode === 'coach' ? 'مربی جدید' : mode === 'student' ? 'شاگرد جدید' : 'افزودن'} onClose={onClose}>
+    {!mode ? <div className="group glass-lite">
+      <Row icon="badge" title="مربی جدید" sub="با شماره موبایل؛ با اولین ثبت‌نام مربی می‌شود" onClick={() => setMode('coach')} />
+      <Row icon="person_add" tone="blue" title="شاگرد جدید" sub="برای یکی از مربی‌ها، با کد دعوت" onClick={() => setMode('student')} />
+    </div> : mode === 'coach'
+      ? <PhoneForm text="اگر این شماره حساب دارد، همین حالا مربی می‌شود؛ اگر ندارد، با اولین ثبت‌نام." okText="مربی شود"
+        phone={phone} setPhone={setPhone} busy={busy} setBusy={setBusy}
+        onSubmit={async p => { await rpc('admin_grant_coach', { p_phone: p }); toast('دسترسی مربی داده شد', 'success'); onAdded() }} />
+      : <AddStudentForm coaches={coaches} coach={coach} setCoach={setCoach} onAdded={onAdded} />}
+  </Sheet>
+}
+
+export function AdminPeople() {
   const nav = useNavigate()
+  const toast = useToast()
   const [params, setParams] = useSearchParams()
   const f = params.get('f') || 'all'
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
+  const [revoking, setRevoking] = useState(null)
   const [data, reload] = useLoad(async () => {
-    const [students, ws] = await Promise.all([
-      must(supabase.from('students').select('id, full_name, phone, active, user_id, coach_id, coaches(full_name)').order('full_name')),
-      must(supabase.from('workouts').select('student_id, date').order('date', { ascending: false }).limit(3000))])
-    const last = {}
-    for (const w of ws) if (!last[w.student_id]) last[w.student_id] = w.date
-    return { students, last }
+    const [users, students, waiting] = await Promise.all([rpc('admin_users'),
+      must(supabase.from('students').select('id, full_name, phone, active, user_id, coach_id').order('full_name')),
+      rpc('admin_waiting_coaches')])
+    return peopleOf({ users, students, waiting })
   })
   const shown = useMemo(() => {
     if (!data) return []
-    const needle = q.trim().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\s+/g, '')
-    return data.students.filter(s => (f === 'all' || (f === 'active' ? s.active && s.user_id : f === 'waiting' ? s.active && !s.user_id : !s.active))
-      && (!needle || (s.full_name + (s.phone || '') + (s.coaches?.full_name || '')).replace(/\s+/g, '').includes(needle)))
+    const needle = digitsOf(q)
+    return data.filter(x => inFilter(x, f) && (!needle || String(x.hay).replace(/\s+/g, '').toLowerCase().includes(needle)))
   }, [data, q, f])
-  const add = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
-  return <Page title="شاگردها" back="/admin" actions={add}>
-    <input className="input" placeholder="جستجو: نام، شماره یا مربی" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" style={{ marginBottom: '1rem' }} />
-    <div className="chips" data-no-drag>{STUDENT_FILTERS.map(([k, l]) => <button key={k} className={'chip glass-lite pressable' + (f === k ? ' on' : '')}
-      onClick={() => setParams(k === 'all' ? {} : { f: k }, { replace: true })}>{l}</button>)}</div>
-    {data === null ? <Loading /> : !data ? null : !shown.length ? <Empty icon="group" title="شاگردی پیدا نشد" /> : <div className="section">
-      <div className="section-title">{fa(shown.length)} شاگرد</div>
-      <div className="group glass-lite">{shown.map(s => <Row key={s.id} icon="person" tone={s.active && s.user_id ? '' : 'gray'} title={s.full_name}
-        sub={`مربی: ${s.coaches?.full_name?.trim() || '—'}، ${!s.active ? 'دسترسی بسته' : !s.user_id ? 'منتظر ثبت‌نام' : data.last[s.id] ? 'آخرین تمرین ' + fmtDate(data.last[s.id], { day: 'numeric', month: 'long' }) : 'هنوز تمرین نکرده'}`}
-        onClick={() => nav('/s/' + s.id)} />)}</div>
+  const add = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="افزودن"><Icon name="person_add" /></button>
+  const row = x => {
+    if (x.kind === 'phone') return <Row key={x.key} icon="hourglass_top" tone="gray" title={<span className="latin">{x.name}</span>}
+      sub="مربی، منتظر اولین ثبت‌نام" trailing={<button className="btn plain small pressable" onClick={() => setRevoking(x.p)}>لغو</button>} />
+    if (x.kind === 'student') return <Row key={x.key} icon="key" tone="gray" title={x.name}
+      sub={`شاگرد ${x.coach || '—'}، ${x.s.active ? 'منتظر ثبت‌نام' : 'دسترسی بسته'}`} onClick={() => nav('/s/' + x.s.id)} />
+    const u = x.u, r = x.roles
+    const sub = [r.map(k => ROLE_LABEL[k]).join('، '), u.coach_active != null && `${fa(u.coach_students)} شاگرد`, `آخرین ورود ${ago(u.last_sign_in_at)}`].filter(Boolean).join('، ')
+    return <Row key={x.key} icon={r.includes('admin') ? 'admin_panel_settings' : r.includes('coach') || r.includes('coach_off') ? 'badge' : r.includes('student') ? 'person' : 'person_remove'}
+      tone={r.includes('none') ? 'orange' : r.includes('coach_off') ? 'gray' : r.includes('admin') ? 'red' : ''} title={x.name} sub={sub} onClick={() => nav('/admin/u/' + u.id)} />
+  }
+  return <Page title="افراد" back="/admin" actions={add}>
+    <input className="input" placeholder="جستجو: نام، شماره یا مربی" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجو" style={{ marginBottom: '1rem' }} />
+    <div className="chips" data-no-drag>{PEOPLE_FILTERS.map(([k, l]) => <button key={k} className={'chip glass-lite pressable' + (f === k ? ' on' : '')}
+      onClick={() => setParams(k === 'all' ? {} : { f: k }, { replace: true })}>{l} {data ? fa(data.filter(x => inFilter(x, k)).length) : ''}</button>)}</div>
+    {data === null ? <Loading /> : !data ? null : !shown.length ? <Empty icon="group" title="کسی پیدا نشد" /> : <div className="section">
+      <div className="group glass-lite">{shown.map(row)}</div>
     </div>}
-    {adding && <AddStudentSheet onClose={() => setAdding(false)} onAdded={reload} />}
+    {adding && <AddSheet onClose={() => setAdding(false)} onAdded={reload} />}
+    {revoking && <Confirm title="لغو دسترسی مربی؟" text={`شماره ${faPhone(revoking).replace(/ /g, '')} دیگر با ثبت‌نام مربی نمی‌شود.`} okText="لغو دسترسی" danger
+      onOk={async () => { try { await rpc('admin_revoke_waiting_coach', { p_phone: revoking }); reload() } catch (e) { toast(adminError(e), 'error') } }} onClose={() => setRevoking(null)} />}
   </Page>
 }
 
-/* ---------- every account ---------- */
-
-const USER_FILTERS = [['all', 'همه'], ['coach', 'مربی'], ['student', 'شاگرد'], ['admin', 'مدیر'], ['none', 'بدون نقش']]
-
-export function AdminUsers() {
-  const nav = useNavigate()
-  const [params, setParams] = useSearchParams()
-  const f = params.get('f') || 'all'
-  const [q, setQ] = useState('')
-  const [users] = useLoad(() => rpc('admin_users'))
-  const shown = useMemo(() => (users ? filterUsers(users, f, q) : []), [users, f, q])
-  const count = k => (users ? filterUsers(users, k).length : 0)
-  return <Page title="همه حساب‌ها" back="/admin">
-    <input className="input" placeholder="جستجو: نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی حساب" style={{ marginBottom: '1rem' }} />
-    <div className="chips" data-no-drag>{USER_FILTERS.map(([k, l]) => <button key={k} className={'chip glass-lite pressable' + (f === k ? ' on' : '')}
-      onClick={() => setParams(k === 'all' ? {} : { f: k }, { replace: true })}>{l} {users ? fa(count(k)) : ''}</button>)}</div>
-    {users === null ? <Loading /> : !shown.length ? <Empty icon="manage_accounts" title="حسابی پیدا نشد" /> : <div className="section">
-      <div className="group glass-lite">{shown.map(u => {
-        const roles = rolesOf(u)
-        return <Row key={u.id} icon={roles.includes('admin') ? 'admin_panel_settings' : roles.includes('coach') || roles.includes('coach_off') ? 'badge' : roles.includes('student') ? 'person' : 'person_remove'}
-          tone={roles.includes('none') ? 'orange' : roles.includes('admin') ? 'red' : ''} title={nameOf(u)}
-          sub={`${roles.map(r => ROLE_LABEL[r]).join('، ')}، آخرین ورود ${ago(u.last_sign_in_at)}`} onClick={() => nav('/admin/u/' + u.id)} />
-      })}</div>
-    </div>}
-  </Page>
-}
+/* ---------- one person: who they are, what they may do; a coach's students too ---------- */
 
 export function AdminUser() {
   const { id } = useParams()
@@ -385,13 +282,21 @@ export function AdminUser() {
   const me = useMe()
   const [sheet, setSheet] = useState(null)
   const [invite, setInvite] = useState(null)
-  const [u, reload] = useLoad(() => rpc('admin_users').then(us => us.find(x => x.id === id) || null), [id])
-  if (u === null) return <Page back="/admin/users"><Loading /></Page>
-  if (!u) return <Page back="/admin/users"><Empty icon="manage_accounts" title="این حساب پیدا نشد">ممکن است حذف شده باشد.</Empty></Page>
+  const [data, reload] = useLoad(async () => {
+    const [users, students] = await Promise.all([rpc('admin_users'),
+      must(supabase.from('students').select('id, full_name, active, user_id').eq('coach_id', id).order('full_name'))])
+    return { u: users.find(x => x.id === id) || null, students }
+  }, [id])
+  const back = '/admin/people'
+  if (data === null) return <Page back={back}><Loading /></Page>
+  if (!data?.u) return <Page back={back}><Empty icon="manage_accounts" title="این حساب پیدا نشد">ممکن است حذف شده باشد.</Empty></Page>
+  const { u, students } = data
   const self = u.id === me.session.user.id
+  const coach = u.coach_active != null
   const roles = rolesOf(u)
+  const name = nameOf(u)
   const run = (fn, ok) => async () => { try { await fn(); if (ok) toast(ok, 'success'); reload() } catch (e) { toast(adminError(e), 'error') } }
-  return <Page title={nameOf(u)} back="/admin/users">
+  return <Page title={name} back={back}>
     <section className="card glass-lite">
       <div className="hstack wrap" style={{ marginBottom: '0.75rem' }}>{roles.map(r => <span key={r} className={'pill ' + (r === 'none' || r === 'coach_off' ? 'bad' : 'ok')}>{ROLE_LABEL[r]}</span>)}</div>
       <div className="kv"><span>شماره</span><b className="latin">{faPhone(u.phone) || '—'}</b></div>
@@ -401,32 +306,51 @@ export function AdminUser() {
       {u.student_id && <div className="kv"><span>مربی</span><b>{u.student_coach?.trim() || '—'}</b></div>}
     </section>
 
-    {(u.coach_active != null || u.student_id) && <div className="section"><div className="group glass-lite">
-      {u.coach_active != null && <Row icon="badge" title="صفحه مربی" sub={`${fa(u.coach_students)} شاگرد`} onClick={() => nav('/admin/c/' + u.id)} />}
-      {u.student_id && <Row icon="person" tone="blue" title="صفحه شاگرد" sub="برنامه، پرونده، پیشرفت" onClick={() => nav('/s/' + u.student_id)} />}
+    {u.student_id && <div className="section"><div className="group glass-lite">
+      <Row icon="person" tone="blue" title="صفحه شاگرد" sub="برنامه، پیشرفت، پرونده" onClick={() => nav('/s/' + u.student_id)} />
     </div></div>}
+
+    {coach && <div className="section">
+      <div className="section-title">{fa(students.length)} شاگرد</div>
+      {!students.length ? <div className="group glass-lite"><div className="row"><div className="content sub">این مربی هنوز شاگردی ندارد.</div></div></div>
+        : <div className="group glass-lite">{students.map(s => <Row key={s.id} icon="person" tone={s.active && s.user_id ? '' : 'gray'} title={s.full_name}
+          sub={!s.active ? 'دسترسی بسته' : s.user_id ? 'ثبت‌نام کرده' : 'هنوز ثبت‌نام نکرده'} onClick={() => nav('/s/' + s.id)} />)}</div>}
+      {students.length > 0 && <button className="btn glass interactive block mt" onClick={() => setSheet('moveAll')}><Icon name="swap_horiz" />انتقال همه به مربی دیگر</button>}
+    </div>}
 
     <div className="section">
       <div className="section-title">دسترسی‌ها</div>
       <div className="group glass-lite">
-        {u.coach_active == null && u.phone && <Row icon="badge" title="مربی کردن" sub="می‌تواند شاگرد اضافه کند و برنامه بنویسد" onClick={run(() => rpc('admin_grant_coach', { p_phone: u.phone }), 'مربی شد')} />}
-        {u.coach_active === true && <Row icon="block" tone="red" title="بستن دسترسی مربی" onClick={() => setSheet('off')} />}
-        {u.coach_active === false && <Row icon="play_arrow" title="باز کردن دسترسی مربی" onClick={run(() => rpc('admin_set_coach_active', { p_coach: u.id, p_active: true }), 'دسترسی باز شد')} />}
+        {coach && <Row icon="edit_note" title="نام مربی" sub={u.coach_name?.trim() || 'بدون نام'} onClick={() => setSheet('name')} />}
+        {!coach && u.phone && <Row icon="badge" title="مربی کردن" sub="می‌تواند شاگرد اضافه کند و برنامه بنویسد" onClick={run(() => rpc('admin_grant_coach', { p_phone: u.phone }), 'مربی شد')} />}
+        {coach && !self && (u.coach_active
+          ? <Row icon="block" tone="red" title="بستن دسترسی مربی" sub="شاگردها و برنامه‌ها می‌مانند و شاگردها به تمرین ادامه می‌دهند" onClick={() => setSheet('off')} />
+          : <Row icon="play_arrow" title="باز کردن دسترسی مربی" onClick={run(() => rpc('admin_set_coach_active', { p_coach: u.id, p_active: true }), 'دسترسی باز شد')} />)}
+        {coach && !self && <Row icon="person_remove" tone="red" title="حذف نقش مربی" sub={students.length ? 'اول شاگردها را منتقل کنید' : 'حساب می‌ماند، فقط مربی نیست'}
+          disabled={students.length > 0} onClick={students.length ? undefined : () => setSheet('remove')} />}
         {u.phone && !self && (u.is_admin
           ? <Row icon="admin_panel_settings" tone="red" title="برداشتن از مدیرها" onClick={run(() => rpc('admin_set_admin', { p_phone: u.phone, p_on: false }), 'از مدیرها برداشته شد')} />
           : <Row icon="admin_panel_settings" tone="orange" title="مدیر کردن" sub="دسترسی کامل به همه سیستم" onClick={() => setSheet('admin')} />)}
-        {u.student_id && !self && u.coach_active == null && !u.is_admin && <Row icon="lock_reset" tone="blue" title="بازنشانی ورود" sub="برای رمز فراموش‌شده؛ کد دعوت تازه می‌گیرد" onClick={() => setSheet('reset')} />}
-        {self && <div className="row"><div className="content sub">دسترسی‌های حساب خودتان را از اینجا نمی‌شود تغییر داد.</div></div>}
+        {u.student_id && !self && !coach && !u.is_admin && <Row icon="lock_reset" tone="blue" title="بازنشانی ورود" sub="برای رمز فراموش‌شده؛ کد دعوت تازه می‌گیرد" onClick={() => setSheet('reset')} />}
+        {self && <div className="row"><div className="content sub">بقیه دسترسی‌های حساب خودتان را از اینجا نمی‌شود تغییر داد.</div></div>}
       </div>
     </div>
 
     {!self && <button className="btn glass interactive danger block" disabled={u.coach_students > 0} onClick={() => setSheet('delete')}><Icon name="delete" />حذف حساب</button>}
     {!self && u.coach_students > 0 && <div className="section-footer">برای حذف این حساب، اول شاگردهای این مربی را منتقل کنید.</div>}
 
-    {sheet === 'off' && <Confirm title="دسترسی مربی بسته شود؟" okText="بستن دسترسی" danger onClose={() => setSheet(null)}
-      text="شاگردها، برنامه‌ها و سوابق دست نمی‌خورند و هر وقت بخواهید باز می‌شود."
+    {sheet === 'name' && <NameSheet initial={u.coach_name} onClose={() => setSheet(null)}
+      onSave={async n => { await rpc('admin_rename_coach', { p_coach: u.id, p_name: n }); reload() }} />}
+    {sheet === 'off' && <Confirm title={`دسترسی ${name} بسته شود؟`} okText="بستن دسترسی" danger onClose={() => setSheet(null)}
+      text="دیگر نمی‌تواند وارد پنل مربی شود. شاگردها، برنامه‌ها و سوابق دست نمی‌خورند و هر وقت بخواهید باز می‌شود."
       onOk={run(() => rpc('admin_set_coach_active', { p_coach: u.id, p_active: false }), 'دسترسی بسته شد')} />}
-    {sheet === 'admin' && <Confirm title={`${nameOf(u)} مدیر شود؟`} okText="مدیر شود" onClose={() => setSheet(null)}
+    {sheet === 'remove' && <Confirm title="نقش مربی حذف شود؟" okText="حذف نقش مربی" danger onClose={() => setSheet(null)}
+      text="حساب باقی می‌ماند ولی دیگر مربی نیست. هر وقت بخواهید می‌توانید دوباره مربی‌اش کنید."
+      onOk={run(() => rpc('admin_remove_coach', { p_coach: u.id }), 'نقش مربی حذف شد')} />}
+    {sheet === 'moveAll' && <CoachPicker title="انتقال همه شاگردها" exclude={u.id} onClose={() => setSheet(null)}
+      text={`${fa(students.length)} شاگرد با برنامه و سوابقشان به این مربی منتقل می‌شوند.`}
+      onPick={async c => { for (const s of students) await rpc('admin_move_student', { p_student: s.id, p_coach: c.id }); toast(`به ${nameOf(c)} منتقل شدند`, 'success'); reload() }} />}
+    {sheet === 'admin' && <Confirm title={`${name} مدیر شود؟`} okText="مدیر شود" onClose={() => setSheet(null)}
       text="مدیر همه حساب‌ها، شاگردها، برنامه‌ها و فعالیت‌ها را می‌بیند و می‌تواند هر دسترسی را تغییر دهد."
       onOk={run(() => rpc('admin_set_admin', { p_phone: u.phone, p_on: true }), 'مدیر شد')} />}
     {sheet === 'reset' && <Confirm title="ورود بازنشانی شود؟" okText="بازنشانی ورود" onClose={() => setSheet(null)}
@@ -439,8 +363,8 @@ export function AdminUser() {
       }} />}
     {sheet === 'delete' && <Confirm title="حساب حذف شود؟" okText="حذف حساب" danger onClose={() => setSheet(null)}
       text={u.student_id ? 'حساب ورود حذف می‌شود؛ پرونده شاگرد و سوابقش می‌ماند و با کد دعوت تازه می‌تواند دوباره ثبت‌نام کند.' : 'این حساب برای همیشه حذف می‌شود.'}
-      onOk={async () => { try { await rpc('admin_delete_user', { p_user: u.id }); toast('حساب حذف شد', 'success'); nav('/admin/users', { replace: true }) } catch (e) { toast(adminError(e), 'error') } }} />}
-    {invite && <Sheet title="کد دعوت تازه" onClose={() => { setInvite(null); nav('/admin/users', { replace: true }) }}><InviteCard student={invite} /></Sheet>}
+      onOk={async () => { try { await rpc('admin_delete_user', { p_user: u.id }); toast('حساب حذف شد', 'success'); nav(back, { replace: true }) } catch (e) { toast(adminError(e), 'error') } }} />}
+    {invite && <Sheet title="کد دعوت تازه" onClose={() => { setInvite(null); nav(back, { replace: true }) }}><InviteCard student={invite} /></Sheet>}
   </Page>
 }
 
