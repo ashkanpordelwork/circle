@@ -26,7 +26,7 @@ function NameSheet({ coach, onSaved, onClose }) {
       <p className="subhead secondary" style={{ marginTop: 0 }}>این نام در متن دعوتی که برای شاگرد می‌فرستید می‌آید.</p>
       <div className="field"><label htmlFor="coach-name">نام و نام خانوادگی</label>
         <input id="coach-name" className="input" value={name} maxLength={60} autoFocus onChange={e => setName(e.target.value)} placeholder="مثلاً اشکان پوردل" /></div>
-      <button className="btn glass interactive prominent block" disabled={busy}>{busy ? 'کمی صبر کن…' : 'ذخیره'}</button>
+      <button className="btn glass interactive prominent block" disabled={busy}>{busy ? 'کمی صبر کنید…' : 'ذخیره'}</button>
     </form>
   </Sheet>
 }

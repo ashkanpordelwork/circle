@@ -68,7 +68,7 @@ function Wizard({ mode, initial, programs, editingId, intakeDays, sources, writt
     <div className="float-bar no-tabbar"><div className="hstack">
       {step === 1 && <button className="btn glass interactive" onClick={() => setStep(0)}><Icon name="chevron_right" />قبلی</button>}
       <button className="btn glass interactive prominent grow" disabled={busy} onClick={() => (step === 0 ? setStep(1) : finish())}>
-        {step === 0 ? 'ادامه' : busy ? 'کمی صبر کن…' : mode === 'new' ? 'ساخت برنامه' : 'ذخیره'}{step === 0 && <Icon name="chevron_left" />}</button>
+        {step === 0 ? 'ادامه' : busy ? 'کمی صبر کنید…' : mode === 'new' ? 'ساخت برنامه' : 'ذخیره'}{step === 0 && <Icon name="chevron_left" />}</button>
     </div></div>
     {confirmDelete && <Confirm title="این برنامه حذف شود؟" danger okText="حذف برنامه" onClose={() => setConfirmDelete(false)}
       text="همه هفته‌ها و جلسه‌های آن پاک می‌شود. تمرین‌هایی که شاگرد ثبت کرده می‌ماند." onOk={onDelete} />}
@@ -135,7 +135,7 @@ function SessionScreen({ draft, setDraft, week, session, onGo, onClose }) {
     {sheet === 'copy' && <WeeksSheet title="کپی به هفته‌های دیگر" weeks={draft.program.weeks} exclude={week} onClose={() => setSheet(null)}
       text={`${sessionLabel(session)} این هفته جای ${sessionLabel(session)} هفته‌های انتخابی را می‌گیرد.`}
       onOk={ws => setDraft(d => copySession(d, week, session, ws))} />}
-    {sheet === 'clear' && <Confirm title={`${sessionLabel(session)} خالی شود؟`} danger okText="خالی کن" onClose={() => setSheet(null)}
+    {sheet === 'clear' && <Confirm title={`${sessionLabel(session)} خالی شود؟`} danger okText="خالی کردن" onClose={() => setSheet(null)}
       onOk={() => edit(() => [])} />}
   </Screen>
 }
@@ -193,9 +193,9 @@ function ProgramEditor({ student, draft, setDraft, status, onRetry, today, onSet
     </div>}
 
     {session && <SessionScreen draft={draft} setDraft={setDraft} week={w} session={session} onGo={setSession} onClose={() => setSession(null)} />}
-    {sheet === 'replace' && <Confirm title={`جایگزینی ${weekLabel(w + 1)}؟`} okText="جایگزین کن" onClose={() => setSheet(null)}
+    {sheet === 'replace' && <Confirm title={`جایگزینی ${weekLabel(w + 1)}؟`} okText="جایگزینی" onClose={() => setSheet(null)}
       text={`${weekLabel(w + 1)} الان ${fa(nextFilled)} جلسه نوشته‌شده دارد که با جلسه‌های این هفته عوض می‌شود.`} onOk={copyNext} />}
-    {sheet === 'all' && <Confirm title="کپی به همه هفته‌های بعد؟" okText="کپی کن" onClose={() => setSheet(null)}
+    {sheet === 'all' && <Confirm title="کپی به همه هفته‌های بعد؟" okText="کپی" onClose={() => setSheet(null)}
       text={`هفته‌های ${fa(w + 1)} تا ${fa(p.weeks)} مثل همین هفته می‌شوند و نوشته‌های قبلی‌شان جایگزین می‌شود.`}
       onOk={() => setDraft(d => copyWeek(d, w, Array.from({ length: p.weeks - w }, (_, k) => w + 1 + k)))} />}
   </>

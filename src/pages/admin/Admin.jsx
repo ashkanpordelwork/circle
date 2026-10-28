@@ -142,7 +142,7 @@ function PhoneForm({ text, okText, phone, setPhone, busy, setBusy, onSubmit }) {
     {text && <p className="subhead secondary" style={{ marginTop: 0 }}>{text}</p>}
     <div className="field"><label htmlFor="ph">شماره موبایل</label>
       <input id="ph" className={'input ltr' + (bad ? ' bad' : '')} inputMode="tel" placeholder="0912 123 4567" value={phone} autoFocus onChange={e => setPhone(e.target.value)} /></div>
-    <button className="btn glass interactive prominent block" disabled={busy}>{busy ? 'کمی صبر کن…' : okText}</button>
+    <button className="btn glass interactive prominent block" disabled={busy}>{busy ? 'کمی صبر کنید…' : okText}</button>
   </form>
 }
 
@@ -312,7 +312,7 @@ function AddStudentForm({ coaches, coach, setCoach, onAdded }) {
         <button key={c.id} type="button" className={'chip glass-lite pressable' + (coach === c.id ? ' on' : '')} onClick={() => setCoach(c.id)}>{nameOf(c)}</button>)}</div></div>
     <div className="field"><label htmlFor="sn">نام</label><input id="sn" className="input" value={name} maxLength={60} onChange={e => setName(e.target.value)} /></div>
     <div className="field"><label htmlFor="sp">شماره موبایل</label><input id="sp" className="input ltr" inputMode="tel" placeholder="0912 123 4567" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-    <button className="btn glass interactive prominent block" disabled={busy}><Icon name="person_add" />{busy ? 'کمی صبر کن…' : 'افزودن شاگرد'}</button>
+    <button className="btn glass interactive prominent block" disabled={busy}><Icon name="person_add" />{busy ? 'کمی صبر کنید…' : 'افزودن شاگرد'}</button>
   </form>
 }
 
@@ -473,6 +473,6 @@ export function AdminActivity() {
         <div className="section-title">{d.label}</div>
         <div className="group glass-lite">{d.items.map((e, i) => <ActivityRow key={i} ev={e} names={names} />)}</div>
       </div>)}
-    {events && more && <button className="btn glass interactive block" disabled={busy} onClick={() => page(events[events.length - 1]?.at)}>{busy ? 'کمی صبر کن…' : 'قدیمی‌ترها'}</button>}
+    {events && more && <button className="btn glass interactive block" disabled={busy} onClick={() => page(events[events.length - 1]?.at)}>{busy ? 'کمی صبر کنید…' : 'قدیمی‌ترها'}</button>}
   </Page>
 }

@@ -26,7 +26,7 @@ export default function LogWorkout() {
       try {
         await loadExercises()   // equipment decides whether a set needs a weight
         const r = (await loadPlan()).find(x => x.id === routineId)
-        if (!r) { toast('این برنامه پیدا نشد', 'error'); return nav('/') }
+        if (!r) { toast('این جلسه پیدا نشد', 'error'); return nav('/') }
         const last = await must(supabase.from('workouts').select('id').eq('student_id', me.student.id).eq('routine_id', routineId).order('date', { ascending: false }).limit(1))
         const lastSets = last.length ? await must(supabase.from('workout_sets').select('*').eq('workout_id', last[0].id)) : []
         setRoutine(r); setLog(blankLog(r, lastSets))
@@ -64,7 +64,7 @@ export default function LogWorkout() {
         <button className="row pressable" style={{ padding: 0, marginBottom: '0.75rem' }} onClick={() => setInfo(ex.exercise_id)}>
           <Thumb id={ex.exercise_id} />
           <div className="content"><ExName id={ex.exercise_id} style={{ fontWeight: 650 }} />
-            <div className="sub">برنامه: {fmtTarget(plan)}</div>
+            <div className="sub">مربی گفته: {fmtTarget(plan)}</div>
             {plan.tempo && <div className="sub tempo-line"><Icon name="timer" />{tempoWords(plan.tempo)}</div>}
             {plan.note && <div className="sub">{plan.note}</div>}</div>
           <Disclosure />

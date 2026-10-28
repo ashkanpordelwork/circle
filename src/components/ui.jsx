@@ -158,6 +158,9 @@ export function errorText(e) {
   if (/rate limit|too many/i.test(m)) return 'تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کن.'
   if (/Signups not allowed/i.test(m)) return 'ثبت‌نام در Supabase بسته است (Allow new users to sign up).'
   if (e?.code === '42501' || /row-level security|permission denied/.test(m)) return 'اجازه این کار را ندارید.'
-  if (/Failed to fetch|NetworkError|Load failed/.test(m)) return 'اتصال به اینترنت برقرار نیست.'
-  return m || 'خطایی رخ داد.'
+  if (/Failed to fetch|NetworkError|Load failed/.test(m)) return 'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره امتحان کنید.'
+  // Our own messages are Persian; a raw technical one (English) is for the console, not the person.
+  if (/[\u0600-\u06FF]/.test(m)) return m
+  if (m) console.error(e)
+  return 'مشکلی پیش آمد؛ دوباره امتحان کنید.'
 }

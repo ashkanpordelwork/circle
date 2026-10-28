@@ -47,5 +47,5 @@ export function useAutosave(value, keyOf, save, delay = 700) {
 
 export function SaveState({ status, onRetry }) {
   return <span className={'save-state ' + status}>{status === 'saved' ? 'ذخیره شد'
-    : status === 'error' ? <button className="btn plain small pressable" onClick={onRetry}>ذخیره نشد؛ دوباره</button> : 'در حال ذخیره…'}</span>
+    : status === 'error' ? <button className="btn plain small pressable" onClick={onRetry}>ذخیره نشد؛ دوباره امتحان کنید</button> : 'در حال ذخیره…'}</span>
 }
