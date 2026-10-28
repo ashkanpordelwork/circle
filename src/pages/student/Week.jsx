@@ -13,7 +13,7 @@ const fa = n => Number(n).toLocaleString('fa-IR')
 // One session with its exercises; tapping an exercise shows how it is done.
 function SessionCard({ r, title, onInfo }) {
   const nav = useNavigate()
-  return <div className="group glass-lite" style={{ marginBottom: '0.5rem' }}>
+  return <div className="group glass-lite" style={{ marginBottom: '1rem' }}>
     <div className="row with-leading">
       <div className="tile-icon"><Icon name="fitness_center" /></div>
       <div className="content"><div className="title-text">{title}</div><div className="sub">{fa(r.items.length)} حرکت</div></div>

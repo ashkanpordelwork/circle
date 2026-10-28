@@ -59,7 +59,7 @@ export default function CoachAccount() {
       {/* A small edit icon, so the name and number keep the card's width. */}
       <button className="icon-btn glass interactive" onClick={() => setEditing(true)} aria-label={name ? 'ویرایش نام' : 'افزودن نام'}><Icon name="edit_note" /></button>
     </section>
-    {!name && <div className="section-footer" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
+    {!name && <div className="section-footer" style={{ marginTop: '-0.75rem', marginBottom: '2.5rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
 
     <div className="section">
       <div className="section-title">ابزارها</div>

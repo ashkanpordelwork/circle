@@ -338,7 +338,7 @@ export function AdminStudents() {
   }, [data, q, f])
   const add = <button className="icon-btn glass interactive" onClick={() => setAdding(true)} aria-label="شاگرد جدید"><Icon name="person_add" /></button>
   return <Page title="شاگردها" back="/admin" actions={add}>
-    <input className="input" placeholder="جستجو: نام، شماره یا مربی" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" style={{ marginBottom: '0.5rem' }} />
+    <input className="input" placeholder="جستجو: نام، شماره یا مربی" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی شاگرد" style={{ marginBottom: '1rem' }} />
     <div className="chips" data-no-drag>{STUDENT_FILTERS.map(([k, l]) => <button key={k} className={'chip glass-lite pressable' + (f === k ? ' on' : '')}
       onClick={() => setParams(k === 'all' ? {} : { f: k }, { replace: true })}>{l}</button>)}</div>
     {data === null ? <Loading /> : !data ? null : !shown.length ? <Empty icon="group" title="شاگردی پیدا نشد" /> : <div className="section">
@@ -364,7 +364,7 @@ export function AdminUsers() {
   const shown = useMemo(() => (users ? filterUsers(users, f, q) : []), [users, f, q])
   const count = k => (users ? filterUsers(users, k).length : 0)
   return <Page title="همه حساب‌ها" back="/admin">
-    <input className="input" placeholder="جستجو: نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی حساب" style={{ marginBottom: '0.5rem' }} />
+    <input className="input" placeholder="جستجو: نام یا شماره" value={q} onChange={e => setQ(e.target.value)} aria-label="جستجوی حساب" style={{ marginBottom: '1rem' }} />
     <div className="chips" data-no-drag>{USER_FILTERS.map(([k, l]) => <button key={k} className={'chip glass-lite pressable' + (f === k ? ' on' : '')}
       onClick={() => setParams(k === 'all' ? {} : { f: k }, { replace: true })}>{l} {users ? fa(count(k)) : ''}</button>)}</div>
     {users === null ? <Loading /> : !shown.length ? <Empty icon="manage_accounts" title="حسابی پیدا نشد" /> : <div className="section">
