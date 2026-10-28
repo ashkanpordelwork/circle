@@ -517,11 +517,16 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 /* ---------- screens: a full page pushed over the current one (Screen.jsx) ---------- */
 
 .screen { position: fixed; inset: 0; z-index: 35; overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
-  animation: screen-in 280ms cubic-bezier(0.2, 0.9, 0.25, 1); }
-.screen.leaving { animation: screen-out 180ms ease-in forwards; }
-@keyframes screen-in { from { transform: translateX(-24%); opacity: 0; } }
-@keyframes screen-out { to { transform: translateX(-24%); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .screen, .screen.leaving { animation-name: fade; } }
+  animation: push-in 420ms cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+.screen.leaving { animation: push-out 240ms cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+
+/* A pushed page slides in from the side, the iOS way — from the left, in right-to-left — and a
+   page with a back button can be swiped away from the right edge (EdgeBack in ui.jsx). */
+.page.enter { animation: push-in 420ms cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+@keyframes push-in { from { transform: translateX(-100%); box-shadow: 0 0 48px rgba(0, 0, 0, 0.6); } }
+@keyframes push-out { to { transform: translateX(-100%); box-shadow: 0 0 48px rgba(0, 0, 0, 0.6); } }
+.edge-back { position: fixed; top: 0; bottom: 0; inset-inline-start: 0; width: 0.75rem; z-index: 26; touch-action: none; }
+@media (prefers-reduced-motion: reduce) { .screen, .screen.leaving, .page.enter { animation-name: fade; } }
 @keyframes fade { from { opacity: 0; } }
 html.has-screen body { overflow: hidden; }
 .inline-info { padding: 0 1rem 1rem; }
@@ -606,6 +611,10 @@ html.has-screen body { overflow: hidden; }
   touch-action: none;
 }
 .sheet .sheet-head { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1rem 0.5rem; -webkit-user-select: none; user-select: none; }
+/* A sheet that can be pulled down shows its grabber, and its top bar is the handle. */
+.sheet .grabber { padding: 0.5rem 0 0; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.sheet .grabber::after { content: ''; width: 2.5rem; height: 0.25rem; border-radius: 1rem; background: var(--label-3); }
+.sheet.dismissible .sheet-head { padding-top: 0.5rem; cursor: grab; touch-action: none; }
 /* While a sheet is up, the page's floating buttons step aside so nothing sits over or beside it. */
 html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .sheet .sheet-head .title { flex: 1; font-size: 1.25rem; }

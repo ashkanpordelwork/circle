@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
+import { animateSpring, SPRING, velocityOf, edgeBackCommits, reducedMotion } from '../lib/spring.js'
 import Icon from './Icon.jsx'
 import Sheet, { useSheet } from './Sheet.jsx'
 import GlassDrop from './GlassDrop.jsx'
@@ -40,20 +41,68 @@ export function ToastProvider({ children }) {
 // no bar either unless the page has a button to put in it.
 // A page. With a title, it sits in the bar beside the back button, small, like a pushed screen;
 // pages reached from the tab bar have no title at all (the tab already names them).
-export function Page({ title, subtitle, back, actions, children, noTabbar, fill }) {
+// Swipe back from the screen's edge, as on an iPhone — which gives a web app installed on the home
+// screen no back gesture of its own. A thin strip along the edge the back button sits on catches
+// the finger; the page follows it 1:1 and, released, either goes back (by where the flick would
+// come to rest) or springs home. `move` is the element that travels: the page, or its Screen.
+function EdgeBack({ onBack }) {
+  const st = useRef(null)
+  const down = e => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    const el = e.currentTarget.closest('.screen') || e.currentTarget.closest('.page')
+    e.currentTarget.setPointerCapture(e.pointerId)
+    st.current?.anim?.stop()
+    st.current = { el, id: e.pointerId, x0: e.clientX, x: 0, w: el.getBoundingClientRect().width || innerWidth, samples: [{ t: e.timeStamp, y: 0 }] }
+  }
+  const put = (s, x) => { s.x = x; s.el.style.transform = x ? `translate3d(${-x}px, 0, 0)` : ''; s.el.style.boxShadow = x ? '0 0 48px rgba(0, 0, 0, 0.6)' : '' }
+  const move = e => {
+    const s = st.current
+    if (!s || s.id !== e.pointerId || s.anim) return
+    // Right-to-left: the edge is on the right and the page leaves toward the left.
+    const x = Math.max(0, s.x0 - e.clientX)
+    put(s, x)
+    s.samples.push({ t: e.timeStamp, y: x })
+    if (s.samples.length > 8) s.samples.shift()
+  }
+  const up = e => {
+    const s = st.current
+    if (!s || s.id !== e.pointerId || s.anim) return
+    s.samples.push({ t: e.timeStamp, y: s.x })
+    const v = velocityOf(s.samples)
+    const go = edgeBackCommits(s.x, v, s.w)
+    if (reducedMotion()) { put(s, 0); if (go) onBack(true); st.current = null; return }
+    s.anim = animateSpring({
+      from: s.x, to: go ? s.w : 0, velocity: v, params: SPRING.default,
+      onUpdate: x => put(s, x),
+      onDone: () => { st.current = null; if (go) onBack(true); else put(s, 0) }
+    })
+  }
+  return <div className="edge-back" aria-hidden="true" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
+}
+
+// A page. With a title, it sits in the bar beside the back button, small, like a pushed screen;
+// pages reached from the tab bar have no title at all (the tab already names them).
+// A page with a back button can be swiped away from the screen's edge, and slides in from the
+// side when it was pushed (not when it was gone back to). `inScreen`: a Screen moves it instead.
+export function Page({ title, subtitle, back, actions, children, noTabbar, fill, inScreen }) {
   const nav = useNavigate()
+  const navType = useNavigationType()
+  const loc = useLocation()
   const sentinel = useRef(null)
   const [scrolled, setScrolled] = useState(false)
+  const [entering] = useState(() => !!back && !inScreen && navType === 'PUSH' && !loc.state?.back)
   useEffect(() => {
     const io = new IntersectionObserver(([e]) => setScrolled(!e.isIntersecting), { rootMargin: '-8px 0px 0px 0px' })
     if (sentinel.current) io.observe(sentinel.current)
     return () => io.disconnect()
   }, [])
+  const goBack = swiped => (typeof back === 'function' ? back(swiped) : typeof back === 'string' ? nav(back, { state: { back: true } }) : nav(-1))
   const bar = title || back || actions
-  return <div className={'page' + (noTabbar ? ' no-tabbar' : '') + (fill ? ' fill' : '')}>
+  return <div className={'page' + (noTabbar ? ' no-tabbar' : '') + (fill ? ' fill' : '') + (entering ? ' enter' : '')}>
+    {back && <EdgeBack onBack={goBack} />}
     {!bar && <div className="top-space" />}
     {bar && <header className={'navbar' + (scrolled ? ' scrolled' : '')}>
-      {back && <button className="icon-btn glass interactive" onClick={() => (typeof back === 'function' ? back() : typeof back === 'string' ? nav(back) : nav(-1))} aria-label="بازگشت">
+      {back && <button className="icon-btn glass interactive" onClick={() => goBack(false)} aria-label="بازگشت">
         <Icon name="chevron_right" /></button>}
       <div className="nav-title">
         {title && <h1 className="nav-h">{title}</h1>}

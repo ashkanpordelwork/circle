@@ -45,15 +45,17 @@ export default function Screen({ title, subtitle, actions, onClose, children }) 
     }
   }, [])
 
-  const close = useCallback(() => {
+  // Swiped away from the edge, it is already off-screen: no second animation.
+  const close = useCallback(swiped => {
     if (leaving) return
+    if (swiped === true) { history.back(); return }
     setLeaving(true)
-    setTimeout(() => history.back(), 180)
+    setTimeout(() => history.back(), 240)
   }, [leaving])
 
   return createPortal(<Ctx.Provider value={{ close }}>
     <div className={'screen' + (leaving ? ' leaving' : '')} role="dialog" aria-modal="true" aria-label={title}>
-      <Page title={title} subtitle={subtitle} back={close} actions={actions} noTabbar>{children}</Page>
+      <Page title={title} subtitle={subtitle} back={close} actions={actions} noTabbar inScreen>{children}</Page>
     </div>
   </Ctx.Provider>, document.body)
 }

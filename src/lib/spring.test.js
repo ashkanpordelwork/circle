@@ -50,3 +50,15 @@ describe('glass droplet', () => {
     expect(stretchFor(100000)).toBe(1.25)
   })
 })
+
+import { edgeBackCommits } from './spring.js'
+describe('swipe back from the edge', () => {
+  it('goes back past half the width, or on a decided flick; a slow short pull springs home', () => {
+    const w = 390
+    expect(edgeBackCommits(220, 0, w)).toBe(true)      // dragged past half
+    expect(edgeBackCommits(60, 900, w)).toBe(true)     // a flick
+    expect(edgeBackCommits(60, 50, w)).toBe(false)     // a slow short pull
+    expect(edgeBackCommits(150, -400, w)).toBe(false)  // pulled out, then back toward the edge
+    expect(edgeBackCommits(10, 900, w)).toBe(false)    // a twitch at the edge
+  })
+})

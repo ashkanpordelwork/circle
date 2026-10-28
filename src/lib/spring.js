@@ -72,3 +72,8 @@ export function velocityOf(samples) {
   const dt = (end.t - start.t) / 1000
   return dt > 0 ? (end.y - start.y) / dt : 0
 }
+
+// Swiping back from the screen's edge: does a release at travel `x` (px, toward closing) with
+// velocity `v` (px/s, positive toward closing) go back, or spring home? By where the flick would
+// come to rest, as iOS does: past half the width, or simply a decided flick.
+export const edgeBackCommits = (x, v, width) => x > 24 && (x + project(v) > width / 2 || v > 600)

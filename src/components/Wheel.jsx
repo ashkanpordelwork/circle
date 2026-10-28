@@ -80,7 +80,7 @@ function PickField({ title, text, placeholder, initial, render, onDone, clearTex
     <button type="button" className={'input pick ' + className} onClick={() => setOpen(true)} aria-label={ariaLabel || title}>
       {text !== '' && text != null ? text : <span className="ph">{placeholder ?? '—'}</span>}
     </button>
-    {open && <Sheet title={title} onClose={() => setOpen(false)}>
+    {open && <Sheet title={title} onClose={() => setOpen(false)} dismissible={false}>
       <PickBody initial={initial} render={render} onDone={onDone} clearText={clearText} onClear={onClear} hint={hint} />
     </Sheet>}
   </>

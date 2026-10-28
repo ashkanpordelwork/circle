@@ -1,17 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { animateSpring, SPRING, reducedMotion } from '../lib/spring.js'
+import { animateSpring, SPRING, project, rubberband, velocityOf, reducedMotion } from '../lib/spring.js'
 import Icon from './Icon.jsx'
 
-// A bottom sheet for one quick choice: it rises on a critically damped spring and closes only with
-// its close button (or Escape). No drag-to-dismiss and no tap outside: a finger scrolling a wheel
-// inside it must never take the sheet down with it, and nothing is lost by a stray tap.
+// A bottom sheet for one quick choice, the iOS way: it rises on a critically damped spring, and a
+// pull down on its top bar (the grabber and title) follows the finger 1:1 — released, the flick's
+// velocity is projected forward, so a short fast flick closes it and a slow drag springs back.
+// A tap on the dimmed page behind closes it too.
+// `dismissible={false}` (the number wheels): only the close button closes it — a finger turning
+// a wheel must never take the sheet down with it. No grabber is shown then.
 // With reduced motion it cross-fades instead.
 
 const Ctx = createContext({ close: () => {}, inSheet: false })
 export const useSheet = () => useContext(Ctx)
 
-export default function Sheet({ onClose, title, children, label }) {
+export default function Sheet({ onClose, title, children, label, dismissible = true }) {
   // One sheet at a time: anything that needs a second layer belongs on a page (Screen.jsx).
   const parent = useContext(Ctx)
   if (import.meta.env.DEV && parent.inSheet) console.error(`Sheet «${title}» opened inside another sheet; use a Screen for the outer one.`)
@@ -34,7 +37,7 @@ export default function Sheet({ onClose, title, children, label }) {
     s.anim = animateSpring({ from: s.y, to, velocity, params, onUpdate: render, onDone: () => { s.anim = null; done?.() } })
   }, [render])
 
-  const close = useCallback(() => {
+  const close = useCallback((velocity = 0) => {
     const s = st.current
     if (s.closing) return
     s.closing = true
@@ -45,7 +48,7 @@ export default function Sheet({ onClose, title, children, label }) {
       setTimeout(finish, 180)
       return
     }
-    springTo(s.h + 40, 0, SPRING.default, finish)
+    springTo(s.h + 40, velocity, velocity > 0 ? SPRING.sheet : SPRING.default, finish)
   }, [onClose, springTo])
 
   // Rise from below on the first frame, from exactly off-screen.
@@ -76,10 +79,48 @@ export default function Sheet({ onClose, title, children, label }) {
     return () => document.removeEventListener('keydown', k)
   }, [close])
 
+  /* ---------- pulling it down by its top bar ---------- */
+
+  const onPointerDown = e => {
+    if (!dismissible || (e.button !== 0 && e.pointerType === 'mouse')) return
+    if (!e.target.closest('[data-drag-handle]') || e.target.closest('button, a, input')) return
+    e.preventDefault()   // no text selection, no native drag to cancel the gesture
+    panel.current.setPointerCapture(e.pointerId)
+    const s = st.current
+    // Take over from wherever the sheet is right now, even mid-animation.
+    const now = s.anim ? s.anim.stop().x : s.y
+    s.anim = null
+    s.closing = false
+    s.drag = { id: e.pointerId, originY: e.clientY, originSheet: now, samples: [{ t: e.timeStamp, y: e.clientY }] }
+  }
+  const onPointerMove = e => {
+    const s = st.current, d = s.drag
+    if (!d || d.id !== e.pointerId) return
+    let y = d.originSheet + (e.clientY - d.originY)
+    if (y < 0) y = rubberband(y, s.h)   // above its resting place it resists
+    render(y)
+    d.samples.push({ t: e.timeStamp, y: e.clientY })
+    if (d.samples.length > 8) d.samples.shift()
+  }
+  const onPointerUp = e => {
+    const s = st.current, d = s.drag
+    s.drag = null
+    if (!d) return
+    d.samples.push({ t: e.timeStamp, y: e.clientY })
+    const v = velocityOf(d.samples)
+    // Decide by where the flick would come to rest, not by where the finger let go.
+    if (s.y + project(v) > s.h * 0.5 || v > 1200) close(v)
+    else springTo(0, v, SPRING.sheet)
+  }
+  // The system took the gesture: settle back, without inventing a velocity.
+  const onPointerCancel = () => { const s = st.current; if (s.drag) { s.drag = null; springTo(0, 0, SPRING.default) } }
+
   return createPortal(<Ctx.Provider value={{ close, inSheet: true }}>
-    <div ref={scrim} className="scrim" />
-    <div ref={panel} className="sheet glass" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}>
-      {title !== undefined && <div className="sheet-head">
+    <div ref={scrim} className="scrim" onClick={dismissible ? () => close() : undefined} />
+    <div ref={panel} className={'sheet glass' + (dismissible ? ' dismissible' : '')} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}
+      onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
+      {dismissible && <div className="grabber" data-drag-handle aria-hidden="true" />}
+      {title !== undefined && <div className="sheet-head" data-drag-handle>
         <h2 className="title">{title}</h2>
         <button className="icon-btn glass interactive" onClick={() => close()} aria-label="بستن"><Icon name="close" /></button>
       </div>}
