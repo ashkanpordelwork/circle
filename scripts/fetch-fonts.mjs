@@ -14,8 +14,8 @@ export const ICONS = [
   'hourglass_top', 'how_to_reg', 'info', 'key', 'lock', 'lock_reset', 'login', 'logout',
   'manage_accounts', 'medical_information', 'monitor_weight', 'person', 'person_add', 'person_remove',
   'play_arrow', 'refresh', 'restaurant', 'search', 'settings', 'share', 'smartphone', 'sticky_note_2',
-  'swap_horiz', 'timer', 'today', 'trending_down', 'trending_up', 'visibility', 'visibility_off',
-  'warning'
+  'swap_horiz', 'swipe_right', 'timer', 'today', 'trending_down', 'trending_up', 'undo', 'visibility',
+  'visibility_off', 'warning'
 ]
 const sorted = [...ICONS].sort()
 if (sorted.join() !== ICONS.join()) throw new Error('ICONS must be sorted: ' + sorted.join(', '))

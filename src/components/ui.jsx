@@ -4,6 +4,7 @@ import { animateSpring, SPRING, velocityOf, edgeBackCommits, reducedMotion } fro
 import Icon from './Icon.jsx'
 import Sheet, { useSheet } from './Sheet.jsx'
 import GlassDrop from './GlassDrop.jsx'
+import { LogoLoader } from './Logo.jsx'
 
 /* ---------- feedback ---------- */
 
@@ -18,29 +19,25 @@ export const haptic = (ms = 10) => { try { navigator.vibrate?.(ms) } catch { /* 
 export function ToastProvider({ children }) {
   const [t, setT] = useState(null)
   const timer = useRef(0)
-  const show = useCallback((text, kind = 'info') => {
+  // action: { label, onClick } — e.g. «بازگرداندن» after a delete; the toast then stays longer.
+  const show = useCallback((text, kind = 'info', action) => {
     clearTimeout(timer.current)
-    setT({ text, kind, key: Date.now() })
+    setT({ text, kind, action, key: Date.now() })
     if (kind === 'success') haptic(12)
     if (kind === 'error') haptic([20, 60, 20])
-    timer.current = setTimeout(() => setT(null), 2800)
+    timer.current = setTimeout(() => setT(null), action ? 5000 : 2800)
   }, [])
   return <ToastCtx.Provider value={show}>
     {children}
     {t && <div key={t.key} className={'toast glass ' + t.kind} role={t.kind === 'error' ? 'alert' : 'status'}>
       <Icon name={TOAST_ICON[t.kind]} filled />{t.text}
+      {t.action && <button className="toast-action pressable" onClick={() => { clearTimeout(timer.current); setT(null); t.action.onClick() }}>{t.action.label}</button>}
     </div>}
   </ToastCtx.Provider>
 }
 
-/* ---------- navigation bar with a large title ---------- */
+/* ---------- pages ---------- */
 
-// The large title sits in the page; once it scrolls under the bar, the bar becomes a material and
-// shows the title small. Back, when there is one, sits at the start (the right, in RTL).
-// Without a title (the tab pages: the tab bar already names them) there is no heading at all, and
-// no bar either unless the page has a button to put in it.
-// A page. With a title, it sits in the bar beside the back button, small, like a pushed screen;
-// pages reached from the tab bar have no title at all (the tab already names them).
 // Swipe back from the screen's edge, as on an iPhone — which gives a web app installed on the home
 // screen no back gesture of its own. A thin strip along the edge the back button sits on catches
 // the finger; the page follows it 1:1 and, released, either goes back (by where the flick would
@@ -144,7 +141,8 @@ export function Confirm({ title, text, okText = 'تأیید', danger, onOk, onCl
   return <Sheet title={title} onClose={onClose}><ConfirmBody text={text} okText={okText} danger={danger} onOk={onOk} /></Sheet>
 }
 
-export const Loading = () => <div className="spinner" role="status" aria-label="در حال بارگذاری"><span /></div>
+// Loading is the logo's sunrise (Logo.jsx).
+export const Loading = () => <LogoLoader />
 
 export function Empty({ icon, title, children }) {
   return <div className="empty"><Icon name={icon} /><div className="headline">{title}</div><div className="subhead">{children}</div></div>

@@ -18,6 +18,7 @@ import Screen from '../../components/Screen.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import ItemRow from '../../components/ItemRow.jsx'
+import SwipeRow, { SwipeHint } from '../../components/SwipeRow.jsx'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
 import JalaliCalendar from '../../components/JalaliCalendar.jsx'
 
@@ -93,20 +94,29 @@ function WeeksBody({ text, weeks, exclude, onOk }) {
 }
 
 function SessionScreen({ draft, setDraft, week, session, onGo, onClose }) {
+  const toast = useToast()
   const [open, setOpen] = useState(null)
   const [picking, setPicking] = useState(false)
   const [sheet, setSheet] = useState(null)
   const s = weekSessions(draft, week)[session - 1]
   const per = draft.program.per_week
   const edit = fn => setDraft(d => setItems(d, week, session, fn))
+  // Deleting is easy to undo: the toast offers it back, in the same place.
+  const removeAt = i => {
+    const item = s.items[i]
+    edit(items => items.filter((_, k) => k !== i)); setOpen(null)
+    toast(`«${exerciseName(item.exercise_id)}» حذف شد`, 'info', { label: 'بازگرداندن', onClick: () => edit(items => [...items.slice(0, i), item, ...items.slice(i)]) })
+  }
   const [a, b] = weekRange(draft.program, week)
   return <Screen title={`${weekLabel(week)}، ${sessionLabel(session)}`} subtitle={fmtRange(a, b)} onClose={onClose}>
     {!s.items.length ? <Empty icon="fitness_center" title="هنوز حرکتی ندارد">حرکت‌های این جلسه را اضافه کنید؛ ست و تکرار هر کدام همان‌جا تنظیم می‌شود.</Empty>
-      : <div className="group glass-lite">{s.items.map((it, i) => <ItemRow key={i + it.exercise_id} item={it} index={i} count={s.items.length}
-        open={open === i} onToggle={() => setOpen(o => (o === i ? null : i))}
-        onChange={next => edit(items => items.map((x, k) => (k === i ? next : x)))}
-        onMove={dir => { edit(items => { const c = [...items]; const [x] = c.splice(i, 1); c.splice(i + dir, 0, x); return c }); setOpen(i + dir) }}
-        onRemove={() => { edit(items => items.filter((_, k) => k !== i)); setOpen(null) }} />)}</div>}
+      : <><div className="group glass-lite">{s.items.map((it, i) => <SwipeRow key={i + it.exercise_id} hint={i === 0} onDelete={() => removeAt(i)}>
+        <ItemRow item={it} index={i} count={s.items.length}
+          open={open === i} onToggle={() => setOpen(o => (o === i ? null : i))}
+          onChange={next => edit(items => items.map((x, k) => (k === i ? next : x)))}
+          onMove={dir => { edit(items => { const c = [...items]; const [x] = c.splice(i, 1); c.splice(i + dir, 0, x); return c }); setOpen(i + dir) }}
+          onRemove={() => removeAt(i)} />
+      </SwipeRow>)}</div><SwipeHint /></>}
     <button className="btn glass interactive prominent block mt" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
     {s.items.length > 0 && <div className="section mt"><div className="group glass-lite">
       {draft.program.weeks > 1 && <button className="row pressable with-leading" onClick={() => setSheet('copy')}>
