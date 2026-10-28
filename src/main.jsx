@@ -8,7 +8,7 @@ import { installGlass } from './lib/glass.js'
 
 // iOS Safari only applies :active while a touch listener exists; press feedback depends on it.
 document.addEventListener('touchstart', () => {}, { passive: true })
-// Liquid Glass reacts to touch: swell, wobble back, a sheen under the finger.
+// Controls sink a little the moment they are pressed (lib/glass.js).
 installGlass()
 
 createRoot(document.getElementById('root')).render(

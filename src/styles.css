@@ -1,23 +1,18 @@
-/* Circle — Liquid Glass.
+/* Circle.
  *
- * Two sets of design notes meet here.
- *   Apple's fluid-interface principles: spring motion that starts from where things are and can be
- *   interrupted, feedback on press, type that follows the user's text size, gentler equivalents
- *   for reduced motion / transparency / higher contrast.
- *   Liquid Glass (iOS 26): a material that blurs what is behind it, picks up its colour, catches
- *   light on its rim, and reacts to touch. Translated for the web:
- *     .glass               the material — backdrop blur + saturation, a specular sheen, a rim
- *                          that catches light, a soft shadow
- *     .glass.interactive   reacts to touch: swells on a spring and wobbles back, and the sheen
- *                          follows the finger (lib/glass.js)
- *     .glass.prominent     tinted glass for the one main action (glassProminent)
- *     .glass-lite          the same look without a live blur, for content cards in long lists
- *                          (the guide: don't put real glass on every view)
- *   Real blur is kept for floating chrome that content scrolls under: tab bar, navigation
- *   buttons, sheets, toasts, the rest timer, the segmented control and the save bar.
+ * Calm and iOS-like: graphite surfaces a step apart, warm greys, and one lime kept for what can be
+ * acted on — the main button, a choice, progress. No glow, no gradient, no light-catching rims:
+ * depth comes from a surface step and a hairline. Colour beyond the lime carries meaning only
+ * (red for a warning or something late, orange for attention).
  *
- * Glass needs something behind it to be glass, so the page has an ambient colour field instead
- * of a flat background ("opaque backgrounds behind glass defeat the translucency").
+ * Motion follows Apple's fluid-interface notes: springs that start from where things are and can
+ * be interrupted, feedback the moment a finger lands (a press sinks a little, lib/glass.js),
+ * gentler equivalents for reduced motion / transparency / higher contrast.
+ *
+ *   .glass               a filled control (button, icon button); translucent only where it floats
+ *   .glass.prominent     the one main action, solid lime
+ *   .glass-lite          cards and grouped lists: a surface with a hairline edge
+ *   Blur is kept for floating chrome that content scrolls under: the tab bar and sheets.
  *
  * Right-to-left throughout: only logical properties, directional icons mirror.
  */
@@ -28,51 +23,36 @@
 
 :root {
   color-scheme: dark;
-  --bg: #0a0a0b;
-  --label: #f6f6f7;
-  --label-2: #a1a1a8;
-  --label-3: #5f5f66;
-  --separator: rgba(255, 255, 255, 0.07);
-  --fill: rgba(255, 255, 255, 0.055);
-  --fill-strong: rgba(255, 255, 255, 0.1);
-  /* Near-black paper, graphite cards with a hairline edge, one lime accent.
-     --accent for text and icons, --lime for filled surfaces with near-black text on top. */
-  --accent: #b6f24c;
-  --accent-bright: #ccff70;
-  --accent-soft: rgba(182, 242, 76, 0.12);
-  --on-accent: #0c1204;
-  --lime: #b6f24c;
-  --lime-hi: #ccff70;
-  --lime-glow: rgba(182, 242, 76, 0.28);
-  --surface: #161618;
-  --surface-2: #1d1d20;
-  --hairline: rgba(255, 255, 255, 0.07);
-  --glass-top: rgba(255, 255, 255, 0.035);
-  --red: #ff5d52;
-  --red-soft: rgba(255, 93, 82, 0.14);
-  --orange: #ff9f2e;
-  --blue: #5aa9ff;
+  /* Graphite surfaces a step apart, warm greys for text, and one lime, toned down, kept for
+     what can be acted on (the main button, a choice, progress). Depth comes from a surface step
+     and a hairline, never from a glow or a gradient. */
+  --bg: #0d0d0c;
+  --surface: #1a1a18;
+  --surface-2: #252523;
+  --lite-fill: #1a1a18;
+  --hairline: rgba(255, 255, 255, 0.06);
+  --separator: rgba(255, 255, 255, 0.08);
+  --fill: rgba(255, 255, 255, 0.06);
+  --fill-strong: rgba(255, 255, 255, 0.11);
+  --label: #f2f2ee;
+  --label-2: #a3a39c;
+  --label-3: #6a6a64;
+  --accent: #c8dd84;
+  --accent-soft: rgba(200, 221, 132, 0.12);
+  --on-accent: #171b0c;
+  --lime: #c8dd84;
+  --red: #f0675e;
+  --red-soft: rgba(240, 103, 94, 0.12);
+  --orange: #e9a04c;
+  --blue: #7fa8d9;
 
-  /* the material */
-  --glass-fill: rgba(26, 26, 29, 0.62);
-  --glass-fill-strong: rgba(22, 22, 25, 0.86);
-  --glass-blur: 18px;
-  --glass-sat: 190%;
-  --glass-rim-hi: rgba(255, 255, 255, 0.13);
-  --glass-rim-lo: rgba(255, 255, 255, 0.045);
-  --glass-specular: rgba(255, 255, 255, 0.07);
-  --glass-shade: rgba(0, 0, 0, 0.4);
-  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.7);
-  --sheen: rgba(255, 255, 255, 0.07);
-  --lite-fill: #151517;
-  --scrim: rgba(0, 0, 0, 0.62);
-
-  /* Only a faint lime haze for the glass to pick up. */
-  --ambient-1: rgba(132, 204, 22, 0.11);
-  --ambient-2: rgba(101, 163, 13, 0.06);
-  --ambient-3: rgba(132, 204, 22, 0.07);
-  --ambient-4: rgba(0, 0, 0, 0);
+  /* Floating layers (tab bar, sheets) are the only translucent ones. */
+  --glass-fill: #252523;
+  --glass-fill-strong: rgba(30, 30, 28, 0.92);
+  --glass-blur: 24px;
+  --glass-sat: 160%;
+  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(0, 0, 0, 0.55);
 
   /* The 4/8 grid: every size, gap and radius is a multiple of 4px (8px wherever it can be).
      Corners come from five steps and follow the element's role, never its mood:
@@ -109,20 +89,6 @@ body {
   -webkit-tap-highlight-color: transparent;
   text-rendering: optimizeLegibility;
 }
-/* The ambient colour field the glass refracts. Fixed, so it does not move with content. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: -10%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38% 30% at 88% 6%, var(--ambient-1), transparent 70%),
-    radial-gradient(34% 28% at 6% 22%, var(--ambient-2), transparent 70%),
-    radial-gradient(40% 34% at 70% 62%, var(--ambient-4), transparent 72%),
-    radial-gradient(44% 36% at 18% 96%, var(--ambient-3), transparent 70%),
-    var(--bg);
-}
 button, input, textarea, select { font: inherit; color: inherit; }
 button { touch-action: manipulation; }
 a { color: var(--accent); }
@@ -136,8 +102,8 @@ a { color: var(--accent); }
 /* ---------- type scale ---------- */
 
 .title-lg { font-size: 2rem; line-height: 2.75rem; font-weight: 700; margin: 0; }
-.title { font-size: 1.5rem; line-height: 2.25rem; font-weight: 750; margin: 0; }
-.headline { font-size: 1rem; line-height: 1.75rem; font-weight: 650; }
+.title { font-size: 1.5rem; line-height: 2.25rem; font-weight: 700; margin: 0; }
+.headline { font-size: 1rem; line-height: 1.75rem; font-weight: 600; }
 .subhead { font-size: 1rem; line-height: 1.75rem; }
 .footnote { font-size: 0.875rem; line-height: 1.5rem; color: var(--label-2); }
 .caption { font-size: 0.75rem; line-height: 1.25rem; color: var(--label-2); }
@@ -167,67 +133,14 @@ a { color: var(--accent); }
    The material
    ========================================================================== */
 
-.glass {
-  position: relative;
-  isolation: isolate;
-  background: var(--glass-tint, var(--glass-fill));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  box-shadow:
-    inset 0 1px 0.5px var(--glass-specular),         /* light on the top edge */
-    inset 0 -1px 1px var(--glass-shade),             /* weight at the bottom */
-    var(--glass-shadow);
-}
-/* The sheen: a soft light that sits where the finger is (lib/glass.js sets --gx/--gy). */
-.glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(140px circle at var(--gx, 30%) var(--gy, -10%), var(--sheen), transparent 70%),
-    linear-gradient(180deg, var(--glass-top), transparent 45%);
-  opacity: var(--sheen-opacity, 0.9);
-  transition: opacity 240ms ease;
-}
-/* The rim: a thin edge that catches light at the top-start and the bottom-end, like a lens. */
-.glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  padding: 1px;
-  background: linear-gradient(150deg, var(--glass-rim-hi), var(--glass-rim-lo) 38%, var(--glass-rim-lo) 62%, var(--glass-rim-hi));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-}
+.glass { position: relative; background: var(--glass-tint, var(--glass-fill)); }
 .glass.interactive { cursor: pointer; }
-.glass.interactive.pressed { --sheen-opacity: 1; --glass-specular: rgba(255, 255, 255, 0.35); }
+/* The one main action on a screen: solid lime, near-black text. */
+.glass.prominent { --glass-tint: var(--lime); color: var(--on-accent); }
+.glass.danger { --glass-tint: var(--red-soft); color: var(--red); }
 
-/* The one main action on a screen: solid lime, near-black text, a soft lime glow. */
-.glass.prominent {
-  --glass-tint: linear-gradient(180deg, var(--lime-hi) 0%, var(--lime) 100%);
-  --glass-rim-hi: rgba(255, 255, 255, 0.55);
-  --glass-rim-lo: rgba(255, 255, 255, 0.08);
-  --glass-specular: rgba(255, 255, 255, 0.5);
-  --sheen: rgba(255, 255, 255, 0.4);
-  color: var(--on-accent);
-  box-shadow: inset 0 1px 0.5px var(--glass-specular), inset 0 -1px 1px rgba(0, 0, 0, 0.12), 0 8px 24px var(--lime-glow);
-}
-.glass.danger { --glass-tint: color-mix(in srgb, var(--red) 14%, var(--glass-fill)); color: var(--red); }
-
-/* Content cards: the glass look over the ambient field, without a live blur per card. */
-.glass-lite {
-  position: relative;
-  background: var(--lite-fill);
-  box-shadow:
-    inset 0 1px 0 var(--glass-specular),
-    inset 0 0 0 1px var(--hairline);
-}
+/* Content cards and lists: a surface one step up from the page, with a hairline edge. */
+.glass-lite { position: relative; background: var(--lite-fill); box-shadow: inset 0 0 0 1px var(--hairline); }
 
 /* ---------- layout ---------- */
 
@@ -291,7 +204,7 @@ a { color: var(--accent); }
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--accent);
-  font-weight: 650;
+  font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
 }
@@ -372,50 +285,29 @@ button.row, a.row { cursor: pointer; text-decoration: none; color: inherit; }
   display: grid;
   place-items: center;
   flex: none;
-  color: var(--tile, var(--accent));
-  background: color-mix(in srgb, var(--tile, var(--accent)) 13%, var(--surface-2));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile, var(--accent)) 22%, transparent);
+  /* Neutral: colour is kept for meaning (a warning, something late), not decoration. */
+  color: var(--tile, var(--label-2));
+  background: color-mix(in srgb, var(--tile, var(--label-2)) 12%, var(--surface-2));
 }
 .tile-icon .icon { font-size: 1.25rem; }
-.tile-icon.gray { --tile: var(--label-2); }
-.tile-icon.blue { --tile: var(--blue); }
-.tile-icon.orange { --tile: #f97316; }
+.tile-icon.orange { --tile: var(--orange); }
 
 /* ---------- cards ---------- */
 
 .card { border-radius: var(--radius-lg); padding: 1rem; margin-bottom: 1rem; }
 .card-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-/* The hero: today's session, a graphite card lit by a lime glow from the bottom corner. */
-.card.hero {
-  position: relative;
-  overflow: hidden;
-  color: #fff;
-  background:
-    radial-gradient(85% 75% at 92% 112%, rgba(150, 220, 40, 0.42), transparent 70%),
-    radial-gradient(60% 50% at 0% 0%, rgba(255, 255, 255, 0.05), transparent 70%),
-    linear-gradient(160deg, #1d2117 0%, #141513 60%, #101110 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 44px rgba(0, 0, 0, 0.35);
-}
-.card.hero .footnote, .card.hero .caption { color: rgba(255, 255, 255, 0.62); }
-/* Everything inside reads in white. */
-.card.hero { --label: #fff; --label-2: rgba(255, 255, 255, 0.62); --label-3: rgba(255, 255, 255, 0.4); --separator: rgba(255, 255, 255, 0.08); --fill: rgba(255, 255, 255, 0.07); }
-.card.hero .caption.kicker { color: var(--lime); font-weight: 600; }
-.hero-list { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+/* The hero: today's session, on the page's own surface; the kicker carries the lime. */
+.card.hero { position: relative; overflow: hidden; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); }
+.card.hero .caption.kicker { color: var(--accent); font-weight: 600; }
+.hero-list { background: var(--surface-2); }
 .hero-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
-.hero-start { flex: 1; color: #fff; --glass-tint: rgba(255, 255, 255, 0.07); --glass-rim-hi: rgba(255, 255, 255, 0.22); --glass-rim-lo: rgba(255, 255, 255, 0.05); --glass-specular: rgba(255, 255, 255, 0.1); --sheen: rgba(255, 255, 255, 0.1); }
-.hero-go {
-  width: 3rem; height: 3rem; flex: none; border: 0; border-radius: var(--radius-sm); cursor: pointer;
-  display: grid; place-items: center; color: var(--on-accent);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.55), 0 8px 22px var(--lime-glow);
-}
-.hero-go .icon { font-size: 1.5rem; }
+.hero-start { flex: 1; --glass-tint: var(--lime); color: var(--on-accent); }
 .card.hero .thumb { box-shadow: none; }
 
 /* ---------- form fields ---------- */
 
 .field { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-.field label { font-size: 0.875rem; color: var(--label-2); padding-inline-start: 0.5rem; font-weight: 500; }
+.field label { font-size: 0.875rem; color: var(--label-2); padding-inline-start: 0.5rem; font-weight: 400; }
 .input {
   width: 100%;
   min-height: 3rem;
@@ -432,7 +324,7 @@ button.row, a.row { cursor: pointer; text-decoration: none; color: inherit; }
 .input::placeholder { color: var(--label-3); }
 textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 .input.ltr { direction: ltr; text-align: left; }
-.input.code { text-align: center; letter-spacing: 0.25em; font-weight: 750; font-size: 1.25rem; direction: ltr; }
+.input.code { text-align: center; letter-spacing: 0.25em; font-weight: 700; font-size: 1.25rem; direction: ltr; }
 .input.num { text-align: center; font-variant-numeric: tabular-nums; padding-inline: 0.25rem; }
 .inline-fields { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
 .inline-fields .field { margin-bottom: 0; }
@@ -448,6 +340,8 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   border-radius: var(--radius);
   padding: 0.25rem;
   margin-bottom: 1.25rem;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 .seg .seg-thumb {
   position: absolute;
@@ -455,8 +349,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   bottom: 0.25rem;
   left: 0;
   border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 16px var(--lime-glow);
+  background: #3a3a37;
   will-change: transform;
 }
 .seg button {
@@ -464,14 +357,14 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   border: 0;
   background: transparent;
   min-height: 2.5rem;
-  font-weight: 650;
+  font-weight: 600;
   font-size: 0.875rem;
   color: var(--label-2);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: color 200ms ease;
 }
-.seg button[aria-selected='true'] { color: var(--on-accent); }
+.seg button[aria-selected='true'] { color: var(--label); }
 
 /* ---------- chips ---------- */
 
@@ -491,7 +384,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 }
 .chip.glass-lite { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--hairline); }
 /* Wins over the graphite fill wherever the chip sits. */
-.chips .chip.on, .chip.glass-lite.on { background: var(--lime); color: var(--on-accent); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 14px var(--lime-glow); }
+.chips .chip.on, .chip.glass-lite.on { background: var(--lime); color: var(--on-accent); }
 
 /* ---------- weekday picker ---------- */
 
@@ -504,16 +397,15 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--hairline);
   font-size: 0.875rem;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   color: var(--label-2);
   transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
 }
 .day.on {
   color: var(--on-accent);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 12px var(--lime-glow);
-}
+  background: var(--lime);
+  }
 
 /* ---------- pills ---------- */
 
@@ -522,7 +414,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   align-items: center;
   gap: 0.25rem;
   font-size: 0.75rem;
-  font-weight: 650;
+  font-weight: 600;
   min-height: 1.5rem;
   padding: 0 0.5rem;
   border-radius: var(--radius-xs);
@@ -568,9 +460,11 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   gap: 0;
   padding: 0.25rem;
   border-radius: var(--radius);
-  --glass-blur: 24px;
-  --glass-tint: var(--glass-fill-strong);
-  box-shadow: inset 0 1px 0.5px var(--glass-specular), inset 0 0 0 1px var(--hairline), var(--glass-shadow-lg);
+  /* The one translucent bar: content scrolls under it. */
+  background: rgba(26, 26, 24, 0.78);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: inset 0 0 0 1px var(--hairline), 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 .tabbar .drop {
   position: absolute;
@@ -578,8 +472,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   bottom: 0.25rem;
   left: 0;
   border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.55), 0 8px 16px var(--lime-glow);
+  background: rgba(255, 255, 255, 0.1);
   will-change: transform;
   z-index: 0;
 }
@@ -596,13 +489,13 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   text-decoration: none;
   color: var(--label-2);
   font-size: 0.75rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1rem;
   border-radius: var(--radius-sm);
 }
 .tabbar a .icon { font-size: 1.5rem; }
 .tabbar a { transition: color 220ms ease; }
-.tabbar a.active { color: var(--on-accent); }
+.tabbar a.active { color: var(--accent); }
 .tabbar a.active .icon { font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; }
 @media (max-width: 380px) { .tabbar a { min-width: 3.5rem; padding-inline: 0.5rem; } }
 
@@ -652,7 +545,7 @@ html.has-screen body { overflow: hidden; }
 .range-card .kv b { font-weight: 700; }
 .seg-choice.three { grid-template-columns: repeat(3, 1fr); }
 .seg-choice .chip { line-height: 1.25rem; padding-block: 0.5rem; }
-.seg-choice .chip .caption { display: block; font-size: 0.75rem; font-weight: 500; opacity: 0.75; color: inherit; }
+.seg-choice .chip .caption { display: block; font-size: 0.75rem; font-weight: 400; opacity: 0.75; color: inherit; }
 .start-card { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 .program-card .kicker.muted { color: var(--label-2); }
 .program-card .headline { margin-top: 0.25rem; }
@@ -661,12 +554,12 @@ html.has-screen body { overflow: hidden; }
 .week-tabs::-webkit-scrollbar { display: none; }
 .week-tab { flex: 1 0 5rem; border: 0; font: inherit; color: var(--label-2); background: var(--lite-fill); border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--hairline); padding: 0.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; cursor: pointer; min-height: 3.5rem; }
-.week-tab .t { font-weight: 650; font-size: 0.875rem; }
+.week-tab .t { font-weight: 600; font-size: 0.875rem; }
 .week-tab .f { font-size: 0.75rem; color: var(--label-3); display: inline-flex; }
 .week-tab .f.full { color: var(--accent); }
 .week-tab .f .icon { font-size: 1rem; }
 .week-tab.now .t::after { content: ''; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--lime); margin-inline-start: 0.25rem; vertical-align: middle; }
-.week-tab.on { background: var(--lime); color: var(--on-accent); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 4px 12px var(--lime-glow); }
+.week-tab.on { background: var(--lime); color: var(--on-accent); }
 .week-tab.on .f, .week-tab.on .f.full { color: var(--on-accent); opacity: 0.75; }
 .week-tab.on.now .t::after { background: var(--on-accent); }
 .tile-icon.num { font-weight: 700; font-size: 1rem; }
@@ -679,13 +572,13 @@ html.has-screen body { overflow: hidden; }
 .jcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
 .jcal-wd { font-size: 0.75rem; line-height: 1.5rem; color: var(--label-3); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 .jcal-day { border: 0; font: inherit; color: var(--label); background: transparent; height: 2.5rem; border-radius: var(--radius-sm); cursor: pointer;
-  font-variant-numeric: tabular-nums; font-weight: 500; }
+  font-variant-numeric: tabular-nums; font-weight: 400; }
 .jcal-day.today { box-shadow: inset 0 0 0 1px var(--label-3); }
 .jcal-day.in { background: var(--accent-soft); border-radius: var(--radius-xs); }
 .jcal-day.end { background: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--label); }
-.jcal-day.on { background: var(--lime); color: var(--on-accent); font-weight: 700; box-shadow: 0 4px 12px var(--lime-glow); }
+.jcal-day.on { background: var(--lime); color: var(--on-accent); font-weight: 700; }
 
-.save-state { font-size: 0.75rem; font-weight: 500; color: var(--label-3); }
+.save-state { font-size: 0.75rem; font-weight: 400; color: var(--label-3); }
 .save-state.saved { color: var(--accent); }
 .save-state.error { color: var(--red); }
 
@@ -705,7 +598,10 @@ html.has-screen body { overflow: hidden; }
   border-radius: var(--radius-xl);
   --glass-tint: var(--glass-fill-strong);
   --glass-blur: 30px;
-  box-shadow: inset 0 1px 0.5px var(--glass-specular), var(--glass-shadow-lg);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: blur(30px) saturate(var(--glass-sat));
+  backdrop-filter: blur(30px) saturate(var(--glass-sat));
+  box-shadow: inset 0 0 0 1px var(--hairline), var(--glass-shadow-lg);
   will-change: transform;
   touch-action: none;
 }
@@ -733,7 +629,7 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
   border-radius: var(--radius);
   --glass-tint: var(--glass-fill-strong);
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 600;
   animation: toast-in 520ms cubic-bezier(0.25, 1.4, 0.45, 1);
 }
 .toast .icon { font-size: 1.5rem; }
@@ -764,9 +660,8 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 }
 .check.on {
   color: var(--on-accent);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.55), 0 4px 14px var(--lime-glow);
-}
+  background: var(--lime);
+  }
 .check.on .icon { animation: pop 420ms cubic-bezier(0.3, 1.7, 0.5, 1); }
 /* Locked until the set's weight is in; then it lights up, inviting the tick. */
 .check:disabled { opacity: 0.38; cursor: default; }
@@ -784,8 +679,8 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 
 /* A field that opens wheels: looks like an input, behaves like a button. */
 .input.pick { display: grid; place-items: center; cursor: pointer; color: var(--label); font-weight: 600; text-align: center; }
-.input.pick .ph { color: var(--label-3); font-weight: 500; }
-.input.pick.static { cursor: default; color: var(--label-3); font-size: 0.875rem; font-weight: 500; }
+.input.pick .ph { color: var(--label-3); font-weight: 400; }
+.input.pick.static { cursor: default; color: var(--label-3); font-size: 0.875rem; font-weight: 400; }
 /* The band spans the wheels and their unit, so the unit reads as part of the value, with room to breathe. */
 .wheels-wrap { position: relative; display: flex; align-items: flex-start; justify-content: center; gap: 1.25rem;
   width: fit-content; margin: 0.25rem auto 1.25rem; padding-inline: 1rem; }
@@ -806,7 +701,7 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .wheel:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 .wheel .opt {
   height: 2.75rem; display: grid; place-items: center; scroll-snap-align: center;
-  font-size: 1.5rem; font-weight: 500; color: var(--label-2); font-variant-numeric: tabular-nums;
+  font-size: 1.5rem; font-weight: 400; color: var(--label-2); font-variant-numeric: tabular-nums;
   backface-visibility: hidden; cursor: pointer; -webkit-user-select: none; user-select: none;
 }
 /* Same weight for every row (a bolder centre would widen and seem to shift); only the colour changes. */
@@ -822,7 +717,7 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
 .section > .stats { margin-bottom: 0; }
 .stat { border-radius: var(--radius); padding: 1rem 1rem; }
-.stat .v { font-size: 1.5rem; font-weight: 800; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.stat .v { font-size: 1.5rem; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; }
 .stat .l { font-size: 0.75rem; color: var(--label-2); }
 .chart { width: 100%; height: 8.5rem; display: block; }
 
@@ -842,8 +737,7 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
   place-items: center;
   margin: 0 auto 1rem;
   color: var(--on-accent);
-  background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.6), inset 0 -2px 4px rgba(0, 0, 0, 0.12), 0 16px 40px var(--lime-glow);
+  background: var(--lime);
 }
 .auth .mark .icon { font-size: 2.5rem; }
 .auth h1 { text-align: center; }
@@ -887,14 +781,14 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .ring-stat { position: relative; width: 4.5rem; height: 4.5rem; margin: 0 auto 0.25rem; }
 .ring-stat svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring-stat circle { fill: none; stroke-width: 6; }
-.ring-stat .track { stroke: rgba(255, 255, 255, 0.1); }
+.ring-stat .track { stroke: var(--surface-2); }
 .ring-stat .bar { stroke: var(--lime); stroke-linecap: round; transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.9, 0.25, 1); }
 .ring-stat .v { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; }
 .hero-of { font-size: 1rem; font-weight: 600; color: var(--label-2); }
 /* A student's sessions this week, Saturday on the right: done, missed, due today, still to come. */
 .pips { display: flex; gap: 0.25rem; flex-shrink: 0; }
 .pips span, .pip { width: 0.5rem; height: 1.5rem; border-radius: 1rem; background: var(--fill-strong); }
-.pips .done, .pip.done { background: var(--lime); box-shadow: 0 0 8px var(--lime-glow); }
+.pips .done, .pip.done { background: var(--lime); }
 .pips .missed, .pip.missed { background: var(--red); }
 .pips .today, .pip.today { background: transparent; box-shadow: inset 0 0 0 2px var(--lime); }
 .pips-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
@@ -907,16 +801,15 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
 .coach-card { display: flex; align-items: center; gap: 1rem; }
 .coach-card .grow { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
 .avatar { width: 4rem; height: 4rem; flex-shrink: 0; border-radius: var(--radius-lg); display: grid; place-items: center;
-  font-size: 1.5rem; font-weight: 700; color: var(--on-accent); background: linear-gradient(180deg, var(--lime-hi), var(--lime));
-  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.5), 0 8px 20px var(--lime-glow); }
+  font-size: 1.5rem; font-weight: 700; color: var(--on-accent); background: var(--lime);
+  }
 .avatar .icon { font-size: 2rem; }
 button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; font: inherit; }
 .stat-icon { width: 2rem; height: 2rem; border-radius: var(--radius-xs); display: grid; place-items: center; margin-bottom: 0.5rem;
-  color: var(--tile, var(--accent)); background: color-mix(in srgb, var(--tile, var(--accent)) 13%, var(--surface-2)); }
+  color: var(--tile, var(--label-2)); background: color-mix(in srgb, var(--tile, var(--label-2)) 12%, var(--surface-2)); }
 .stat-icon .icon { font-size: 1.25rem; }
-.stat-icon.orange { --tile: #f97316; }
-.stat-icon.blue { --tile: var(--blue); }
-.stat .of { font-size: 0.875rem; font-weight: 500; color: var(--label-2); }
+.stat-icon.orange { --tile: var(--orange); }
+.stat .of { font-size: 0.875rem; font-weight: 400; color: var(--label-2); }
 
 /* ---------- intake questionnaire (student) ---------- */
 
@@ -926,7 +819,7 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 .intake-progress { display: flex; gap: 0.25rem; }
 .intake-progress span { flex: 1; height: 0.25rem; border-radius: 1rem; background: var(--fill-strong); transition: background 300ms ease, box-shadow 300ms ease; }
 .intake-progress span.done { background: color-mix(in srgb, var(--accent) 55%, transparent); }
-.intake-progress span.now { background: var(--accent); box-shadow: 0 0 10px var(--lime-glow); }
+.intake-progress span.now { background: var(--accent); }
 .intake-hello { margin: 0 0.25rem 1rem; }
 .intake-head { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; padding-inline: 0.25rem; }
 .intake-head .tile-icon { width: 3rem; height: 3rem; border-radius: var(--radius); margin-bottom: 0.5rem; }
@@ -935,11 +828,11 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 
 .choice { width: 100%; text-align: start; border: 0; background: transparent; font: inherit; color: inherit; transition: background 160ms ease; }
 .choice.on { background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.choice.on .title-text { font-weight: 650; }
+.choice.on .title-text { font-weight: 600; }
 .tick { width: 1.5rem; height: 1.5rem; flex: none; border-radius: 50%; display: grid; place-items: center;
   box-shadow: inset 0 0 0 1.5px var(--label-3); transition: background 160ms ease, box-shadow 160ms ease; }
 .tick.square { border-radius: var(--radius-xs); }
-.choice.on .tick { background: var(--lime); box-shadow: 0 0 0 0 transparent, 0 3px 10px var(--lime-glow); color: var(--on-accent); }
+.choice.on .tick { background: var(--lime); color: var(--on-accent); }
 .tick .icon { font-size: 1rem; font-variation-settings: 'wght' 700; animation: pop 320ms cubic-bezier(0.3, 1.7, 0.5, 1); }
 
 .seg-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
@@ -956,17 +849,17 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
   border: 0; border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem; color: var(--label);
   background: var(--red-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 28%, transparent); }
 .alert-strip > .icon { color: var(--red); font-size: 1.5rem; }
-.alert-strip .title-text { font-size: 0.875rem; font-weight: 650; }
+.alert-strip .title-text { font-size: 0.875rem; font-weight: 600; }
 .alert-strip .sub { font-size: 0.875rem; color: var(--label-2); }
 .alert-card { background: color-mix(in srgb, var(--red) 7%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 26%, transparent); }
 .alert-item + .alert-item { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid color-mix(in srgb, var(--red) 16%, transparent); }
-.alert-title { font-size: 0.875rem; font-weight: 650; color: var(--label-2); margin-bottom: 0.5rem; }
+.alert-title { font-size: 0.875rem; font-weight: 600; color: var(--label-2); margin-bottom: 0.5rem; }
 .quote { margin-top: 0.5rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.875rem; line-height: 1.8;
   background: var(--fill); border-inline-start: 4px solid color-mix(in srgb, var(--accent) 60%, transparent); white-space: pre-wrap; }
 .alert-card .quote { border-inline-start-color: color-mix(in srgb, var(--red) 60%, transparent); }
 .kv { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.5rem 0; font-size: 1rem; }
 .kv span { color: var(--label-2); font-size: 0.875rem; }
-.kv b { font-weight: 650; text-align: left; }
+.kv b { font-weight: 600; text-align: left; }
 .stat .l .pill { font-size: 0.75rem; padding-block: 0; margin-inline-start: 0.25rem; }
 
 /* Tab pages carry no heading: just clear the status bar. */
@@ -974,14 +867,8 @@ button.stat { border: 0; text-align: start; cursor: pointer; color: inherit; fon
 .choice:disabled { opacity: 0.35; cursor: not-allowed; }
 .choice:disabled:active { background: transparent; }
 
-/* The app's own mark on sign-in: the home-screen icon in miniature (graphite, lime glow, lime sun). */
-.auth .mark.app {
-  color: var(--lime);
-  background:
-    radial-gradient(70% 60% at 50% 110%, rgba(150, 220, 40, 0.38), transparent 70%),
-    linear-gradient(160deg, #1d2117 0%, #141513 60%, #101110 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 16px 40px rgba(0, 0, 0, 0.35), 0 8px 32px var(--lime-glow);
-}
+/* The app's own mark on sign-in: the logo in lime on a graphite tile. */
+.auth .mark.app { color: var(--lime); background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); }
 .auth .brand { letter-spacing: -0.02em; }
 /* Side-by-side fields keep one row: labels never wrap, so the fields under them stay aligned. */
 .inline-fields .field label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

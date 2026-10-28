@@ -31,7 +31,6 @@ function SessionHero({ r, kicker, done }) {
     </div>
     <div className="hero-actions">
       <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{done ? 'ثبت دوباره' : 'شروع تمرین'}</button>
-      <button className="hero-go pressable" aria-hidden="true" tabIndex={-1} onClick={() => nav('/log/' + r.id)}><Icon name="arrow_outward" mirror /></button>
     </div>
   </section>
 }

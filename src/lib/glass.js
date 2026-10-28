@@ -1,15 +1,13 @@
-// How Liquid Glass reacts to touch (the `.interactive()` of the iOS 26 material), on the web:
-//   - on press, the glass swells a little on a spring, from whatever scale it is at right now;
-//   - on release it settles back, slightly under-damped, so it wobbles like something liquid;
-//   - its sheen moves to where the finger is (--gx / --gy, used by .glass::before in the CSS).
-// One delegated listener for the whole document, so every `.glass.interactive` element gets the
-// behaviour without wiring. Reduced motion: no swell, the sheen still answers.
+// How a control answers a finger, the iOS way: the moment it is pressed it sinks a little, on a
+// critically damped spring from whatever scale it is at right now, and settles back the same way
+// on release — no bounce, nothing to wobble. One delegated listener for the whole document, so
+// every `.glass.interactive` element gets it without wiring. Reduced motion: no scaling.
 
 import { animateSpring, reducedMotion } from './spring.js'
 
-const PRESS = { damping: 0.7, response: 0.28 }    // a quick swell
-const RELEASE = { damping: 0.5, response: 0.42 }  // settles with a wobble: it was squeezed
-const SWELL = 1.05
+const PRESS = { damping: 1, response: 0.18 }
+const RELEASE = { damping: 1, response: 0.3 }
+const SINK = 0.97
 
 const live = new WeakMap()   // element -> { anim, scale }
 
@@ -24,12 +22,6 @@ function scaleTo(el, to, params) {
   live.set(el, st)
 }
 
-function sheenAt(el, e) {
-  const r = el.getBoundingClientRect()
-  el.style.setProperty('--gx', `${e.clientX - r.left}px`)
-  el.style.setProperty('--gy', `${e.clientY - r.top}px`)
-}
-
 export function installGlass(root = document) {
   let pressed = null
   const down = e => {
@@ -37,15 +29,7 @@ export function installGlass(root = document) {
     if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return
     pressed = el
     el.classList.add('pressed')
-    sheenAt(el, e)
-    if (!reducedMotion()) scaleTo(el, SWELL, PRESS)
-  }
-  const move = e => {
-    if (pressed) sheenAt(pressed, e)
-    else if (e.pointerType === 'mouse') {   // a pointer hovering moves the light too
-      const el = e.target.closest?.('.glass.interactive')
-      if (el) sheenAt(el, e)
-    }
+    if (!reducedMotion()) scaleTo(el, SINK, PRESS)
   }
   const up = () => {
     if (!pressed) return
@@ -55,12 +39,10 @@ export function installGlass(root = document) {
     if (!reducedMotion()) scaleTo(el, 1, RELEASE)
   }
   root.addEventListener('pointerdown', down, { passive: true })
-  root.addEventListener('pointermove', move, { passive: true })
   root.addEventListener('pointerup', up, { passive: true })
   root.addEventListener('pointercancel', up, { passive: true })
   return () => {
     root.removeEventListener('pointerdown', down)
-    root.removeEventListener('pointermove', move)
     root.removeEventListener('pointerup', up)
     root.removeEventListener('pointercancel', up)
   }
