@@ -11,10 +11,8 @@ import Students from './pages/coach/Students.jsx'
 import Dashboard from './pages/coach/Dashboard.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
 import Today from './pages/student/Today.jsx'
-import Week from './pages/student/Week.jsx'
 import LogWorkout from './pages/student/LogWorkout.jsx'
-import History from './pages/student/History.jsx'
-import Weight from './pages/student/Weight.jsx'
+import Progress from './pages/student/Progress.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
 import { AdminHome, AdminCoaches, AdminCoach, AdminStudents, AdminUsers, AdminUser, AdminActivity } from './pages/admin/Admin.jsx'
@@ -92,7 +90,7 @@ export default function App() {
     ? [['/', 'dashboard', 'داشبورد'], ['/students', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
-      : [['/', 'today', 'امروز'], ['/week', 'calendar_month', 'برنامه'], ['/history', 'history', 'سابقه'], ['/weight', 'monitor_weight', 'وزن'], ['/account', 'person', 'حساب', '/intake']]
+      : [['/', 'today', 'امروز'], ['/progress', 'monitoring', 'پیشرفت'], ['/account', 'person', 'حساب', '/intake']]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       <Route path="/" element={<Dashboard />} />
@@ -107,10 +105,12 @@ export default function App() {
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes> : <Routes>
       <Route path="/" element={<Today />} />
-      <Route path="/week" element={<Week />} />
+      {/* «برنامه», «سابقه» and «وزن» were tabs once; old links land where they went. */}
+      <Route path="/week" element={<Navigate to="/" replace />} />
       <Route path="/log/:routineId" element={<LogWorkout />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/weight" element={<Weight />} />
+      <Route path="/progress" element={<Progress />} />
+      <Route path="/history" element={<Navigate to="/progress" replace />} />
+      <Route path="/weight" element={<Navigate to="/progress" replace />} />
       <Route path="/intake" element={<IntakeView />} />
       <Route path="/intake/edit" element={<EditIntake />} />
       <Route path="/account" element={<Account />} />

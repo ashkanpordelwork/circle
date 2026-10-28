@@ -12,7 +12,7 @@ export const ICONS = [
   'chevron_right', 'close', 'content_copy', 'dashboard', 'delete', 'download', 'edit_note', 'error',
   'exercise', 'expand_less', 'expand_more', 'fitness_center', 'flag', 'group', 'healing', 'history',
   'hourglass_top', 'how_to_reg', 'info', 'key', 'lock', 'lock_reset', 'login', 'logout',
-  'manage_accounts', 'medical_information', 'monitor_weight', 'person', 'person_add', 'person_remove',
+  'manage_accounts', 'medical_information', 'monitor_weight', 'monitoring', 'person', 'person_add', 'person_remove',
   'play_arrow', 'refresh', 'restaurant', 'search', 'settings', 'share', 'smartphone', 'sticky_note_2',
   'swap_horiz', 'swipe_right', 'timer', 'today', 'trending_down', 'trending_up', 'undo', 'visibility',
   'visibility_off', 'warning'
