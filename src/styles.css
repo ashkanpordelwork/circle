@@ -1090,3 +1090,35 @@ button.tab { border: 0; background: transparent; font: inherit; cursor: pointer;
 .code-big { font-size: 1.75rem; font-weight: 700; letter-spacing: 0.2em; direction: ltr; text-align: right; }
 a.alert-strip { text-decoration: none; }
 .alert-strip.invite > .icon { color: var(--orange); }
+
+/* ---------- «آمار» ---------- */
+
+.line-chart { position: relative; margin-top: 0.75rem; }
+.chart-scale { position: absolute; inset-block: 0; inset-inline-end: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; padding: 0.25rem 0; }
+
+/* Activity: weeks as columns, Saturday at the top. */
+.heat { display: flex; gap: 0.5rem; }
+.heat-days { display: grid; grid-template-rows: 1rem repeat(7, 1fr); gap: 3px; font-size: 0.625rem; color: var(--label-3); align-items: center; }
+.heat-grid { flex: 1; display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; }
+.heat-col { display: grid; grid-template-rows: 1rem repeat(7, 1fr); gap: 3px; }
+.heat-month { font-size: 0.625rem; color: var(--label-3); white-space: nowrap; overflow: visible; }
+.cell { display: block; aspect-ratio: 1; border-radius: 3px; background: var(--surface-2); }
+.cell.l1 { background: color-mix(in srgb, var(--lime) 18%, var(--surface-2)); }
+.cell.l2 { background: color-mix(in srgb, var(--lime) 40%, var(--surface-2)); }
+.cell.l3 { background: color-mix(in srgb, var(--lime) 68%, var(--surface-2)); }
+.cell.l4 { background: var(--lime); }
+.cell.future { opacity: 0.3; }
+.cell.today { box-shadow: 0 0 0 1.5px var(--label-2); }
+.heat-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 0.75rem; }
+.heat-legend .cell { width: 0.75rem; }
+
+/* Muscle balance: one bar per muscle. */
+.balance { display: flex; flex-direction: column; gap: 0.75rem; }
+.balance-row { display: grid; grid-template-columns: 6.5rem 1fr 3.5rem; align-items: center; gap: 0.75rem; font-size: 0.875rem; }
+.balance-row .track { height: 0.5rem; border-radius: 1rem; background: var(--surface-2); overflow: hidden; }
+.balance-row .track span { display: block; height: 100%; border-radius: 1rem; background: var(--lime); }
+.balance-row .n { color: var(--label-2); text-align: left; font-size: 0.75rem; }
+.card .seg { margin-top: 1rem; }
+/* Month names hang over their column without widening it. */
+.heat-grid { grid-template-columns: repeat(15, minmax(0, 1fr)); min-width: 0; }
+.heat-month { width: 0; line-height: 1rem; }
