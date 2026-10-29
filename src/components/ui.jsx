@@ -151,6 +151,7 @@ export function Empty({ icon, title, children }) {
 // Supabase / Postgres errors in words a coach or student can act on.
 export function errorText(e) {
   const m = String(e?.message || e || '')
+  if (/coach is full/.test(m)) return 'ظرفیت شاگردهای این مربی پر است؛ برای پلن بزرگ‌تر با مدیر تماس بگیرید.'
   if (e?.code === '23505' || /duplicate key/.test(m)) return 'این شماره قبلاً ثبت شده است.'
   if (/Invalid login credentials/i.test(m)) return 'شماره یا رمز عبور اشتباه است.'
   if (/already registered|already exists/i.test(m)) return 'با این شماره قبلاً ثبت‌نام شده؛ از بخش «ورود» وارد شو.'

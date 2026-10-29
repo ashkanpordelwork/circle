@@ -101,7 +101,10 @@ export function describe(ev, names = {}) {
     user_deleted: `حساب ${ph || d.email || ''} را حذف کرد`,
     admin_added: `${ph} را مدیر کرد`,
     admin_removed: `${ph} را از مدیرها برداشت`,
-    plan_saved: `برنامه ${n(d.student)} را ویرایش کرد`
+    plan_saved: `برنامه ${n(d.student)} را ویرایش کرد`,
+    application_approved: `درخواست مربی‌گری ${d.name || n(d.user)} را پذیرفت`,
+    application_declined: `درخواست مربی‌گری ${d.name || n(d.user)} را نپذیرفت`,
+    plan_set: `پلن ${n(d.coach)} را «${{ free: 'رایگان', pro: 'حرفه‌ای', studio: 'استودیو' }[d.plan] || d.plan}» کرد`
   }[ev.kind.slice('admin:'.length)] || ev.kind
   return { icon: 'admin_panel_settings', tone: 'red', text: `${who}: ${action}`, to }
 }

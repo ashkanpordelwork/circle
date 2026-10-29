@@ -32,7 +32,7 @@ export default function InviteCard({ student, onNewCode }) {
   return <div className="card glass-lite">
     <div className="card-head"><div className="tile-icon orange"><Icon name="key" /></div>
       <div className="grow"><div className="headline">کد دعوت</div><div className="caption">شاگرد با این کد به شما وصل می‌شود</div></div></div>
-    <div className="latin tnum" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.25em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
+    <div className="latin tnum invite-code" style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.25em', textAlign: 'center', margin: '0.25rem 0 0.75rem' }}>{student.invite_code}</div>
     <div className="subhead" style={{ whiteSpace: 'pre-wrap', background: 'var(--fill)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '0.75rem' }}>{text}</div>
     <div className="hstack wrap">
       <button className="btn glass interactive prominent grow" onClick={share}><Icon name="share" />ارسال دعوت</button>

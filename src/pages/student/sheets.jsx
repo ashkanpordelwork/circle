@@ -68,6 +68,7 @@ function MoreBody() {
     me.student?.coach_id && !me.intake?.skipped && ['/intake', 'assignment', 'پرسشنامه', 'هدف، آسیب‌ها، تغذیه'],
     ['/body', 'favorite', 'بدن', 'آمادگی، اندازه‌ها، عکس'],
     ['/account', 'person', 'حساب', 'نام، شماره، خروج'],
+    ['/apply', 'badge', 'مربی شو', 'برای شاگردهایت برنامه بنویس'],
     me.admin && ['/admin', 'admin_panel_settings', 'مدیریت', 'پنل مدیر']
   ].filter(Boolean)
   return <div className="more-grid">{tiles.map(([to, icon, title, sub]) =>

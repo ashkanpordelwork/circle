@@ -16,6 +16,7 @@ import { useMe } from '../../App.jsx'
 import { CoachPicker, adminError } from '../admin/Admin.jsx'
 import Screen from '../../components/Screen.jsx'
 import { END_REASONS } from '../../lib/session.js'
+import WorkoutComments from '../../components/WorkoutComments.jsx'
 
 const END_LABEL = Object.fromEntries(END_REASONS)
 
@@ -24,6 +25,7 @@ const END_LABEL = Object.fromEntries(END_REASONS)
 /* ---------- progress ---------- */
 
 function ProgressTab({ student }) {
+  const me = useMe()
   const toast = useToast()
   const [data, setData] = useState(null)
   const [open, setOpen] = useState(null)
@@ -67,6 +69,7 @@ function ProgressTab({ student }) {
               <div className="footnote tnum">{sets.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
             </div>)}
             {w.note && <div className="footnote" style={{ marginTop: '0.5rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}
+            <WorkoutComments workoutId={w.id} me={me.session.user.id} otherName={student.full_name} />
           </div>}
         </div>
       })}</div>}

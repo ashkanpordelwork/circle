@@ -16,6 +16,8 @@ import WeightChart from '../../components/WeightChart.jsx'
 import Screen from '../../components/Screen.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import { scope } from '../../lib/scope.js'
+import { useMe } from '../../App.jsx'
+import WorkoutComments from '../../components/WorkoutComments.jsx'
 
 // «آمار»: how training is going. An overview, the numbers of a chosen period, which days were
 // trained, which muscles got the work, body weight and each exercise over time, and the
@@ -224,6 +226,7 @@ function Recent({ workouts, sets }) {
   </div>
 }
 function WorkoutList({ workouts, sets }) {
+  const me = useMe()
   const [open, setOpen] = useState(null)
   return <div className="group glass-lite">{workouts.map(w => {
     const mine = sets.filter(s => s.workout_id === w.id)
@@ -244,6 +247,7 @@ function WorkoutList({ workouts, sets }) {
           <div className="footnote tnum">{mine.filter(s => s.exercise_id === id).sort((a, b) => a.set_index - b.set_index).map(setText).join('   ·   ')}</div>
         </div>)}
         {w.note && <div className="footnote" style={{ paddingTop: '0.5rem' }}><Icon name="sticky_note_2" style={{ fontSize: '1rem', verticalAlign: 'middle' }} /> {w.note}</div>}
+        {me.student.coach_id && <WorkoutComments workoutId={w.id} me={me.session.user.id} otherName="مربی" />}
       </div>}
     </div>
   })}</div>

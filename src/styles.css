@@ -1153,3 +1153,23 @@ a.alert-strip { text-decoration: none; }
 .muscle.l2 { fill: color-mix(in srgb, var(--lime) 55%, var(--surface-2)); }
 .muscle.l3 { fill: color-mix(in srgb, var(--lime) 78%, var(--surface-2)); }
 .muscle.l4 { fill: var(--lime); }
+
+/* ---------- coaching ---------- */
+
+.cap-bar { height: 0.5rem; border-radius: 1rem; background: var(--surface-2); overflow: hidden; margin-top: 1rem; }
+.cap-bar span { display: block; height: 100%; background: var(--lime); border-radius: 1rem; }
+.inline-fields.two { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.inline-fields.two .field { margin-bottom: 1rem; }
+.app-status.approved .pill { background: var(--accent-soft); color: var(--accent); }
+.app-status.declined .pill { color: var(--orange); }
+
+/* The conversation under a workout. */
+.comments { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--hairline); }
+.bubble { max-width: 85%; padding: 0.5rem 0.75rem; border-radius: var(--radius); background: var(--surface-2); align-self: flex-end; }
+.bubble.mine { align-self: flex-start; background: color-mix(in srgb, var(--lime) 14%, var(--surface-2)); }
+.comment-form { display: flex; gap: 0.5rem; align-items: center; }
+.comment-form .input { flex: 1; min-height: 2.75rem; }
+.comment-form .icon-btn { width: 2.75rem; height: 2.75rem; }
+/* Codes someone has to type (coach code, invite code): Latin digits in a monospace face. The
+   app's font draws 8 as «۸», which reads as Λ in a code. */
+.code-big, .invite-code, .input.code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace; }

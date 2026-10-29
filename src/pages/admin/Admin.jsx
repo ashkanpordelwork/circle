@@ -13,6 +13,9 @@ import { Page, Loading, Empty, Confirm, useToast, errorText } from '../../compon
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import InviteCard from '../../components/InviteCard.jsx'
+import { PLANS, PLAN_NAME, APP_STATUS, capacityOf, planNow } from '../../lib/coaching.js'
+import { fmtJ } from '../../lib/jalali.js'
+import Screen from '../../components/Screen.jsx'
 
 const fa = n => Number(n || 0).toLocaleString('fa-IR')
 const rpc = (fn, args) => must(supabase.rpc(fn, args))
@@ -67,8 +70,10 @@ function ActivityRow({ ev, names }) {
 export function AdminHome() {
   const nav = useNavigate()
   const [data] = useLoad(async () => {
-    const [st, ev, n] = await Promise.all([rpc('admin_stats'), rpc('admin_activity', { p_limit: 8 }), loadNames()])
-    return { st, ev, names: n.names }
+    const [st, ev, n, pending] = await Promise.all([rpc('admin_stats'), rpc('admin_activity', { p_limit: 8 }), loadNames(),
+      // Before migration 0010 there are no applications: none waiting.
+      supabase.from('coach_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending').then(r => r.count || 0)])
+    return { st: { ...st, applications: pending }, ev, names: n.names }
   })
   if (data === null) return <Page><Loading /></Page>
   if (!data) return <Page><Empty icon="admin_panel_settings" title="پنل مدیریت در دسترس نیست">migration شماره ۵ را در Supabase اجرا کنید.</Empty></Page>
@@ -77,6 +82,7 @@ export function AdminHome() {
     st.no_role > 0 && { icon: 'person_remove', tone: 'orange', title: `${fa(st.no_role)} حساب بدون نقش`, sub: 'ثبت‌نام کرده‌اند ولی نه مربی‌اند نه شاگرد', to: '/admin/people?f=none' },
     st.coaches_off > 0 && { icon: 'block', tone: 'red', title: `${fa(st.coaches_off)} مربی غیرفعال`, sub: 'دسترسی‌شان بسته است', to: '/admin/people?f=coach' },
     st.coach_phones_waiting > 0 && { icon: 'hourglass_top', tone: 'gray', title: `${fa(st.coach_phones_waiting)} مربی در انتظار ثبت‌نام`, sub: 'شماره داده شده، هنوز حساب نساخته‌اند', to: '/admin/people?f=waiting' },
+    st.applications > 0 && { icon: 'badge', tone: 'orange', title: `${fa(st.applications)} درخواست مربی‌گری`, sub: 'منتظر بررسی شما', to: '/admin/applications' },
     st.students_waiting > 0 && { icon: 'key', tone: 'gray', title: `${fa(st.students_waiting)} شاگرد در انتظار ثبت‌نام`, sub: 'کد دعوت گرفته‌اند ولی هنوز وارد نشده‌اند', to: '/admin/people?f=waiting' }
   ].filter(Boolean)
   return <Page>
@@ -106,6 +112,7 @@ export function AdminHome() {
       <div className="section-title">مدیریت</div>
       <div className="group glass-lite">
         <Row icon="group" title="افراد" sub={`${fa(st.coaches)} مربی، ${fa(st.students)} شاگرد، ${fa(st.users)} حساب`} onClick={() => nav('/admin/people')} />
+        <Row icon="badge" tone="orange" title="درخواست‌های مربی‌گری" sub={st.applications ? `${fa(st.applications)} منتظر بررسی` : 'همه بررسی شده'} onClick={() => nav('/admin/applications')} />
         <Row icon="history" tone="gray" title="گزارش فعالیت" sub={`${fa(st.workouts)} تمرین، ${fa(st.sets)} ست ثبت‌شده`} onClick={() => nav('/admin/activity')} />
       </div>
     </div>
@@ -283,14 +290,15 @@ export function AdminUser() {
   const [sheet, setSheet] = useState(null)
   const [invite, setInvite] = useState(null)
   const [data, reload] = useLoad(async () => {
-    const [users, students] = await Promise.all([rpc('admin_users'),
-      must(supabase.from('students').select('id, full_name, active, user_id').eq('coach_id', id).order('full_name'))])
-    return { u: users.find(x => x.id === id) || null, students }
+    const [users, students, plan] = await Promise.all([rpc('admin_users'),
+      must(supabase.from('students').select('id, full_name, active, user_id').eq('coach_id', id).order('full_name')),
+      supabase.from('coaches').select('plan, plan_until').eq('id', id).maybeSingle().then(r => r.data)])
+    return { u: users.find(x => x.id === id) || null, students, plan }
   }, [id])
   const back = '/admin/people'
   if (data === null) return <Page back={back}><Loading /></Page>
   if (!data?.u) return <Page back={back}><Empty icon="manage_accounts" title="این حساب پیدا نشد">ممکن است حذف شده باشد.</Empty></Page>
-  const { u, students } = data
+  const { u, students, plan } = data
   const self = u.id === me.session.user.id
   const coach = u.coach_active != null
   const roles = rolesOf(u)
@@ -319,6 +327,7 @@ export function AdminUser() {
     </div>}
 
     <div className="section">
+      {coach && plan?.plan && <PlanPicker coach={u.id} plan={plan} active={students.filter(s => s.active).length} onSaved={reload} />}
       <div className="section-title">دسترسی‌ها</div>
       <div className="group glass-lite">
         {coach && <Row icon="edit_note" title="نام مربی" sub={u.coach_name?.trim() || 'بدون نام'} onClick={() => setSheet('name')} />}
@@ -371,6 +380,80 @@ export function AdminUser() {
 /* ---------- the activity of the whole system ---------- */
 
 const GROUPS = [['all', 'همه'], ['access', 'ورود و ثبت‌نام'], ['training', 'تمرین'], ['plans', 'برنامه و پرسشنامه'], ['admin', 'کارهای مدیر']]
+
+/* ---------- coaching applications ---------- */
+
+const UNTIL = [[0, 'بدون تاریخ'], [30, '۱ ماه'], [90, '۳ ماه'], [365, '۱ سال']]
+
+// A coach's plan: how many active students they may have, granted until a date or for good.
+function PlanPicker({ coach, plan, active, onSaved }) {
+  const toast = useToast()
+  const [p, setP] = useState(plan.plan)
+  const [days, setDays] = useState(0)
+  const today = new Date().toISOString().slice(0, 10)
+  const cap = capacityOf(plan, today)
+  const save = async () => {
+    const until = days ? new Date(Date.now() + days * 864e5).toISOString().slice(0, 10) : null
+    try { await rpc('admin_set_plan', { p_coach: coach, p_plan: p, p_until: until }); toast('پلن ذخیره شد', 'success'); onSaved() }
+    catch (e) { toast(adminError(e), 'error') }
+  }
+  return <>
+    <div className="section-title">پلن مربی</div>
+    <div className="card glass-lite">
+      <div className="footnote" style={{ marginBottom: '0.75rem' }}>
+        الان {PLAN_NAME[planNow(plan, today)]}{plan.plan_until ? ` تا ${fmtJ(plan.plan_until)}` : ''} · {fa(active)} شاگرد فعال{cap ? ` از ${fa(cap)}` : ''}</div>
+      <div className="chips wrap-chips">{PLANS.map(([k, n, c]) => <button key={k} type="button" className={'chip glass-lite pressable' + (p === k ? ' on' : '')} onClick={() => setP(k)}>{n} · {c ? fa(c) : 'نامحدود'}</button>)}</div>
+      {p !== 'free' && <div className="chips wrap-chips mt">{UNTIL.map(([d, n]) => <button key={d} type="button" className={'chip glass-lite pressable' + (days === d ? ' on' : '')} onClick={() => setDays(d)}>{n}</button>)}</div>}
+      <button className="btn glass interactive prominent block mt" onClick={save}>ذخیره‌ی پلن</button>
+      <div className="footnote mt">با پلن کوچک‌تر شاگردهای فعلی می‌مانند؛ فقط شاگرد تازه پذیرفته نمی‌شود.</div>
+    </div>
+  </>
+}
+
+export function AdminApplications() {
+  const toast = useToast()
+  const [list, reload] = useLoad(() => must(supabase.from('coach_applications').select('*').order('created_at', { ascending: false })))
+  const [open, setOpen] = useState(null)
+  if (list === null) return <Page title="درخواست‌های مربی‌گری" back="/admin"><Loading /></Page>
+  const pending = (list || []).filter(a => a.status === 'pending'), done = (list || []).filter(a => a.status !== 'pending')
+  const row = a => <Row key={a.id} icon="badge" tone={a.status === 'pending' ? 'orange' : a.status === 'approved' ? '' : 'gray'} title={`${a.first_name} ${a.last_name}`}
+    sub={`${fa(a.years)} سال تجربه · ${a.focus.join('، ')} · ${fmtJ(a.created_at.slice(0, 10), false)}`} trailing={<><span className="pill">{APP_STATUS[a.status]}</span><Disclosure /></>} onClick={() => setOpen(a)} />
+  return <Page title="درخواست‌های مربی‌گری" back="/admin">
+    {!list?.length ? <Empty icon="badge" title="درخواستی نیست">ورزشکارها از «بیشتر ← مربی شو» درخواست می‌دهند.</Empty> : <>
+      {pending.length > 0 && <div className="section"><div className="section-title">منتظر بررسی</div><div className="group glass-lite">{pending.map(row)}</div></div>}
+      {done.length > 0 && <div className="section"><div className="section-title">بررسی‌شده</div><div className="group glass-lite">{done.map(row)}</div></div>}
+    </>}
+    {open && <Screen title={`${open.first_name} ${open.last_name}`} subtitle={APP_STATUS[open.status]} onClose={() => setOpen(null)}>
+      <Review a={open} onDone={() => { setOpen(null); reload() }} toast={toast} />
+    </Screen>}
+  </Page>
+}
+function Review({ a, onDone, toast }) {
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const decide = async ok => {
+    setBusy(true)
+    try { await rpc('admin_review_application', { p_id: a.id, p_approve: ok, p_note: note.trim() }); toast(ok ? 'مربی شد' : 'رد شد', 'success'); onDone() }
+    catch (e) { toast(adminError(e), 'error'); setBusy(false) }
+  }
+  return <>
+    <section className="card glass-lite">
+      <div className="kv"><span>تجربه</span><b>{fa(a.years)} سال</b></div>
+      <div className="kv"><span>شاگرد فعلی</span><b>{fa(a.clients)}</b></div>
+      <div className="kv"><span>حوزه‌ها</span><b>{a.focus.join('، ')}</b></div>
+      <div className="kv"><span>تاریخ درخواست</span><b>{fmtJ(a.created_at.slice(0, 10))}</b></div>
+      {a.credentials && <><div className="caption mt">مدارک</div><div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{a.credentials}</div></>}
+      {a.note && <><div className="caption mt">توضیح</div><div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{a.note}</div></>}
+    </section>
+    {a.status === 'pending' ? <>
+      <div className="field"><label htmlFor="rn">یادداشت برای متقاضی (اختیاری)</label>
+        <textarea id="rn" className="input" value={note} onChange={e => setNote(e.target.value)} maxLength={1000} placeholder="خوش آمدی، یا دلیل نه" /></div>
+      <button className="btn glass interactive prominent block" disabled={busy} onClick={() => decide(true)}><Icon name="check" />پذیرفتن و مربی کردن</button>
+      <button className="btn glass interactive danger block mt" disabled={busy} onClick={() => decide(false)}><Icon name="close" />نپذیرفتن</button>
+      <div className="section-footer">با پذیرفتن، روی پلن رایگان ({fa(10)} شاگرد) مربی می‌شود؛ پلن را از صفحه‌ی همین حساب عوض کنید.</div>
+    </> : <section className="card glass-lite"><div className="caption">یادداشت بررسی · {a.reviewed_at ? fmtJ(a.reviewed_at.slice(0, 10)) : ''}</div><div className="subhead">{a.review_note || '—'}</div></section>}
+  </>
+}
 
 export function AdminActivity() {
   const toast = useToast()
