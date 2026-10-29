@@ -11,11 +11,14 @@ import Screen from '../../components/Screen.jsx'
 import { useMe } from '../../App.jsx'
 import { loadStudentPlan, sessionTitle } from './data.js'
 import { scope } from '../../lib/scope.js'
+import { readDraft } from '../../lib/session.js'
 
 // «امروز» is the student's whole plan: the session to do now on top, and under it every week of
 // the program, a tap away. (It used to be split over «امروز» and «برنامه», showing this week twice.)
 
 const fa = n => Number(n).toLocaleString('fa-IR')
+// A session left half done on this device continues where it stopped (lib/session.js).
+const startLabel = (r, done) => (readDraft(localStorage, r.id) ? 'ادامه‌ی تمرین' : done ? 'ثبت دوباره' : 'شروع تمرین')
 const minutes = r => Math.max(15, Math.round(r.items.reduce((m, i) => m + i.sets * 2.2, 0)))
 
 // A session to do: its exercises and the start button.
@@ -34,7 +37,7 @@ function SessionHero({ r, kicker, done }) {
       </div>)}
     </div>
     <div className="hero-actions">
-      <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{done ? 'ثبت دوباره' : 'شروع تمرین'}</button>
+      <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{startLabel(r, done)}</button>
     </div>
   </section>
 }
@@ -55,7 +58,7 @@ function SessionScreen({ r, done, onClose }) {
       <div className="section-footer">برای دیدن طرز اجرای هر حرکت، رویش بزن.</div>
     </div>
     <div className="page-end">
-      <button className="btn glass interactive prominent block" onClick={() => nav('/log/' + r.id)}>{done ? 'ثبت دوباره' : 'شروع تمرین'}</button>
+      <button className="btn glass interactive prominent block" onClick={() => nav('/log/' + r.id)}>{startLabel(r, done)}</button>
     </div>
     {info && <ExerciseInfo id={info} onClose={() => setInfo(null)} />}
   </Screen>

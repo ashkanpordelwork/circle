@@ -15,6 +15,9 @@ import ProgramTab from './ProgramTab.jsx'
 import { useMe } from '../../App.jsx'
 import { CoachPicker, adminError } from '../admin/Admin.jsx'
 import Screen from '../../components/Screen.jsx'
+import { END_REASONS } from '../../lib/session.js'
+
+const END_LABEL = Object.fromEntries(END_REASONS)
 
 
 
@@ -54,7 +57,8 @@ function ProgressTab({ student }) {
         return <div key={w.id}>
           <button className="row pressable" onClick={() => setOpen(isOpen ? null : w.id)} aria-expanded={isOpen}>
             <div className="content"><div className="title-text">{w.routine_name || 'تمرین'}</div>
-              <div className="sub">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست</div></div>
+              <div className="sub">{fmtDate(w.date)} · {sets.length.toLocaleString('fa-IR')} ست{w.duration_sec ? ` · ${Math.max(1, Math.round(w.duration_sec / 60)).toLocaleString('fa-IR')} دقیقه` : ''}</div>
+              {w.end_reason && <div className="sub" style={{ color: 'var(--orange)' }}>زودتر تمام شد: {END_LABEL[w.end_reason]}</div>}</div>
             <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
           </button>
           {isOpen && <div style={{ padding: '0 1rem 0.75rem' }}>

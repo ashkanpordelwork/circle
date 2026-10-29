@@ -24,7 +24,7 @@ export function toDraft(routines, items) {
   return [...routines].sort((a, b) => a.position - b.position).map(r => ({
     id: r.id, name: r.name, days: [...(r.days || [])], program_id: r.program_id || null, week: r.week ?? null, session: r.session ?? null,
     items: items.filter(i => i.routine_id === r.id).sort((a, b) => a.position - b.position)
-      .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '' }))
+      .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '', progression: i.progression || 'linear' }))
   }))
 }
 
@@ -42,13 +42,14 @@ export function toPayload(draft) {
       weight: num(i.weight),
       rest_sec: num(i.rest_sec),
       tempo: normTempo(i.tempo),
-      note: (i.note || '').slice(0, 500)
+      note: (i.note || '').slice(0, 500),
+      progression: ['linear', 'double', 'greyskull', 'off'].includes(i.progression) ? i.progression : 'linear'
     }))
   }))
 }
 
 // A new exercise in a session: three sets of ten until the coach says otherwise.
-export const newItem = id => ({ exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', tempo: '', note: '' })
+export const newItem = id => ({ exercise_id: id, sets: 3, reps: '10', weight: '', rest_sec: '', tempo: '', note: '', progression: 'linear' })
 
 
 // Tempo: four phases in seconds — lowering, pause at the bottom, lifting, pause at the top.

@@ -44,7 +44,7 @@ export function toProgramDraft(program, routines, items) {
     sessions: routines.filter(r => r.program_id === program.id).map(r => ({
       id: r.id, week: r.week, session: r.session,
       items: items.filter(i => i.routine_id === r.id).sort((a, b) => a.position - b.position)
-        .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '' }))
+        .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '', progression: i.progression || 'linear' }))
     }))
   }
 }

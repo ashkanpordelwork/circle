@@ -3,6 +3,7 @@ import { fmtTarget } from '../lib/plan.js'
 import Icon from './Icon.jsx'
 import { Thumb, ExName, ExerciseDetails } from './ExerciseInfo.jsx'
 import { IntField, RepsField, WeightField, TempoField } from './Wheel.jsx'
+import { RULES, RULE_NAME, RULE_DESC } from '../lib/smart.js'
 
 // One exercise of a day: a row that opens in place.
 export default function ItemRow({ item, index, count, open, onToggle, onChange, onMove, onRemove }) {
@@ -20,6 +21,13 @@ export default function ItemRow({ item, index, count, open, onToggle, onChange, 
         <div className="field"><label>تکرار</label><RepsField value={item.reps} onChange={v => set('reps', v)} /></div>
         <div className="field"><label>وزن (کیلو)</label><WeightField value={item.weight} onChange={v => set('weight', v)} title="وزن پیشنهادی" clearText="بدون وزنه" placeholder="—" /></div>
         <div className="field"><label>استراحت</label><IntField value={item.rest_sec} onChange={v => set('rest_sec', v)} title="استراحت" max={600} step={15} unit="ثانیه" suffix="ثانیه" fallback={90} clearText="بدون استراحت مشخص" placeholder="—" /></div>
+      </div>
+      {/* How the student's next weight is suggested, after each session they log. */}
+      <div className="field mt"><label>پیشرفت خودکار</label>
+        <div className="chips wrap-chips" data-no-drag role="radiogroup" aria-label="قانون پیشرفت">{RULES.map(r =>
+          <button key={r} type="button" role="radio" aria-checked={(item.progression || 'linear') === r}
+            className={'chip glass-lite pressable' + ((item.progression || 'linear') === r ? ' on' : '')} onClick={() => set('progression', r)}>{RULE_NAME[r]}</button>)}</div>
+        <div className="caption rule-desc">{RULE_DESC[item.progression || 'linear']}</div>
       </div>
       {more ? <>
         <div className="field mt"><label>تمپو <span className="caption">(پایین · مکث · بالا · مکث، به ثانیه)</span></label>

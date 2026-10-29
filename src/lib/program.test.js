@@ -59,7 +59,7 @@ describe('writing a program', () => {
   })
   it('saves only sessions with exercises, with clean numbers', () => {
     const d = setItems(addExercises(d0, 2, 1, ['squat']), 2, 1, items => items.map(i => ({ ...i, sets: '۴', reps: '۸', weight: '۶۲٫۵' })))
-    expect(toProgramPayload(d)).toEqual([{ id: d.sessions[0].id, week: 2, session: 1, items: [{ exercise_id: 'squat', sets: 4, reps: '8', weight: 62.5, rest_sec: null, tempo: '', note: '' }] }])
+    expect(toProgramPayload(d)).toEqual([{ id: d.sessions[0].id, week: 2, session: 1, items: [{ exercise_id: 'squat', sets: 4, reps: '8', weight: 62.5, rest_sec: null, tempo: '', note: '', progression: 'linear' }] }])
   })
 })
 
