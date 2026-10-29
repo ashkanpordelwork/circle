@@ -16,6 +16,7 @@ import { useMe } from '../../App.jsx'
 import { loadPlan, sessionTitle } from './data.js'
 import ExercisePicker from '../../components/ExercisePicker.jsx'
 import { saveMine } from './Routines.jsx'
+import { ReadinessSheet } from '../../components/Readiness.jsx'
 
 // A workout in progress, one exercise at a time: today's suggested weight and why, each set with
 // last time beside it, a rest timer after every tick. It survives closing the app (kept on the
@@ -60,7 +61,12 @@ export default function LogWorkout() {
         if (draft && draft.log.length >= r.items.length) {
           setLog(draft.log); setNote(draft.note || ''); setStartedAt(draft.startedAt); setAt(Math.min(draft.at || 0, r.items.length - 1))
           toast('تمرین نیمه‌کاره‌ات ادامه پیدا کرد', 'info')
-        } else setLog(buildSession(r, h, id => exerciseById(id)?.e).map((e, i) => ({ ...e, item: r.items[i] })))
+        } else {
+          setLog(buildSession(r, h, id => exerciseById(id)?.e).map((e, i) => ({ ...e, item: r.items[i] })))
+          // A fresh session asks once a day how the athlete feels (skippable; before 0009, never).
+          const { data: check, error } = await supabase.from('readiness_checks').select('date').eq('student_id', me.student.id).eq('date', todayISO()).maybeSingle()
+          if (!error && !check) setSheet('ready')
+        }
       } catch (e) { toast(errorText(e), 'error') }
     })()
   }, [routineId])
@@ -243,6 +249,7 @@ export default function LogWorkout() {
     </div>
 
     {rest && <RestTimer rest={rest} onChange={setRest} onDone={() => setRest(null)} />}
+    {sheet === 'ready' && <ReadinessSheet onClose={() => setSheet(null)} />}
     {sheet === 'note' && <NoteSheet note={note} onSave={setNote} onClose={() => setSheet(null)} />}
     {sheet === 'end' && <EndSheet left={nAll - nDone} busy={busy} onFinish={save} onDiscard={discard} onClose={() => setSheet(null)} note={note} setNote={setNote} />}
     {info && <ExerciseInfo id={info} onClose={() => setInfo(null)} />}

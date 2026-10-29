@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
 import { fmtDate, fmtNum, todayISO, faDigits, summarize, setText, kg } from '../../lib/plan.js'
 import { addDays, fmtJ, isoToJ } from '../../lib/jalali.js'
@@ -10,6 +11,7 @@ import { ExName } from '../../components/ExerciseInfo.jsx'
 import { Page, Loading, Empty, Segmented, useToast, errorText } from '../../components/ui.jsx'
 import Icon, { Disclosure } from '../../components/Icon.jsx'
 import LineChart from '../../components/LineChart.jsx'
+import BodyMap from '../../components/BodyMap.jsx'
 import WeightChart from '../../components/WeightChart.jsx'
 import Screen from '../../components/Screen.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
@@ -60,6 +62,14 @@ export default function Progress() {
           <div className="v">{change == null ? '—' : change === 0 ? <>بدون <span className="of">تغییر</span></> : <>{faDigits(Math.abs(change))} <span className="of">کیلو {change < 0 ? 'کمتر' : 'بیشتر'}</span></>}</div></div>
       </div>
     </div>
+
+    <div className="section"><div className="group glass-lite">
+      <Link to="/body" className="row pressable with-leading">
+        <div className="tile-icon lime"><Icon name="favorite" /></div>
+        <div className="content"><div className="title-text">پیشرفت و بازیابی</div><div className="sub">آمادگی، اندازه‌های بدن و عکس‌ها؛ فقط خودت می‌بینی</div></div>
+        <Disclosure />
+      </Link>
+    </div></div>
 
     {!workouts.length ? <Empty icon="monitoring" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، آمار اینجا جان می‌گیرد.</Empty> : <>
       <Insights workouts={workouts} sets={sets} today={today} />
@@ -126,11 +136,12 @@ function Balance({ workouts, sets, today }) {
     <Segmented label="بازه" value={period} onChange={setPeriod} options={PERIODS.map(([value, label]) => ({ value, label }))} />
     <div className="card glass-lite" style={{ marginBottom: 0 }}>
       {!rows.length ? <div className="subhead secondary">در این بازه تمرینی نیست.</div>
-        : <div className="balance">{rows.map(r => <div key={r.muscle} className="balance-row">
+        : <><BodyMap counts={Object.fromEntries(rows.map(r => [r.muscle, r.sets]))} />
+        <div className="balance">{rows.map(r => <div key={r.muscle} className="balance-row">
           <span className="name">{MUSCLES[r.muscle] || r.muscle}</span>
           <span className="track"><span style={{ width: `${(r.sets / top) * 100}%` }} /></span>
           <span className="n tnum">{fa(r.sets)} ست</span>
-        </div>)}</div>}
+        </div>)}</div></>}
       {missing.length > 0 && rows.length > 0 && <>
         <div className="caption" style={{ margin: '1rem 0 0.5rem' }}>در این بازه تمرین نشده</div>
         <div className="hstack wrap" style={{ gap: '0.5rem' }}>{missing.map(m => <span key={m} className="pill">{MUSCLES[m]}</span>)}</div>

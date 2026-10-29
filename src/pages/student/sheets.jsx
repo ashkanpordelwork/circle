@@ -66,7 +66,7 @@ function MoreBody() {
   const tiles = [
     ['/coach', 'sports', 'مربی', me.student?.coach_id ? 'مربی‌ات و آنچه می‌بیند' : 'پیوستن به مربی'],
     me.student?.coach_id && !me.intake?.skipped && ['/intake', 'assignment', 'پرسشنامه', 'هدف، آسیب‌ها، تغذیه'],
-    ['/stats', 'monitoring', 'پیشرفت', 'وزن و تمرین‌ها'],
+    ['/body', 'favorite', 'بدن', 'آمادگی، اندازه‌ها، عکس'],
     ['/account', 'person', 'حساب', 'نام، شماره، خروج'],
     me.admin && ['/admin', 'admin_panel_settings', 'مدیریت', 'پنل مدیر']
   ].filter(Boolean)

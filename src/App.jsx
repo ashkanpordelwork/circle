@@ -15,6 +15,7 @@ import Progress from './pages/student/Progress.jsx'
 import Routines from './pages/student/Routines.jsx'
 import RoutineEdit from './pages/student/RoutineEdit.jsx'
 import CoachLink from './pages/student/CoachLink.jsx'
+import Body from './pages/student/Body.jsx'
 import { StartSheet, MoreSheet } from './pages/student/sheets.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
@@ -97,7 +98,7 @@ export default function App() {
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
       // The athlete's: two tabs either side of the lime start button, and «بیشتر» for the rest.
-      : [['/', 'home', 'امروز'], ['/routines', 'list_alt', 'روتین'], ['start', 'fitness_center', 'شروع'], ['/stats', 'monitoring', 'آمار', '/progress'], ['more', 'more_horiz', 'بیشتر', ['/account', '/coach', '/intake', '/admin']]]
+      : [['/', 'home', 'امروز'], ['/routines', 'list_alt', 'روتین'], ['start', 'fitness_center', 'شروع'], ['/stats', 'monitoring', 'آمار', ['/progress', '/body']], ['more', 'more_horiz', 'بیشتر', ['/account', '/coach', '/intake', '/admin']]]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
@@ -120,6 +121,7 @@ export default function App() {
       <Route path="/routines/:id" element={<RoutineEdit />} />
       <Route path="/stats" element={<Progress />} />
       <Route path="/coach" element={<CoachLink />} />
+      <Route path="/body" element={<Body />} />
       <Route path="/progress" element={<Navigate to="/stats" replace />} />
       <Route path="/history" element={<Navigate to="/stats" replace />} />
       <Route path="/weight" element={<Navigate to="/stats" replace />} />
