@@ -12,6 +12,10 @@ import StudentPage from './pages/coach/StudentPage.jsx'
 import Today from './pages/student/Today.jsx'
 import LogWorkout from './pages/student/LogWorkout.jsx'
 import Progress from './pages/student/Progress.jsx'
+import Routines from './pages/student/Routines.jsx'
+import RoutineEdit from './pages/student/RoutineEdit.jsx'
+import CoachLink from './pages/student/CoachLink.jsx'
+import { StartSheet, MoreSheet } from './pages/student/sheets.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
 import { AdminHome, AdminPeople, AdminUser, AdminActivity } from './pages/admin/Admin.jsx'
@@ -67,8 +71,9 @@ export default function App() {
   if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
   if (me.role === 'stopped') return <Stopped />
   const setIntake = answers => setMe(m => ({ ...m, intake: { answers, completed_at: new Date().toISOString() } }))
-  // A new student answers the questionnaire once before seeing the plan.
-  if (me.role === 'student' && !me.intake?.completed_at && !me.intake?.skipped) {
+  // A student a coach registered answers the questionnaire once before seeing the plan. An athlete who
+  // started alone is not stopped by it: «امروز» offers it once they have a coach (it is for a coach).
+  if (me.role === 'student' && me.student.coach_id && !me.student.self_started && !me.intake?.completed_at && !me.intake?.skipped) {
     return <Intake student={me.student} initial={me.intake?.answers} onDone={setIntake} />
   }
 
@@ -91,7 +96,8 @@ export default function App() {
     ? [['/', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
-      : [['/', 'today', 'امروز'], ['/progress', 'monitoring', 'پیشرفت'], ['/account', 'person', 'حساب', '/intake']]
+      // The athlete's: two tabs either side of the lime start button, and «بیشتر» for the rest.
+      : [['/', 'home', 'امروز'], ['/routines', 'list_alt', 'روتین'], ['start', 'fitness_center', 'شروع'], ['/stats', 'monitoring', 'آمار', '/progress'], ['more', 'more_horiz', 'بیشتر', ['/account', '/coach', '/intake', '/admin']]]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
@@ -110,9 +116,13 @@ export default function App() {
       {/* «برنامه», «سابقه» and «وزن» were tabs once; old links land where they went. */}
       <Route path="/week" element={<Navigate to="/" replace />} />
       <Route path="/log/:routineId" element={<LogWorkout />} />
-      <Route path="/progress" element={<Progress />} />
-      <Route path="/history" element={<Navigate to="/progress" replace />} />
-      <Route path="/weight" element={<Navigate to="/progress" replace />} />
+      <Route path="/routines" element={<Routines />} />
+      <Route path="/routines/:id" element={<RoutineEdit />} />
+      <Route path="/stats" element={<Progress />} />
+      <Route path="/coach" element={<CoachLink />} />
+      <Route path="/progress" element={<Navigate to="/stats" replace />} />
+      <Route path="/history" element={<Navigate to="/stats" replace />} />
+      <Route path="/weight" element={<Navigate to="/stats" replace />} />
       <Route path="/intake" element={<IntakeView />} />
       <Route path="/intake/edit" element={<EditIntake />} />
       <Route path="/account" element={<Account />} />
@@ -140,20 +150,37 @@ function IntakeView() {
 function EditIntake() {
   const me = useMe()
   const nav = useNavigate()
-  if (!me.intake?.completed_at) return <Navigate to="/account" replace />
-  return <Intake student={me.student} initial={me.intake?.answers} onCancel={() => nav('/intake')} onDone={a => { me.setIntake(a); nav('/intake', { replace: true }) }} />
+  // An athlete who joined a coach fills it the first time from here too (the card on «امروز»).
+  const first = !me.intake?.completed_at
+  if (first && !me.student?.coach_id) return <Navigate to="/account" replace />
+  return <Intake student={me.student} initial={me.intake?.answers} onCancel={() => nav(first ? '/' : '/intake')} onDone={a => { me.setIntake(a); nav(first ? '/' : '/intake', { replace: true }) }} />
 }
 
 // A floating glass capsule; a droplet of glass sits under the current tab and slides to the next.
 function TabBar({ tabs }) {
   const loc = useLocation()
   const box = useRef(null)
-  // A tab may also own other paths (a student's page belongs to «شاگردان»).
-  const index = tabs.findIndex(([to, , , also]) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)) || (also && loc.pathname.startsWith(also)))
-  return <nav ref={box} className="tabbar glass" aria-label="بخش‌ها">
-    <GlassDrop container={box} selector="a" index={index} className="drop" />
-    {tabs.map(([to, icon, label], i) => <NavLink key={to} to={to} end={to === '/'} className={i === index ? 'active' : ''} aria-current={i === index ? 'page' : undefined}>
-      <Icon name={icon} filled={i === index} /><span>{label}</span>
-    </NavLink>)}
+  const [sheet, setSheet] = useState(null)   // 'start' | 'more'
+  // «امروز» without a routine offers an instant workout: the same sheet as the lime button.
+  useEffect(() => { const f = () => setSheet('start'); document.addEventListener('start-workout', f); return () => document.removeEventListener('start-workout', f) }, [])
+  // A tab may also own other paths (a student's page belongs to «شاگردان»). The lime start
+  // button is not a place, so it never holds the droplet.
+  const owns = (to, also) => (to === '/' ? loc.pathname === '/' : to.startsWith('/') && loc.pathname.startsWith(to))
+    || [].concat(also || []).some(a => loc.pathname.startsWith(a))
+  const places = tabs.filter(([to]) => to !== 'start')
+  const index = places.findIndex(([to, , , also]) => owns(to, also))
+  return <nav ref={box} className={'tabbar glass' + (tabs.some(([to]) => to === 'start') ? ' with-start' : '')} aria-label="بخش‌ها">
+    <GlassDrop container={box} selector=".tab" index={index} className="drop" />
+    {tabs.map(([to, icon, label, also]) => {
+      if (to === 'start') return <button key={to} className="tab-start pressable" onClick={() => setSheet('start')} aria-label="شروع تمرین"><Icon name={icon} filled /></button>
+      const on = owns(to, also)
+      if (to === 'more') return <button key={to} className={'tab' + (on ? ' active' : '')} onClick={() => setSheet('more')} aria-current={on ? 'page' : undefined}>
+        <Icon name={icon} filled={on} /><span>{label}</span></button>
+      return <NavLink key={to} to={to} end={to === '/'} className={'tab' + (on ? ' active' : '')} aria-current={on ? 'page' : undefined}>
+        <Icon name={icon} filled={on} /><span>{label}</span>
+      </NavLink>
+    })}
+    {sheet === 'start' && <StartSheet onClose={() => setSheet(null)} />}
+    {sheet === 'more' && <MoreSheet onClose={() => setSheet(null)} />}
   </nav>
 }

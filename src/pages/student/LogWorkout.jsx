@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { todayISO, tempoWords, faDigits, toNumber, kg } from '../../lib/plan.js'
+import { todayISO, tempoWords, faDigits, toNumber, kg, newItem } from '../../lib/plan.js'
 import { exerciseById, loadExercises, MUSCLES, EQUIPMENT } from '../../lib/exercises.js'
 import { historyOf, cfgOf, RULE_NAME } from '../../lib/smart.js'
 import { weightIncrement } from '../../lib/og/progression.js'
@@ -14,6 +14,8 @@ import Stepper from '../../components/Stepper.jsx'
 import RestTimer, { clock } from '../../components/RestTimer.jsx'
 import { useMe } from '../../App.jsx'
 import { loadPlan, sessionTitle } from './data.js'
+import ExercisePicker from '../../components/ExercisePicker.jsx'
+import { saveMine } from './Routines.jsx'
 
 // A workout in progress, one exercise at a time: today's suggested weight and why, each set with
 // last time beside it, a rest timer after every tick. It survives closing the app (kept on the
@@ -37,6 +39,7 @@ export default function LogWorkout() {
   const [sheet, setSheet] = useState(null)   // 'note' | 'end'
   const [info, setInfo] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [picking, setPicking] = useState(false)
   const [done, setDone] = useState(null)     // the summary, once saved
   const [, tick] = useState(0)
 
@@ -53,10 +56,11 @@ export default function LogWorkout() {
         const h = historyOf(ws, sets)
         setRoutine(r); setHistory(h)
         const draft = store && readDraft(store, routineId)
-        if (draft && draft.log.length === r.items.length) {
+        // Exercises added during an instant workout make the session longer than the routine.
+        if (draft && draft.log.length >= r.items.length) {
           setLog(draft.log); setNote(draft.note || ''); setStartedAt(draft.startedAt); setAt(Math.min(draft.at || 0, r.items.length - 1))
           toast('تمرین نیمه‌کاره‌ات ادامه پیدا کرد', 'info')
-        } else setLog(buildSession(r, h, id => exerciseById(id)?.e))
+        } else setLog(buildSession(r, h, id => exerciseById(id)?.e).map((e, i) => ({ ...e, item: r.items[i] })))
       } catch (e) { toast(errorText(e), 'error') }
     })()
   }, [routineId])
@@ -72,8 +76,32 @@ export default function LogWorkout() {
   if (!log) return <Page title="ثبت تمرین" back noTabbar><Loading /></Page>
   if (done) return <Summary s={done} title={sessionTitle(routine)} onDone={() => nav('/', { replace: true })} />
 
+  // Another exercise, mid-session: it starts like any other, from its history.
+  const addExercise = id => {
+    const item = newItem(id)
+    const [entry] = buildSession({ id: routine.id, items: [item] }, history, y => exerciseById(y)?.e)
+    setLog(l => { setAt(l.length); return [...l, { ...entry, item }] })
+  }
+  const picker = picking && <ExercisePicker routineName={sessionTitle(routine)} added={log.map(e => e.exercise_id)} onPick={addExercise} onClose={() => setPicking(false)} />
+
+  // Leaving an instant workout before its first exercise leaves no empty routine behind.
+  const leaveEmpty = async () => {
+    store && dropDraft(store, routineId)
+    if (routine.owner === 'self' && !routine.items.length) await supabase.from('routines').delete().eq('id', routine.id)
+    nav(-1)
+  }
+  // An instant workout starts empty: the first exercise is the first thing to do.
+  if (!log.length) return <Page title={sessionTitle(routine)} subtitle={clock((Date.now() - startedAt) / 1000)} back={leaveEmpty} noTabbar>
+    <div className="card glass-lite">
+      <div className="headline">اولین حرکت را اضافه کن</div>
+      <p className="subhead secondary">حرکت‌ها را حین تمرین یکی‌یکی اضافه کن؛ آخر کار همین‌ها روتینت می‌شوند.</p>
+      <button className="btn glass interactive prominent block" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
+    </div>
+    {picker}
+  </Page>
+
   const ex = log[at]
-  const item = routine.items[at]
+  const item = ex.item || routine.items[at] || newItem(ex.exercise_id)
   const x = exerciseById(ex.exercise_id)
   const step = weightIncrement(cfgOf(item), 'kg')
   const nDone = doneSets(log), nAll = totalSets(log)
@@ -120,6 +148,11 @@ export default function LogWorkout() {
         }
       }
       await must(supabase.from('workout_sets').insert(rows))
+      // Exercises added to one of the athlete's own routines stay in it for next time.
+      if (routine.owner === 'self' && log.length > routine.items.length) {
+        const added = log.slice(routine.items.length).map(e => ({ ...e.item, sets: e.sets.length, reps: String(toNumber(e.sets[0]?.reps) ?? e.item.reps) }))
+        await saveMine(routine.id, routine.name, [...routine.items, ...added]).catch(() => {})
+      }
       store && dropDraft(store, routineId)
       setRest(null); setSheet(null)
       setDone(summarize(log, history, duration))
@@ -201,6 +234,7 @@ export default function LogWorkout() {
       </button>
     </div></div>
 
+    <button className="btn glass interactive block add-ex" onClick={() => setPicking(true)}><Icon name="add" />افزودن حرکت</button>
     <div className="ex-nav">
       <button className="btn glass interactive grow" disabled={at === 0} onClick={() => setAt(at - 1)}><Icon name="chevron_right" />قبلی</button>
       {at < log.length - 1
@@ -212,6 +246,7 @@ export default function LogWorkout() {
     {sheet === 'note' && <NoteSheet note={note} onSave={setNote} onClose={() => setSheet(null)} />}
     {sheet === 'end' && <EndSheet left={nAll - nDone} busy={busy} onFinish={save} onDiscard={discard} onClose={() => setSheet(null)} note={note} setNote={setNote} />}
     {info && <ExerciseInfo id={info} onClose={() => setInfo(null)} />}
+    {picker}
   </Page>
 }
 

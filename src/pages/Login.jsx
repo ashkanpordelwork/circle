@@ -76,11 +76,28 @@ export default function Login() {
   </main>
 }
 
+// A new account with no role. Most people start training on their own right away; someone a
+// coach has registered enters the invite code instead (a number already registered can only do
+// that — start_athlete answers «invited»).
 export function NotRegistered({ email }) {
   const toast = useToast()
+  const [mode, setMode] = useState('start')   // 'start' | 'code'
+  const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const phone = email?.endsWith('@phone.invalid') ? email.split('@')[0] : null
+  const start = async e => {
+    e.preventDefault()
+    if (!name.trim()) return
+    setBusy(true)
+    const { error } = await supabase.rpc('start_athlete', { p_name: name.trim() })
+    setBusy(false)
+    if (!error) { toast(`خوش آمدی ${name.trim()}!`, 'success'); return setTimeout(() => window.location.reload(), 500) }
+    if (/invited/.test(error.message)) { setMode('code'); return toast('مربی‌ات این شماره را ثبت کرده؛ کد دعوتش را وارد کن.', 'info') }
+    // Before migration 0008 nobody can start alone: only the invite is left.
+    if (/start_athlete|function/i.test(error.message)) { setMode('code'); return toast('فعلاً فقط با کد دعوت مربی می‌شود وارد شد.', 'warning') }
+    toast(errorText(error), 'error')
+  }
   const claim = async e => {
     e.preventDefault()
     if (!code.trim()) return
@@ -92,17 +109,28 @@ export function NotRegistered({ email }) {
     setTimeout(() => window.location.reload(), 600)
   }
   return <main className="auth">
-    <div className="mark"><Icon name="key" /></div>
-    <h1 className="title" style={{ textAlign: 'center' }}>یک قدم مانده</h1>
-    <p className="lead">کد دعوتی را که مربی برایت فرستاده وارد کن تا برنامه‌ات باز شود.</p>
-    {phone && <form onSubmit={claim} className="panel glass">
-      <div className="field">
-        <label htmlFor="cl">کد دعوت برای <span className="latin">{fmtPhone(phone)}</span></label>
-        <input id="cl" className="input code" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} autoFocus />
-      </div>
-      <button className="btn glass interactive prominent block" disabled={busy || !code.trim()}>تأیید کد</button>
-    </form>}
-    <p className="footnote" style={{ textAlign: 'center' }}>اگر مربی هستی، صاحب برنامه باید شماره‌ات را در لیست مربی‌ها ثبت کند.</p>
+    <div className="mark"><Icon name={mode === 'start' ? 'fitness_center' : 'key'} /></div>
+    {mode === 'start' ? <>
+      <h1 className="title" style={{ textAlign: 'center' }}>خوش آمدی</h1>
+      <p className="lead">اسمت را بنویس و همین حالا تمرین را شروع کن. هر ستی که ثبت کنی، ست بعدی را مشخص می‌کند.</p>
+      <form onSubmit={start} className="panel glass">
+        <div className="field"><label htmlFor="nm">اسمت</label>
+          <input id="nm" className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} autoFocus autoComplete="name" /></div>
+        <button className="btn glass interactive prominent block" disabled={busy || !name.trim()}>{busy ? 'کمی صبر کن…' : 'شروع'}</button>
+      </form>
+      <button className="btn plain pressable" onClick={() => setMode('code')}><Icon name="key" />کد دعوت مربی دارم</button>
+    </> : <>
+      <h1 className="title" style={{ textAlign: 'center' }}>کد دعوت</h1>
+      <p className="lead">کدی را که مربی برایت فرستاده وارد کن تا برنامه‌ات باز شود.</p>
+      {phone && <form onSubmit={claim} className="panel glass">
+        <div className="field">
+          <label htmlFor="cl">کد دعوت برای <span className="latin">{fmtPhone(phone)}</span></label>
+          <input id="cl" className="input code" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} autoFocus />
+        </div>
+        <button className="btn glass interactive prominent block" disabled={busy || !code.trim()}>تأیید کد</button>
+      </form>}
+      <button className="btn plain pressable" onClick={() => setMode('start')}><Icon name="chevron_right" />بدون مربی شروع می‌کنم</button>
+    </>}
     <button className="btn plain pressable" onClick={() => supabase.auth.signOut()}><Icon name="logout" mirror />خروج</button>
   </main>
 }

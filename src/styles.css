@@ -478,7 +478,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   will-change: transform;
   z-index: 0;
 }
-.tabbar a {
+.tabbar .tab {
   position: relative;
   z-index: 1;
   min-width: 4.25rem;
@@ -495,11 +495,11 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   line-height: 1rem;
   border-radius: var(--radius-sm);
 }
-.tabbar a .icon { font-size: 1.5rem; }
-.tabbar a { transition: color 220ms ease; }
-.tabbar a.active { color: var(--accent); }
-.tabbar a.active .icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
-@media (max-width: 380px) { .tabbar a { min-width: 3.5rem; padding-inline: 0.5rem; } }
+.tabbar .tab .icon { font-size: 1.5rem; }
+.tabbar .tab { transition: color 220ms ease; }
+.tabbar .tab.active { color: var(--accent); }
+.tabbar .tab.active .icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
+@media (max-width: 380px) { .tabbar .tab { min-width: 3.5rem; padding-inline: 0.5rem; } }
 
 /* ---------- floating bar (save, rest timer) ---------- */
 
@@ -1007,3 +1007,86 @@ input.stepper-value { outline: none; box-shadow: inset 0 0 0 1.5px var(--lime); 
 .done-hero .title { margin: 0; }
 /* − on the left, + on the right, like a number line, in either direction of text. */
 .stepper-buttons { direction: ltr; }
+
+/* ---------- the athlete's tab bar: a lime start button in the middle ---------- */
+
+button.tab { border: 0; background: transparent; font: inherit; cursor: pointer; }
+.tabbar.with-start { align-items: center; }
+.tabbar .tab-start { position: relative; z-index: 1; width: 3.5rem; height: 3.5rem; margin: 0 0.25rem; border: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--lime); color: var(--on-accent); cursor: pointer; flex: none; }
+.tabbar .tab-start .icon { font-size: 1.75rem; }
+.tabbar.with-start .tab { min-width: 3.75rem; }
+@media (max-width: 380px) { .tabbar.with-start .tab { min-width: 3.25rem; padding-inline: 0.25rem; } }
+
+/* ---------- large titles on the athlete's root pages ---------- */
+
+.big-title { padding: 0.5rem 0.25rem 1.5rem; }
+.big-title h1 { margin: 0; font-size: 2.25rem; line-height: 1.2; font-weight: 700; }
+.big-title .caption { color: var(--label-2); }
+
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 0.75rem; }
+.section-head .section-title { padding-bottom: 0; }
+
+/* «امروز»: the session up next, with a round play button. */
+.up-next { display: flex; align-items: center; gap: 1rem; margin-bottom: 0; }
+.up-next-main { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; padding: 0; cursor: pointer; }
+.up-next-main .title { margin: 0.25rem 0; }
+.play { width: 3.5rem; height: 3.5rem; border-radius: 50%; border: 0; display: grid; place-items: center; flex: none; cursor: pointer;
+  background: var(--lime); color: var(--on-accent); }
+.play .icon { font-size: 2rem; }
+.play.small { width: 2.75rem; height: 2.75rem; }
+.play.small .icon { font-size: 1.5rem; }
+.play:disabled { opacity: 0.5; }
+
+/* The week, Saturday to Friday. */
+.week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+.wday { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem 0; border-radius: var(--radius-sm); background: var(--surface-2); }
+.wday .l { font-size: 0.75rem; color: var(--label-2); }
+.wday .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.wday .m { height: 1rem; display: grid; place-items: center; }
+.wday .m .icon { font-size: 1rem; }
+.wday.trained { color: var(--accent); }
+.wday.today { background: var(--lime); color: var(--on-accent); }
+.wday.today .l { color: var(--on-accent); }
+.wday.future { opacity: 0.5; }
+.stat .l .icon { font-size: 1rem; vertical-align: -0.2em; margin-inline-end: 0.25rem; }
+
+/* Sessions per week: eight small bars, this week in lime. */
+.bars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.5rem; height: 8rem; align-items: end; margin-top: 1rem; }
+.bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.25rem; }
+.bar .b { width: 100%; max-width: 1.5rem; min-height: 2px; border-radius: 6px; background: var(--surface-2); }
+.bar.now .b { background: var(--lime); }
+.bar .v { font-size: 0.75rem; color: var(--label-2); }
+.bar .d { font-size: 0.75rem; color: var(--label-3); }
+
+/* Water. */
+.water-total { font-size: 2rem; font-weight: 700; margin: 0.5rem 0 1rem; }
+.water-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.water-btn { border: 0; border-radius: var(--radius); background: var(--surface-2); color: var(--label); font: inherit; padding: 0.75rem 0.25rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem; cursor: pointer; }
+.water-btn .a { font-weight: 600; }
+
+/* «روتین»: own routines as tiles, two a row. */
+.routine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+.routine-card { position: relative; border-radius: var(--radius-lg); background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); }
+.routine-open { width: 100%; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; cursor: pointer; min-height: 8.5rem; }
+.routine-open .tile-icon { margin-bottom: 1rem; }
+.routine-card .play { position: absolute; top: 0.75rem; inset-inline-end: 0.75rem; }
+.template-card { display: flex; align-items: center; gap: 1rem; margin-bottom: 0; }
+
+/* The start sheet's instant workout. */
+.instant-card { border-radius: var(--radius-lg); padding: 1rem; background: color-mix(in srgb, var(--lime) 8%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lime) 30%, transparent); }
+
+/* «بیشتر»: tiles two a row. */
+.more-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+.more-tile { border: 0; border-radius: var(--radius-lg); background: var(--surface-2); color: var(--label); font: inherit; text-align: start;
+  padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; cursor: pointer; }
+.more-tile .tile-icon { margin-bottom: 0.75rem; }
+
+.consent { display: flex; gap: 0.75rem; align-items: flex-start; line-height: 1.7; font-size: 0.875rem; color: var(--label-2); cursor: pointer; }
+.consent input { width: 1.25rem; height: 1.25rem; margin-top: 0.2rem; accent-color: var(--lime); flex: none; }
+.add-ex { margin-bottom: 0.75rem; }
+.join-code { display: flex; align-items: center; gap: 1rem; }
+.code-big { font-size: 1.75rem; font-weight: 700; letter-spacing: 0.2em; direction: ltr; text-align: right; }
+a.alert-strip { text-decoration: none; }
+.alert-strip.invite > .icon { color: var(--orange); }

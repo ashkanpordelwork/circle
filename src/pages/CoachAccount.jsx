@@ -44,6 +44,11 @@ export default function CoachAccount() {
     try { await navigator.clipboard.writeText(text); toast('لینک اپ کپی شد', 'success') } catch { toast('کپی در این مرورگر ممکن نیست', 'warning') }
   }
 
+  const shareCode = async () => {
+    const text = `کد مربی من در اپ Circle: ${coach.join_code}\n${appUrl()}`
+    if (navigator.share) return navigator.share({ text }).catch(() => {})
+    try { await navigator.clipboard.writeText(text); toast('کد مربی کپی شد', 'success') } catch { toast('کپی در این مرورگر ممکن نیست', 'warning') }
+  }
   const name = coach.full_name?.trim()
   return <>
     <section className="card glass-lite coach-card">
@@ -59,8 +64,17 @@ export default function CoachAccount() {
     </section>
     {!name && <div className="section-footer" style={{ marginTop: '-0.75rem', marginBottom: '2.5rem' }}>نامتان را وارد کنید تا در پیام دعوت شاگردها بیاید.</div>}
 
+    {coach.join_code && <div className="section">
+      <div className="section-title">کد مربی</div>
+      <div className="card glass-lite join-code" style={{ marginBottom: 0 }}>
+        <div className="grow"><div className="latin tnum code-big">{coach.join_code}</div>
+          <div className="footnote">کسی که خودش در اپ حساب دارد، با این کد از «بیشتر ← مربی» به شاگردهایت می‌پیوندد.</div></div>
+        <button className="icon-btn glass interactive" onClick={shareCode} aria-label="فرستادن کد مربی"><Icon name="share" /></button>
+      </div>
+    </div>}
+
     <div className="section">
-            <div className="group glass-lite">
+      <div className="group glass-lite">
         <button className="row pressable with-leading" onClick={shareApp}>
           <div className="tile-icon blue"><Icon name="share" /></div>
           <div className="content"><div className="title-text">ارسال لینک اپ</div><div className="sub latin" style={{ textAlign: 'right' }}>{appUrl().replace(/^https?:\/\//, '')}</div></div><Disclosure /></button>

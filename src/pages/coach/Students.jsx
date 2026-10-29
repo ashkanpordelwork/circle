@@ -123,7 +123,8 @@ export default function Students() {
       const [students, workouts, routines, programs] = await Promise.all([
         must(supabase.from('students').select('*').eq('coach_id', scope.uid).order('full_name')),
         must(supabase.from('workouts').select('id, student_id, routine_name, date, created_at, workout_sets(count), students!inner(coach_id)').eq('students.coach_id', scope.uid).gte('date', isoMinus(today, 60)).order('date', { ascending: false }).limit(1000)),
-        must(supabase.from('routines').select('student_id, name, days, program_id, week, session, students!inner(coach_id)').eq('students.coach_id', scope.uid)),
+        // The athlete's own routines are theirs (0008): the week is judged by what the coach planned.
+        must(supabase.from('routines').select('*, students!inner(coach_id)').eq('students.coach_id', scope.uid)).then(rs => rs.filter(r => r.owner !== 'self')),
         // Before migration 0006 there are no programs: weekday plans only.
         supabase.from('programs').select('id, student_id, start_date, weeks, per_week, students!inner(coach_id)').eq('students.coach_id', scope.uid).then(r => r.data || [])
       ])

@@ -1,174 +1,211 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { routinesForDay, DAY_NAMES, WEEK, todayISO, fmtTarget, faDigits } from '../../lib/plan.js'
-import { pickPrograms, studentWeek, weekOf, weekRange, weekLabel, sessionLabel, programEnd } from '../../lib/program.js'
-import { fmtJ, fmtRange, addDays } from '../../lib/jalali.js'
-import { Page, Loading, Empty, useToast, errorText } from '../../components/ui.jsx'
-import Icon, { Disclosure } from '../../components/Icon.jsx'
-import ExerciseInfo, { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
-import Screen from '../../components/Screen.jsx'
+import { todayISO, toNumber, fmtNum, faDigits } from '../../lib/plan.js'
+import { pickPrograms, studentWeek, sessionLabel, weekLabel } from '../../lib/program.js'
+import { addDays, fmtJ, fmtRange, isoToJ } from '../../lib/jalali.js'
+import { weekDays, streakWeeks, weeklyCounts, volumeOf, nextOwn, weekStartOf } from '../../lib/home.js'
+import { DAY_NAMES, routinesForDay } from '../../lib/plan.js'
+import { Page, Loading, useToast, errorText, haptic } from '../../components/ui.jsx'
+import Icon from '../../components/Icon.jsx'
+import { WeightField } from '../../components/Wheel.jsx'
 import { useMe } from '../../App.jsx'
-import { loadStudentPlan, sessionTitle } from './data.js'
+import { loadStudentPlan } from './data.js'
+import { startLabel, minutes, SessionScreen } from './plan-parts.jsx'
 import { scope } from '../../lib/scope.js'
-import { readDraft } from '../../lib/session.js'
 
-// «امروز» is the student's whole plan: the session to do now on top, and under it every week of
-// the program, a tap away. (It used to be split over «امروز» and «برنامه», showing this week twice.)
+// «امروز»: what to do next, how the week is going, and the two habits worth a tap a day —
+// body weight and water. The coach's whole plan lives under «روتین»; this is the front page.
 
 const fa = n => Number(n).toLocaleString('fa-IR')
-// A session left half done on this device continues where it stopped (lib/session.js).
-const startLabel = (r, done) => (readDraft(localStorage, r.id) ? 'ادامه‌ی تمرین' : done ? 'ثبت دوباره' : 'شروع تمرین')
-const minutes = r => Math.max(15, Math.round(r.items.reduce((m, i) => m + i.sets * 2.2, 0)))
+const WEEK_LETTERS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+const WATER = [[250, 'لیوان', '۲۵۰ میلی'], [500, 'شیکر', '۰٫۵ لیتر'], [1000, 'بطری', '۱ لیتر']]
 
-// A session to do: its exercises and the start button.
-function SessionHero({ r, kicker, done }) {
-  const nav = useNavigate()
-  return <section className="card hero" aria-label={sessionTitle(r)}>
-    <div className="hstack between">
-      <div><div className="caption kicker">{kicker}</div><h2 className="title">{r.program_id ? sessionLabel(r.session) : r.name}</h2></div>
-      {done && <span className="pill on-hero"><Icon name="check" />انجام شد</span>}
-    </div>
-    <div className="footnote" style={{ margin: '0.25rem 0 1rem' }}>{fa(r.items.length)} حرکت · حدود {fa(minutes(r))} دقیقه</div>
-    <div className="group hero-list">
-      {r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
-        <Thumb id={it.exercise_id} />
-        <div className="content"><ExName id={it.exercise_id} /><div className="sub">{fmtTarget(it)}</div></div>
-      </div>)}
-    </div>
-    <div className="hero-actions">
-      <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{startLabel(r, done)}</button>
-    </div>
-  </section>
-}
-
-// Any session, opened from the plan: what it holds, how each move is done, and the start button.
-function SessionScreen({ r, done, onClose }) {
-  const nav = useNavigate()
-  const [info, setInfo] = useState(null)
-  return <Screen title={sessionTitle(r)} subtitle={`${fa(r.items.length)} حرکت · حدود ${fa(minutes(r))} دقیقه`} onClose={onClose}>
-    <div className="section">
-      <div className="group glass-lite">{r.items.map((it, i) => <button key={i} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => setInfo(it.exercise_id)}>
-        <Thumb id={it.exercise_id} />
-        <div className="content"><ExName id={it.exercise_id} />
-          <div className="sub">{fmtTarget(it)}{it.rest_sec !== '' ? ` · استراحت ${faDigits(it.rest_sec)} ثانیه` : ''}</div>
-          {it.note && <div className="sub">{it.note}</div>}</div>
-        <Disclosure />
-      </button>)}</div>
-      <div className="section-footer">برای دیدن طرز اجرای هر حرکت، رویش بزن.</div>
-    </div>
-    <div className="page-end">
-      <button className="btn glass interactive prominent block" onClick={() => nav('/log/' + r.id)}>{startLabel(r, done)}</button>
-    </div>
-    {info && <ExerciseInfo id={info} onClose={() => setInfo(null)} />}
-  </Screen>
-}
-
-// One row of the plan: done, or its number in the week.
-function SessionRow({ r, mark, title, done, when, onOpen }) {
-  return <button className="row pressable with-leading" onClick={() => onOpen(r)}>
-    <div className={'tile-icon num' + (done ? '' : ' gray')}>{done ? <Icon name="check" /> : mark}</div>
-    <div className="content"><div className="title-text">{title}</div>
-      <div className="sub">{when && <>{when} · </>}{done ? 'انجام شد' : when ? `${fa(r.items.length)} حرکت` : `${fa(r.items.length)} حرکت · حدود ${fa(minutes(r))} دقیقه`}</div></div>
-    <Disclosure />
-  </button>
-}
-
-// The program week by week: this week first, the others a tap away.
-function ProgramWeeks({ p, sessions, doneIds, onOpen }) {
-  const today = todayISO()
-  const cur = weekOf(p, today)
-  const [week, setWeek] = useState(cur || 1)
-  const [a, b] = weekRange(p, week)
-  const list = sessions.filter(s => s.program_id === p.id && s.week === week).sort((x, y) => x.session - y.session)
-  return <div className="section">
-    <div className="section-title">برنامه · {fmtRange(p.start_date, programEnd(p))}</div>
-    {p.weeks > 1 && <div className="week-tabs" role="tablist">{Array.from({ length: p.weeks }, (_, k) => k + 1).map(n =>
-      <button key={n} role="tab" aria-selected={n === week} className={'week-tab pressable' + (n === week ? ' on' : '') + (n === cur ? ' now' : '')} onClick={() => setWeek(n)}>
-        <span className="t">{weekLabel(n)}</span><span className="f">{n === cur ? 'این هفته' : n < (cur || 0) ? 'گذشته' : ''}</span>
-      </button>)}</div>}
-    {!list.length ? <div className="group glass-lite"><div className="row with-leading"><div className="tile-icon gray"><Icon name="hourglass_top" /></div>
-      <div className="content"><div className="title-text secondary">هنوز نوشته نشده</div><div className="sub">{fmtRange(a, b)}</div></div></div></div>
-      : <div className="group glass-lite">{list.map(s => <SessionRow key={s.id} r={s} mark={fa(s.session)} title={sessionLabel(s.session)} done={doneIds.has(s.id)} onOpen={onOpen} />)}</div>}
-    <div className="section-footer">{fmtRange(a, b)} · جلسه‌ها را به ترتیب و در هر روزی که برایت مناسب است انجام بده.</div>
-  </div>
-}
-
-// A monthly program: the next session up front, the program under it.
-function ProgramToday({ programs, sessions, doneIds, onOpen }) {
-  const today = todayISO()
-  const { current, next } = pickPrograms(programs, today)
-  const shown = current || next || programs.at(-1)
-  let top
-  if (!current) top = next
-    ? <Empty icon="calendar_month" title="برنامه جدیدت در راه است">از {fmtJ(next.start_date)} شروع می‌شود.</Empty>
-    : <Empty icon="hourglass_top" title="برنامه‌ات تمام شد">مربی برنامه بعدی را می‌نویسد؛ به محض آماده شدن همین‌جا می‌بینی.</Empty>
-  else {
-    const w = studentWeek(current, sessions, doneIds, today)
-    const doneCount = w.list.filter(s => s.done).length
-    top = <>
-      <div className="week-head">
-        <div><div className="caption kicker">{weekLabel(w.week)} از {fa(current.weeks)}</div>
-          <div className="headline">{w.list.length ? `${fa(doneCount)} از ${fa(w.list.length)} جلسه این هفته` : 'این هفته هنوز جلسه‌ای ندارد'}</div></div>
-        {w.list.length > 0 && <div className="pips big" aria-hidden="true">{w.list.map(s => <span key={s.id} className={s.done ? 'done' : s === w.next ? 'today' : ''} />)}</div>}
-      </div>
-      {!w.list.length ? null
-        : w.next ? <SessionHero r={w.next} kicker="جلسه بعدی" />
-          : <div className="card glass-lite">
-            <div className="card-head" style={{ marginBottom: 0 }}><div className="tile-icon"><Icon name="check" /></div>
-              <div><div className="headline">همه جلسه‌های این هفته انجام شد</div>
-                <div className="footnote">{w.end >= programEnd(current) ? 'این آخرین هفته برنامه بود.' : `هفته بعد از ${fmtJ(addDays(w.end, 1), false)} شروع می‌شود.`}</div></div></div>
-          </div>}
-    </>
+// The session to do next: the coach's (program or today's weekday plan) first, else the
+// athlete's own routine trained longest ago.
+function upNext(data, today) {
+  if (data.programs.length) {
+    const { current } = pickPrograms(data.programs, today)
+    if (current) {
+      const w = studentWeek(current, data.sessions, data.doneIds, today)
+      if (w.next) return { r: w.next, kicker: `${weekLabel(w.week)} · برنامه‌ی مربی`, title: sessionLabel(w.next.session) }
+    }
+  } else if (data.weekdays.length) {
+    const r = routinesForDay(data.weekdays, new Date().getDay()).find(x => !data.doneToday.has(x.id))
+    if (r) return { r, kicker: 'برنامه‌ی امروز مربی', title: r.name }
   }
-  return <>{top}<ProgramWeeks key={shown.id} p={shown} sessions={sessions} doneIds={doneIds} onOpen={onOpen} /></>
-}
-
-// A weekday plan from before monthly programs: today's session, then the week day by day.
-function WeekdayToday({ plan, doneToday, onOpen }) {
-  const today = new Date().getDay()
-  const todays = routinesForDay(plan, today)
-  const next = !todays.length ? WEEK.map((_, k) => (today + k + 1) % 7).find(d => routinesForDay(plan, d).length) : undefined
-  if (!plan.length) return <Empty icon="hourglass_top" title="برنامه‌ات در راه است">مربی هنوز برنامه را نفرستاده. به محض آماده شدن همین‌جا می‌بینی.</Empty>
-  return <>
-    {!todays.length ? <div className="card glass-lite">
-      <div className="card-head" style={{ marginBottom: 0 }}><div className="tile-icon blue"><Icon name="bedtime" filled /></div>
-        <div><div className="headline">امروز روز استراحت است</div>
-          {next !== undefined && <div className="footnote">تمرین بعدی: {DAY_NAMES[next]} — {routinesForDay(plan, next).map(r => r.name).join(' + ')}</div>}</div></div>
-    </div> : todays.map(r => <SessionHero key={r.id} r={r} kicker="تمرین امروز" done={doneToday.has(r.id)} />)}
-    <div className="section">
-      <div className="section-title">برنامه هفته</div>
-      <div className="group glass-lite">{WEEK.flatMap(d => routinesForDay(plan, d).map(r =>
-        <SessionRow key={d + r.id} r={r} mark={<Icon name="fitness_center" />} title={r.name} onOpen={onOpen}
-          when={d === today ? <span style={{ color: 'var(--accent)' }}>{DAY_NAMES[d]}، امروز</span> : DAY_NAMES[d]}
-          done={d === today && doneToday.has(r.id)} />))}</div>
-      <div className="section-footer">روزهایی که اینجا نیستند، روز استراحت‌اند.</div>
-    </div>
-  </>
+  const own = nextOwn(data.mine, data.lastDone)
+  return own ? { r: own, kicker: 'روتین بعدی تو', title: own.name } : null
 }
 
 export default function Today() {
   const me = useMe()
+  const nav = useNavigate()
   const toast = useToast()
   const [data, setData] = useState(null)
   const [open, setOpen] = useState(null)
+  const today = todayISO()
   useEffect(() => {
     (async () => {
       try {
-        const [plan, ws] = await Promise.all([loadStudentPlan(),
-          must(supabase.from('workouts').select('routine_id, date').eq('student_id', scope.student).gte('date', addDays(todayISO(), -120)))])
-        setData({ ...plan, doneIds: new Set(ws.map(w => w.routine_id)), doneToday: new Set(ws.filter(w => w.date === todayISO()).map(w => w.routine_id)) })
-      } catch (e) { toast(errorText(e), 'error'); setData({ programs: [], sessions: [], weekdays: [], doneIds: new Set(), doneToday: new Set() }) }
+        const since = addDays(weekStartOf(today), -7 * 9)
+        const [plan, ws, weights, water] = await Promise.all([loadStudentPlan(),
+          must(supabase.from('workouts').select('id, routine_id, date').eq('student_id', scope.student).gte('date', since).order('date')),
+          must(supabase.from('body_weights').select('date, weight').eq('student_id', scope.student).order('date', { ascending: false }).limit(2)),
+          // Before migration 0008 there is no water table: the card simply starts at zero.
+          supabase.from('water_logs').select('ml').eq('student_id', scope.student).eq('date', today).maybeSingle().then(r => r.data?.ml ?? 0)])
+        const thisWeek = ws.filter(w => w.date >= weekStartOf(today))
+        const sets = thisWeek.length ? await must(supabase.from('workout_sets').select('weight, reps').in('workout_id', thisWeek.map(w => w.id))) : []
+        const lastDone = {}
+        for (const w of ws) if (w.routine_id) lastDone[w.routine_id] = w.date
+        setData({ ...plan, ws, sets, weights, water, lastDone,
+          doneIds: new Set(ws.map(w => w.routine_id)), doneToday: new Set(ws.filter(w => w.date === today).map(w => w.routine_id)) })
+      } catch (e) { toast(errorText(e), 'error'); setData(false) }
     })()
   }, [])
-  if (!data) return <Page><Loading /></Page>
+  if (data === null) return <Page><Loading /></Page>
+  if (!data) return <Page><Header today={today} /></Page>
+
+  const dates = [...new Set(data.ws.map(w => w.date))]
+  const week = weekDays(today, dates)
+  const weekCount = data.ws.filter(w => w.date >= weekStartOf(today)).length
+  const next = upNext(data, today)
+  const counts = weeklyCounts(dates, today, 8)
+  const top = Math.max(3, ...counts.map(c => c.count))
+
   return <Page>
+    <Header today={today} />
+
     {me.student.note?.trim() && <div className="card glass-lite">
       <div className="card-head"><div className="tile-icon orange"><Icon name="sticky_note_2" filled /></div><div className="headline">از طرف مربی</div></div>
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
-    {data.programs.length ? <ProgramToday programs={data.programs} sessions={data.sessions} doneIds={data.doneIds} onOpen={setOpen} />
-      : <WeekdayToday plan={data.weekdays} doneToday={data.doneToday} onOpen={setOpen} />}
-    {open && <SessionScreen r={open} done={data.programs.length ? data.doneIds.has(open.id) : data.doneToday.has(open.id)} onClose={() => setOpen(null)} />}
+
+    {me.student.coach_id && !me.intake?.completed_at && !me.intake?.skipped && <Link to="/intake/edit" className="alert-strip invite pressable">
+      <Icon name="assignment" /><div className="grow"><div className="title-text">پرسشنامه برای مربی</div><div className="sub">هدف، آسیب‌ها و تغذیه؛ مربی با آن برنامه‌ات را می‌نویسد</div></div><Icon name="chevron_left" />
+    </Link>}
+
+    <div className="section">
+      <div className="section-title">بعدی</div>
+      {next ? <div className="up-next card hero">
+        <button className="up-next-main pressable" onClick={() => setOpen(next.r)}>
+          <div className="caption kicker">{next.kicker}</div>
+          <h2 className="title">{next.title}</h2>
+          <div className="footnote">{fa(next.r.items.length)} حرکت · حدود {fa(minutes(next.r))} دقیقه</div>
+        </button>
+        <button className="play pressable" onClick={() => nav('/log/' + next.r.id)} aria-label={startLabel(next.r, false)}><Icon name="play_arrow" filled /></button>
+      </div> : <div className="card glass-lite">
+        <div className="headline">اولین روتینت را بساز</div>
+        <p className="subhead secondary">یکی از روتین‌های آماده را بردار، یا همین حالا بدون برنامه شروع کن و حرکت‌ها را حین تمرین اضافه کن.</p>
+        <div className="hstack">
+          <button className="btn glass interactive prominent grow" onClick={() => nav('/routines')}><Icon name="list_alt" />روتین‌ها</button>
+          <button className="btn glass interactive grow" onClick={() => document.dispatchEvent(new Event('start-workout'))}><Icon name="bolt" />تمرین فوری</button>
+        </div>
+      </div>}
+    </div>
+
+    <div className="section">
+      <div className="section-title">این هفته</div>
+      <div className="card glass-lite" style={{ marginBottom: '0.75rem' }}>
+        <div className="hstack between" style={{ marginBottom: '1rem' }}>
+          <div><div className="headline">{fmtRange(week[0].date, week[6].date)}</div>
+            <div className="footnote">{weekCount ? `${fa(weekCount)} جلسه انجام شد` : 'هنوز جلسه‌ای در این هفته نیست'}</div></div>
+        </div>
+        <div className="week-strip">{week.map((d, i) => <div key={d.date} className={'wday' + (d.today ? ' today' : '') + (d.trained ? ' trained' : '') + (d.future ? ' future' : '')}>
+          <span className="l">{WEEK_LETTERS[i]}</span><span className="n">{fa(isoToJ(d.date)[2])}</span>
+          <span className="m">{d.trained && <Icon name="check" />}</span>
+        </div>)}</div>
+      </div>
+      <div className="stats" style={{ marginBottom: '0.75rem' }}>
+        <div className="stat glass-lite"><div className="l"><Icon name="local_fire_department" />پیوستگی</div><div className="v">{fa(streakWeeks(dates, today))} <span className="of">هفته</span></div></div>
+        <div className="stat glass-lite"><div className="l"><Icon name="fitness_center" />حجم این هفته</div><div className="v">{fa(volumeOf(data.sets))} <span className="of">کیلو</span></div></div>
+      </div>
+      <div className="card glass-lite" style={{ marginBottom: 0 }}>
+        <div className="headline">جلسه در هفته</div>
+        <div className="footnote">هشت هفته‌ی اخیر</div>
+        <div className="bars" role="img" aria-label={`جلسه‌ها در هشت هفته‌ی اخیر: ${counts.map(c => c.count).join('، ')}`}>
+          {counts.map((c, i) => <div key={c.start} className={'bar' + (i === counts.length - 1 ? ' now' : '')}>
+            <span className="v">{c.count ? fa(c.count) : ''}</span>
+            <span className="b" style={{ height: `${(c.count / top) * 100}%` }} />
+            <span className="d">{fa(isoToJ(c.start)[2])}</span>
+          </div>)}
+        </div>
+      </div>
+    </div>
+
+    <div className="section">
+      <div className="section-title">بدن و عادت‌ها</div>
+      <WeightCard weights={data.weights} onSaved={w => setData(d => ({ ...d, weights: [{ date: today, weight: w }, ...d.weights.filter(x => x.date !== today)] }))} />
+      <WaterCard ml={data.water} onChange={ml => setData(d => ({ ...d, water: ml }))} />
+    </div>
+
+    <div className="section">
+      <div className="section-title">کتابخانه</div>
+      <div className="stats">
+        <Link to="/routines" className="stat glass-lite pressable"><div className="l"><Icon name="list_alt" />روتین‌های من</div><div className="v">{fa(data.mine.length)}</div></Link>
+        <Link to="/stats" className="stat glass-lite pressable"><div className="l"><Icon name="history" />تمرین در ۹ هفته</div><div className="v">{fa(data.ws.length)}</div></Link>
+      </div>
+    </div>
+
+    {open && <SessionScreen r={open} done={false} onClose={() => setOpen(null)} />}
   </Page>
+}
+
+function Header({ today }) {
+  return <header className="big-title">
+    <div className="caption">{DAY_NAMES[new Date(today + 'T12:00:00').getDay()]} {fmtJ(today, false)}</div>
+    <h1>امروز</h1>
+  </header>
+}
+
+function WeightCard({ weights, onSaved }) {
+  const toast = useToast()
+  const [w, setW] = useState('')
+  const last = weights[0]
+  const save = async () => {
+    const v = toNumber(w)
+    if (!(v >= 20 && v <= 400)) return toast('یک وزن معتبر وارد کن.', 'warning')
+    try {
+      await must(supabase.from('body_weights').upsert({ student_id: scope.student, date: todayISO(), weight: v }, { onConflict: 'student_id,date' }))
+      setW(''); onSaved(v); toast('وزن امروز ثبت شد', 'success')
+    } catch (e) { toast(errorText(e), 'error') }
+  }
+  const delta = weights.length > 1 ? Number(weights[0].weight) - Number(weights[1].weight) : null
+  return <div className="card glass-lite" style={{ marginBottom: '0.75rem' }}>
+    <div className="hstack between">
+      <div><div className="headline">وزن بدن</div>
+        <div className="footnote">{last ? fmtJ(last.date, false) : 'هنوز ثبت نشده'}</div></div>
+      {last && <div className="tnum title-lg">{fmtNum(last.weight)} <span className="subhead secondary">کیلو</span>
+        {delta ? <span className={'pill' + (delta < 0 ? ' ok' : '')} style={{ marginInlineStart: '0.5rem' }}><Icon name={delta > 0 ? 'trending_up' : 'trending_down'} />{fmtNum(Math.abs(delta))}</span> : null}</div>}
+    </div>
+    <div className="hstack mt">
+      <WeightField value={w} onChange={setW} title="وزن امروز" fine min={30} max={250} hint={last?.weight} hintLabel="آخرین وزن"
+        placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلو" className="grow" />
+      <button className="btn glass interactive prominent" disabled={w === ''} onClick={save}><Icon name="add" />ثبت</button>
+    </div>
+  </div>
+}
+
+// Water: three taps for three sizes; the last one taken back with ↺.
+function WaterCard({ ml, onChange }) {
+  const toast = useToast()
+  const [last, setLast] = useState([])
+  const put = async (next, undo) => {
+    const prev = ml
+    onChange(next)
+    const { error } = await supabase.from('water_logs').upsert({ student_id: scope.student, date: todayISO(), ml: next }, { onConflict: 'student_id,date' })
+    if (error) { onChange(prev); return toast(/water_logs/.test(error.message) ? 'ثبت آب هنوز فعال نشده.' : errorText(error), 'error') }
+    if (!undo) haptic(8)
+  }
+  return <div className="card glass-lite" style={{ marginBottom: 0 }}>
+    <div className="hstack between">
+      <div className="hstack"><div className="tile-icon blue"><Icon name="water_drop" /></div><div className="headline">آب</div></div>
+      <button className="icon-btn bare" disabled={!last.length} onClick={() => { const a = last[last.length - 1]; setLast(l => l.slice(0, -1)); put(Math.max(0, ml - a), true) }} aria-label="برداشتن آخرین ثبت"><Icon name="undo" /></button>
+    </div>
+    <div className="water-total tnum">{faDigits(Math.round(ml / 100) / 10)} <span className="subhead secondary">لیتر امروز</span></div>
+    <div className="water-buttons">{WATER.map(([amount, name, label]) =>
+      <button key={amount} className="water-btn pressable" onClick={() => { setLast(l => [...l, amount]); put(Math.min(20000, ml + amount)) }}>
+        <span className="a">+ {label}</span><span className="caption">{name}</span>
+      </button>)}</div>
+  </div>
 }

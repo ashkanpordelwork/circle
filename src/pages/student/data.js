@@ -19,10 +19,17 @@ export async function loadPrograms() {
   return error ? [] : data
 }
 
-// Sessions of the programs, and the weekday plan (used only while there is no program at all).
+// Sessions of the coach's programs, the coach's weekday plan (used only while there is no program at
+// all), and the athlete's own routines.
 export async function loadStudentPlan() {
   const [plan, programs] = await Promise.all([loadPlan(), loadPrograms()])
-  return { programs, sessions: plan.filter(r => r.program_id), weekdays: programs.length ? [] : plan.filter(r => !r.program_id) }
+  const coach = plan.filter(r => r.owner !== 'self')
+  return {
+    programs,
+    sessions: coach.filter(r => r.program_id),
+    weekdays: programs.length ? [] : coach.filter(r => !r.program_id),
+    mine: plan.filter(r => r.owner === 'self')   // the athlete's own routines (0008_athletes.sql)
+  }
 }
 
 // What a session is called on the student's screens: «هفته ۲، جلسه ۱», or the weekday plan's name.

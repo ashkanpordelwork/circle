@@ -22,7 +22,7 @@ export const routinesForDay = (routines, day) =>
 // Rows from Supabase (routines + routine_items) → the editor's draft: routines with their items.
 export function toDraft(routines, items) {
   return [...routines].sort((a, b) => a.position - b.position).map(r => ({
-    id: r.id, name: r.name, days: [...(r.days || [])], program_id: r.program_id || null, week: r.week ?? null, session: r.session ?? null,
+    id: r.id, name: r.name, days: [...(r.days || [])], owner: r.owner || 'coach', program_id: r.program_id || null, week: r.week ?? null, session: r.session ?? null,
     items: items.filter(i => i.routine_id === r.id).sort((a, b) => a.position - b.position)
       .map(i => ({ exercise_id: i.exercise_id, sets: i.sets, reps: i.reps, weight: i.weight ?? '', rest_sec: i.rest_sec ?? '', tempo: i.tempo || '', note: i.note || '', progression: i.progression || 'linear' }))
   }))

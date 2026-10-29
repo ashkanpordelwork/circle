@@ -233,7 +233,7 @@ export default function ProgramTab({ student, intake, alerts, onAlerts, onSaved 
           must(supabase.from('routines').select('*').eq('student_id', student.id))])
         const items = routines.length ? await must(supabase.from('routine_items').select('*').in('routine_id', routines.map(r => r.id))) : []
         const drafts = Object.fromEntries(programs.map(p => [p.id, toProgramDraft(p, routines, items)]))
-        setData({ programs, drafts, legacy: toDraft(routines.filter(r => !r.program_id), items) })
+        setData({ programs, drafts, legacy: toDraft(routines.filter(r => !r.program_id && r.owner !== 'self'), items) })
         const { current, next } = pickPrograms(programs, today)
         setSelected((current || next || programs.at(-1))?.id || null)
       } catch (e) {

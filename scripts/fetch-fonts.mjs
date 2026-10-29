@@ -8,15 +8,15 @@ import fs from 'node:fs'
 
 export const ICONS = [
   'add', 'admin_panel_settings', 'arrow_downward', 'arrow_outward', 'arrow_upward', 'assignment',
-  'badge', 'bedtime', 'block', 'calendar_month', 'check', 'check_circle', 'chevron_left',
+  'badge', 'bedtime', 'block', 'bolt', 'calendar_month', 'check', 'check_circle', 'chevron_left',
   'chevron_right', 'close', 'content_copy', 'dashboard', 'delete', 'download', 'edit_note',
   'emoji_events', 'error', 'exercise', 'expand_less', 'expand_more', 'fitness_center', 'flag',
-  'group', 'healing', 'history', 'hourglass_top', 'how_to_reg', 'info', 'key', 'lock',
-  'lock_reset', 'login', 'logout', 'manage_accounts', 'medical_information', 'monitor_weight',
-  'monitoring', 'person', 'person_add', 'person_remove', 'play_arrow', 'refresh', 'remove',
-  'restaurant', 'search', 'settings', 'share', 'smartphone', 'sticky_note_2', 'swap_horiz',
-  'swipe_right', 'timer', 'today', 'trending_down', 'trending_up', 'undo', 'visibility',
-  'visibility_off', 'warning'
+  'group', 'healing', 'history', 'home', 'hourglass_top', 'how_to_reg', 'info', 'key', 'list_alt',
+  'local_fire_department', 'lock', 'lock_reset', 'login', 'logout', 'manage_accounts',
+  'medical_information', 'monitor_weight', 'monitoring', 'more_horiz', 'person', 'person_add',
+  'person_remove', 'play_arrow', 'refresh', 'remove', 'restaurant', 'search', 'settings', 'share',
+  'smartphone', 'sports', 'sticky_note_2', 'swap_horiz', 'swipe_right', 'timer', 'today',
+  'trending_down', 'trending_up', 'undo', 'visibility', 'visibility_off', 'warning', 'water_drop'
 ]
 const sorted = [...ICONS].sort()
 if (sorted.join() !== ICONS.join()) throw new Error('ICONS must be sorted: ' + sorted.join(', '))
