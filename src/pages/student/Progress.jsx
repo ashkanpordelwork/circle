@@ -16,6 +16,7 @@ import WeightChart from '../../components/WeightChart.jsx'
 import Screen from '../../components/Screen.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import { scope } from '../../lib/scope.js'
+import { on } from '../../lib/features.js'
 import { useMe } from '../../App.jsx'
 import WorkoutComments from '../../components/WorkoutComments.jsx'
 
@@ -51,7 +52,7 @@ export default function Progress() {
   const change = weightChange(weights, today)
 
   return <Page>
-    <header className="big-title"><div className="caption">پیشرفت و سابقه</div><h1>آمار</h1></header>
+    <header className="big-title"><div className="caption">تمرین‌ها و رکوردها</div><h1>پیشرفت</h1></header>
 
     <div className="section">
       <div className="section-title">نمای کلی</div>
@@ -65,15 +66,15 @@ export default function Progress() {
       </div>
     </div>
 
-    <div className="section"><div className="group glass-lite">
+    {on('body') && <div className="section"><div className="group glass-lite">
       <Link to="/body" className="row pressable with-leading">
         <div className="tile-icon lime"><Icon name="favorite" /></div>
         <div className="content"><div className="title-text">پیشرفت و بازیابی</div><div className="sub">آمادگی، اندازه‌های بدن و عکس‌ها؛ فقط خودت می‌بینی</div></div>
         <Disclosure />
       </Link>
-    </div></div>
+    </div></div>}
 
-    {!workouts.length ? <Empty icon="monitoring" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، آمار اینجا جان می‌گیرد.</Empty> : <>
+    {!workouts.length ? <Empty icon="monitoring" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، پیشرفتت اینجا می‌آید.</Empty> : on('detailedStats') && <>
       <Insights workouts={workouts} sets={sets} today={today} />
       <Activity workouts={workouts} sets={sets} today={today} />
       <Balance workouts={workouts} sets={sets} today={today} />

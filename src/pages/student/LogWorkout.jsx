@@ -80,7 +80,7 @@ export default function LogWorkout() {
   useEffect(() => { document.documentElement.classList.toggle('has-rest', !!rest); return () => document.documentElement.classList.remove('has-rest') }, [!!rest])
   const open = useMemo(() => (log ? nextOpen(log) : null), [log])
   if (!log) return <Page title="ثبت تمرین" back noTabbar><Loading /></Page>
-  if (done) return <Summary s={done} title={sessionTitle(routine)} onDone={() => nav('/', { replace: true })} />
+  if (done) return <Summary s={done} title={sessionTitle(routine)} coach={!!me.student.coach_id} onDone={() => nav('/', { replace: true })} />
 
   // Another exercise, mid-session: it starts like any other, from its history.
   const addExercise = id => {
@@ -192,7 +192,7 @@ export default function LogWorkout() {
         {x.e && <span className="pill">{EQUIPMENT[x.e] || x.e}</span>}
       </div>}
       {(item.note || item.tempo) && <div className="coach-says">
-        <div className="caption kicker">مربی گفته</div>
+        <div className="caption kicker">{routine.owner === 'self' ? 'نکته' : 'مربی گفته'}</div>
         {item.note && <div className="subhead">{item.note}</div>}
         {item.tempo && <div className="sub tempo-line"><Icon name="timer" />{tempoWords(item.tempo)}</div>}
       </div>}
@@ -235,7 +235,7 @@ export default function LogWorkout() {
     <div className="section"><div className="group glass-lite">
       <button className="row pressable with-leading" onClick={() => setSheet('note')}>
         <div className="tile-icon"><Icon name="sticky_note_2" /></div>
-        <div className="content"><div className="title-text">یادداشت تمرین</div><div className="sub ellipsis">{note || 'حس امروز، درد، هر چیزی که مربی باید بداند'}</div></div>
+        <div className="content"><div className="title-text">یادداشت تمرین</div><div className="sub ellipsis">{note || 'حس امروز، درد، هر چیزی که بخواهی یادت بماند'}</div></div>
         <Disclosure />
       </button>
     </div></div>
@@ -250,17 +250,17 @@ export default function LogWorkout() {
 
     {rest && <RestTimer rest={rest} onChange={setRest} onDone={() => setRest(null)} />}
     {sheet === 'ready' && <ReadinessSheet onClose={() => setSheet(null)} />}
-    {sheet === 'note' && <NoteSheet note={note} onSave={setNote} onClose={() => setSheet(null)} />}
+    {sheet === 'note' && <NoteSheet note={note} coach={!!me.student.coach_id} onSave={setNote} onClose={() => setSheet(null)} />}
     {sheet === 'end' && <EndSheet left={nAll - nDone} busy={busy} onFinish={save} onDiscard={discard} onClose={() => setSheet(null)} note={note} setNote={setNote} />}
     {info && <ExerciseInfo id={info} onClose={() => setInfo(null)} />}
     {picker}
   </Page>
 }
 
-function NoteSheet({ note, onSave, onClose }) {
+function NoteSheet({ note, coach, onSave, onClose }) {
   const [text, setText] = useState(note)
   return <Sheet title="یادداشت تمرین" onClose={() => { onSave(text.trim()); onClose() }}>
-    <p className="subhead secondary" style={{ marginTop: 0 }}>همراه این تمرین ثبت می‌شود و مربی هم می‌بیند.</p>
+    <p className="subhead secondary" style={{ marginTop: 0 }}>همراه این تمرین در سابقه‌ات ثبت می‌شود{coach ? ' و مربی هم می‌بیند' : ''}.</p>
     <textarea className="input" autoFocus placeholder="انرژی، درد، وسیله‌ای که نبود، هر چیزی که ارزش یادآوری دارد" value={text} onChange={e => setText(e.target.value)} maxLength={1000} />
     <div className="caption" style={{ textAlign: 'left', marginTop: '0.25rem' }}>{fa(text.length)}/{fa(1000)}</div>
     <button className="btn glass interactive prominent block mt" onClick={() => { onSave(text.trim()); onClose() }}>ذخیره</button>
@@ -291,12 +291,12 @@ function EndSheet({ left, busy, onFinish, onDiscard, onClose, note, setNote }) {
 }
 
 // After saving: what the session added up to, and the records it set.
-function Summary({ s, title, onDone }) {
+function Summary({ s, title, coach, onDone }) {
   return <Page title="تمرین ثبت شد" subtitle={title} noTabbar fill>
     <section className="card hero done-hero">
       <div className="hstack" style={{ gap: '1rem' }}>
         <div className="tile-icon big lime"><Icon name="check_circle" filled /></div>
-        <div><h2 className="title">آفرین!</h2><div className="footnote">در سابقه‌ات ثبت شد و مربی هم می‌بیند.</div></div>
+        <div><h2 className="title">آفرین!</h2><div className="footnote">در سابقه‌ات ثبت شد{coach ? ' و مربی هم می‌بیند' : ''}.</div></div>
       </div>
     </section>
     <div className="stats">

@@ -40,7 +40,8 @@ export default function Routines() {
   }
   useEffect(() => { load() }, [])
   if (!data) return <Page><Loading /></Page>
-  const fromCoach = data.programs.length > 0 || data.weekdays.length > 0 || !!me.student.coach_id
+  // The coach's tab only when there is a coach's plan to read: someone training alone never sees it.
+  const fromCoach = data.programs.length > 0 || data.weekdays.length > 0
 
   const blank = async () => {
     const id = newId()
@@ -56,7 +57,7 @@ export default function Routines() {
   }
 
   return <Page>
-    <header className="big-title"><div className="caption">{fa(data.mine.length)} روتین</div><h1>روتین</h1></header>
+    <header className="big-title"><div className="caption">{fa(data.mine.length)} روتین</div><h1>برنامه</h1></header>
     {fromCoach && <Segmented label="روتین‌ها" value={tab} onChange={setTab}
       options={[{ value: 'mine', label: 'روتین‌های من' }, { value: 'coach', label: 'از مربی' }]} />}
 

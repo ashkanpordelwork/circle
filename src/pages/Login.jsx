@@ -5,8 +5,8 @@ import { useToast, errorText, Segmented } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 import Logo from '../components/Logo.jsx'
 
-// Sign in, or create an account the first time. A student types the invite code their coach gave
-// them; the coach (whose number the owner lists in coach_phones) leaves it empty.
+// Sign in, or create an account the first time. Most people sign up with nothing but a number and
+// a password; someone who was given an invite code opens the small «کد دعوت دارم» link for it.
 export default function Login() {
   const toast = useToast()
   const [mode, setMode] = useState('login')
@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [code, setCode] = useState('')
+  const [hasCode, setHasCode] = useState(false)
   const [busy, setBusy] = useState(false)
   // Validate inline as the person types, not only on submit.
   const phoneBad = phone.length >= 4 && !isPhone(phone)
@@ -45,7 +46,7 @@ export default function Login() {
   return <main className="auth">
     <div className="mark app"><Logo size="2.75rem" /></div>
     <h1 className="title-lg latin brand">Circle</h1>
-    <p className="lead">برنامه تمرینی‌ات را از مربی بگیر و تمرین‌هایت را ثبت کن.</p>
+    <p className="lead">برنامه‌ات را بیاور، هر روز اجرایش کن، پیشرفتت را ببین.</p>
     <Segmented label="ورود یا ثبت‌نام" value={mode} onChange={setMode}
       options={[{ value: 'login', label: 'ورود' }, { value: 'signup', label: 'ثبت‌نام' }]} />
     <form onSubmit={submit} noValidate className="panel glass">
@@ -65,14 +66,12 @@ export default function Login() {
         </div>
         {mode === 'signup' && <div className="caption">حداقل ۶ کاراکتر. دفعه‌های بعد با همین رمز وارد می‌شوی.</div>}
       </div>
-      {mode === 'signup' && <div className="field">
-        <label htmlFor="cd">کد دعوت مربی</label>
-        <input id="cd" className="input code" autoCapitalize="characters" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} />
-        <div className="caption">مربی‌ها این را خالی می‌گذارند.</div>
-      </div>}
+      {mode === 'signup' && (hasCode ? <div className="field">
+        <label htmlFor="cd">کد دعوت</label>
+        <input id="cd" className="input code" autoCapitalize="characters" placeholder="ABC234" value={code} onChange={e => setCode(e.target.value)} maxLength={10} autoFocus />
+      </div> : <button type="button" className="link-btn pressable" onClick={() => setHasCode(true)}>کد دعوت دارم</button>)}
       <button className="btn glass interactive prominent block mt" disabled={busy}>{busy ? 'کمی صبر کن…' : mode === 'login' ? 'ورود' : 'ساخت حساب'}</button>
     </form>
-    {mode === 'login' && <p className="footnote" style={{ textAlign: 'center' }}>رمز را فراموش کرده‌ای؟ به مربی‌ات بگو.</p>}
   </main>
 }
 
@@ -118,10 +117,10 @@ export function NotRegistered({ email }) {
           <input id="nm" className="input" value={name} onChange={e => setName(e.target.value)} maxLength={60} autoFocus autoComplete="name" /></div>
         <button className="btn glass interactive prominent block" disabled={busy || !name.trim()}>{busy ? 'کمی صبر کن…' : 'شروع'}</button>
       </form>
-      <button className="btn plain pressable" onClick={() => setMode('code')}><Icon name="key" />کد دعوت مربی دارم</button>
+      <button className="link-btn pressable" onClick={() => setMode('code')}>کد دعوت دارم</button>
     </> : <>
       <h1 className="title" style={{ textAlign: 'center' }}>کد دعوت</h1>
-      <p className="lead">کدی را که مربی برایت فرستاده وارد کن تا برنامه‌ات باز شود.</p>
+      <p className="lead">کد دعوتی را که گرفته‌ای وارد کن.</p>
       {phone && <form onSubmit={claim} className="panel glass">
         <div className="field">
           <label htmlFor="cl">کد دعوت برای <span className="latin">{fmtPhone(phone)}</span></label>
@@ -129,7 +128,7 @@ export function NotRegistered({ email }) {
         </div>
         <button className="btn glass interactive prominent block" disabled={busy || !code.trim()}>تأیید کد</button>
       </form>}
-      <button className="btn plain pressable" onClick={() => setMode('start')}><Icon name="chevron_right" />بدون مربی شروع می‌کنم</button>
+      <button className="btn plain pressable" onClick={() => setMode('start')}><Icon name="chevron_right" />بدون کد شروع می‌کنم</button>
     </>}
     <button className="btn plain pressable" onClick={() => supabase.auth.signOut()}><Icon name="logout" mirror />خروج</button>
   </main>

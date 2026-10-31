@@ -1179,3 +1179,7 @@ a.alert-strip { text-decoration: none; }
 /* Codes someone has to type (coach code, invite code): Latin digits in a monospace face. The
    app's font draws 8 as «۸», which reads as Λ in a code. */
 .code-big, .invite-code, .input.code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace; }
+.big-title.with-action { display: flex; align-items: flex-end; gap: 1rem; }
+/* A quiet text link: the invite code, kept out of the way. */
+.link-btn { align-self: center; border: 0; background: transparent; padding: 0.5rem; margin-top: 0.5rem; font: inherit; font-size: 0.875rem;
+  color: var(--label-2); text-decoration: underline; text-underline-offset: 0.25em; cursor: pointer; }

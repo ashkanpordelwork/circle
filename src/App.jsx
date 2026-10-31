@@ -22,6 +22,7 @@ import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
 import { AdminHome, AdminPeople, AdminUser, AdminActivity, AdminApplications } from './pages/admin/Admin.jsx'
 import { setScope } from './lib/scope.js'
+import { on } from './lib/features.js'
 
 // Who is signed in: { session, role: 'coach' | 'student' | 'admin' | 'stopped' | 'none', admin, coach?, student? }
 //   admin    the system's owner (0005_admin.sql); also a coach or student when they are one too
@@ -75,7 +76,7 @@ export default function App() {
   const setIntake = answers => setMe(m => ({ ...m, intake: { answers, completed_at: new Date().toISOString() } }))
   // A student a coach registered answers the questionnaire once before seeing the plan. An athlete who
   // started alone is not stopped by it: «امروز» offers it once they have a coach (it is for a coach).
-  if (me.role === 'student' && me.student.coach_id && !me.student.self_started && !me.intake?.completed_at && !me.intake?.skipped) {
+  if (on('intake') && me.role === 'student' && me.student.coach_id && !me.student.self_started && !me.intake?.completed_at && !me.intake?.skipped) {
     return <Intake student={me.student} initial={me.intake?.answers} onDone={setIntake} />
   }
 
@@ -99,8 +100,8 @@ export default function App() {
     ? [['/', 'group', 'شاگردان', '/s/'], ['/account', 'person', 'حساب', '/admin']]
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
-      // The athlete's: two tabs either side of the lime start button, and «بیشتر» for the rest.
-      : [['/', 'home', 'امروز'], ['/routines', 'list_alt', 'روتین'], ['start', 'fitness_center', 'شروع'], ['/stats', 'monitoring', 'آمار', ['/progress', '/body']], ['more', 'more_horiz', 'بیشتر', ['/account', '/coach', '/intake', '/admin', '/apply']]]
+      // The athlete's: three tabs. «حساب» opens from the icon at the top of «امروز».
+      : [['/', 'home', 'امروز', '/account'], ['/routines', 'list_alt', 'برنامه'], ['/stats', 'monitoring', 'پیشرفت', ['/progress', '/body']]]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
@@ -122,14 +123,15 @@ export default function App() {
       <Route path="/routines" element={<Routines />} />
       <Route path="/routines/:id" element={<RoutineEdit />} />
       <Route path="/stats" element={<Progress />} />
-      <Route path="/coach" element={<CoachLink />} />
-      <Route path="/body" element={<Body />} />
-      <Route path="/apply" element={<Apply />} />
+      {/* Hidden features (lib/features.js) have no route: their addresses fall through to «امروز». */}
+      {on('coach') && <Route path="/coach" element={<CoachLink />} />}
+      {on('body') && <Route path="/body" element={<Body />} />}
+      {on('apply') && <Route path="/apply" element={<Apply />} />}
       <Route path="/progress" element={<Navigate to="/stats" replace />} />
       <Route path="/history" element={<Navigate to="/stats" replace />} />
       <Route path="/weight" element={<Navigate to="/stats" replace />} />
-      <Route path="/intake" element={<IntakeView />} />
-      <Route path="/intake/edit" element={<EditIntake />} />
+      {on('intake') && <Route path="/intake" element={<IntakeView />} />}
+      {on('intake') && <Route path="/intake/edit" element={<EditIntake />} />}
       <Route path="/account" element={<Account />} />
       {me.admin && <>{adminRoutes}</>}
       <Route path="*" element={<Navigate to="/" replace />} />

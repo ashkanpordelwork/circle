@@ -13,6 +13,7 @@ import { useMe } from '../../App.jsx'
 import { loadStudentPlan } from './data.js'
 import { startLabel, minutes, SessionScreen } from './plan-parts.jsx'
 import { scope } from '../../lib/scope.js'
+import { on } from '../../lib/features.js'
 
 // «امروز»: what to do next, how the week is going, and the two habits worth a tap a day —
 // body weight and water. The coach's whole plan lives under «روتین»; this is the front page.
@@ -81,7 +82,7 @@ export default function Today() {
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
 
-    {me.student.coach_id && !me.intake?.completed_at && !me.intake?.skipped && <Link to="/intake/edit" className="alert-strip invite pressable">
+    {on('intake') && me.student.coach_id && !me.intake?.completed_at && !me.intake?.skipped && <Link to="/intake/edit" className="alert-strip invite pressable">
       <Icon name="assignment" /><div className="grow"><div className="title-text">پرسشنامه برای مربی</div><div className="sub">هدف، آسیب‌ها و تغذیه؛ مربی با آن برنامه‌ات را می‌نویسد</div></div><Icon name="chevron_left" />
     </Link>}
 
@@ -136,7 +137,7 @@ export default function Today() {
     <div className="section">
       <div className="section-title">بدن و عادت‌ها</div>
       <WeightCard weights={data.weights} onSaved={w => setData(d => ({ ...d, weights: [{ date: today, weight: w }, ...d.weights.filter(x => x.date !== today)] }))} />
-      <WaterCard ml={data.water} onChange={ml => setData(d => ({ ...d, water: ml }))} />
+      {on('water') && <WaterCard ml={data.water} onChange={ml => setData(d => ({ ...d, water: ml }))} />}
     </div>
 
     <div className="section">
@@ -152,9 +153,11 @@ export default function Today() {
 }
 
 function Header({ today }) {
-  return <header className="big-title">
-    <div className="caption">{DAY_NAMES[new Date(today + 'T12:00:00').getDay()]} {fmtJ(today, false)}</div>
-    <h1>امروز</h1>
+  return <header className="big-title with-action">
+    <div className="grow"><div className="caption">{DAY_NAMES[new Date(today + 'T12:00:00').getDay()]} {fmtJ(today, false)}</div>
+      <h1>امروز</h1></div>
+    {/* «حساب» is no tab: it opens from here. */}
+    <Link to="/account" className="icon-btn glass interactive" aria-label="حساب"><Icon name="person" /></Link>
   </header>
 }
 
