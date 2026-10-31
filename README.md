@@ -25,7 +25,15 @@
 5. و همین‌طور `supabase/migrations/0004_intake.sql` (پرسشنامه شاگرد).
 6. و `supabase/migrations/0005_admin.sql` (پنل مدیر کل).
 7. و `supabase/migrations/0006_programs.sql` (برنامه‌های یک‌ماهه).
-8. از دکمه **Connect** بالای صفحه، `Project URL` و کلید `anon` (یا `publishable`) را بردارید.
+8. و `supabase/migrations/0007_smart.sql` (قانون پیشرفت هر حرکت، مدت تمرین).
+9. و `supabase/migrations/0008_athletes.sql` (ورزشکار بدون مربی، روتین شخصی).
+10. و `supabase/migrations/0009_body.sql` (اندازه‌های بدن، چک‌این آمادگی).
+11. و `supabase/migrations/0010_coaching.sql` (درخواست مربی‌گری، پلن مربی، گفتگو زیر تمرین).
+12. و `supabase/migrations/0011_nutrition.sql` (تغذیه و مکمل: هدف روزانه، وعده‌ها، مکمل‌ها و تیک‌های هر روز).
+    تا این فایل اجرا نشود، اپ کار می‌کند ولی بخش تغذیه و مکمل پنهان است و پیام راهنما نشان می‌دهد.
+13. از دکمه **Connect** بالای صفحه، `Project URL` و کلید `anon` (یا `publishable`) را بردارید.
+
+> فایل‌ها را **به ترتیب شماره** و هر کدام **یک بار** اجرا کنید. اگر پروژه از قبل راه افتاده، فقط فایل‌هایی را اجرا کنید که هنوز اجرا نشده‌اند.
 
 ### ۲. Supabase: ورود با شماره و رمز
 
