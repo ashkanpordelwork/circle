@@ -17,6 +17,7 @@ import RoutineEdit from './pages/student/RoutineEdit.jsx'
 import CoachLink from './pages/student/CoachLink.jsx'
 import Body from './pages/student/Body.jsx'
 import Apply from './pages/student/Apply.jsx'
+import ImportPlan from './pages/student/ImportPlan.jsx'
 import { StartSheet, MoreSheet } from './pages/student/sheets.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
@@ -121,6 +122,7 @@ export default function App() {
       <Route path="/week" element={<Navigate to="/" replace />} />
       <Route path="/log/:routineId" element={<LogWorkout />} />
       <Route path="/routines" element={<Routines />} />
+      <Route path="/routines/import" element={<ImportPlan />} />
       <Route path="/routines/:id" element={<RoutineEdit />} />
       <Route path="/stats" element={<Progress />} />
       {/* Hidden features (lib/features.js) have no route: their addresses fall through to «امروز». */}

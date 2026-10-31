@@ -58,6 +58,14 @@ export default function Routines() {
 
   return <Page>
     <header className="big-title"><div className="caption">{fa(data.mine.length)} روتین</div><h1>برنامه</h1></header>
+    {/* The usual way in: the plan the athlete's AI wrote, as one code. */}
+    <button className="card glass-lite import-entry pressable" onClick={() => nav('/routines/import')}>
+      <div className="tile-icon lime"><Icon name="download" /></div>
+      <div className="grow"><div className="headline">وارد کردن برنامه</div>
+        <div className="sub">برنامه‌ی تمرین، غذا و مکملی که هوش مصنوعی‌ات نوشته را با یک کد بیاور.</div></div>
+      <Icon name="chevron_left" />
+    </button>
+
     {fromCoach && <Segmented label="روتین‌ها" value={tab} onChange={setTab}
       options={[{ value: 'mine', label: 'روتین‌های من' }, { value: 'coach', label: 'از مربی' }]} />}
 

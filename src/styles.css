@@ -1183,3 +1183,23 @@ a.alert-strip { text-decoration: none; }
 /* A quiet text link: the invite code, kept out of the way. */
 .link-btn { align-self: center; border: 0; background: transparent; padding: 0.5rem; margin-top: 0.5rem; font: inherit; font-size: 0.875rem;
   color: var(--label-2); text-decoration: underline; text-underline-offset: 0.25em; cursor: pointer; }
+
+/* ---------- «وارد کردن برنامه» ---------- */
+
+.import-entry { width: 100%; display: flex; align-items: center; gap: 1rem; text-align: start; font: inherit; color: inherit; border: 0; cursor: pointer; }
+.step-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.step-head.plain { margin-bottom: 1rem; padding-inline: 0.25rem; }
+.step-n { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; flex: none; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+.code-text { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.8125rem; line-height: 1.6; direction: ltr; text-align: left; }
+.import-errors { margin-top: 1rem; padding: 1rem; border-radius: var(--radius); background: var(--red-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 24%, transparent); }
+.import-errors ul { margin: 0.5rem 0; padding-inline-start: 1.25rem; line-height: 1.8; font-size: 0.875rem; }
+.import-row { align-items: flex-start; }
+.import-row .st { margin-top: 0.25rem; color: var(--accent); }
+.import-row.maybe .st { color: var(--orange); }
+.import-row.missing .st { color: var(--red); }
+.import-row .ltr-name { direction: ltr; text-align: right; }
+.import-actions { gap: 0.5rem; margin-top: 0.5rem; }
+.pill.warn { background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--orange); }
+.macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--hairline); }
+.import-meal { padding: 0.75rem 0; }
+.import-meal + .import-meal { border-top: 1px solid var(--hairline); }
