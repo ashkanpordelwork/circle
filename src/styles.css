@@ -23,41 +23,42 @@
 
 :root {
   color-scheme: light;
-  /* Light only. A warm off-white page, white surfaces a step above it, near-black text, and one
-     olive green kept for what can be acted on (the main button, a choice, progress). The green
-     is dark enough for AA both ways: white text on it 5.9:1, it as text on white 5.9:1 and on
-     the page and the grey surface above 5:1. Depth comes from a surface step and a hairline. */
-  --bg: #f4f4f0;
-  --surface: #ffffff;
-  --surface-2: #ecece7;
-  --lite-fill: #ffffff;
-  --hairline: rgba(0, 0, 0, 0.08);
-  --separator: rgba(0, 0, 0, 0.1);
-  --fill: rgba(0, 0, 0, 0.05);
-  --fill-strong: rgba(0, 0, 0, 0.09);
-  --label: #1c1c1a;
-  --label-2: #5f5f58;
-  --label-3: #86867e;
-  --accent: #456f0b;
-  --accent-soft: rgba(69, 111, 11, 0.1);
+  /* Light only, and warm: a cream page, warm-white cards a step above it, a warm near-black for
+     text, and one caramel kept for what can be acted on (the main button, a choice, progress).
+     Every colour passes WCAG AA where it is used: the caramel is 5.7:1 as text on the cards and
+     5.1:1 on the page, and white on it is 5.8:1. Depth comes from a surface step, never a border. */
+  --bg: #f5f1ea;
+  --surface: #fffdf9;
+  --surface-2: #ede6dc;
+  --lite-fill: #fffdf9;
+  --hairline: rgba(60, 40, 20, 0.08);
+  --separator: rgba(60, 40, 20, 0.1);
+  --fill: rgba(60, 40, 20, 0.05);
+  --fill-strong: rgba(60, 40, 20, 0.09);
+  --label: #2b2621;
+  --label-2: #6e655b;
+  --label-3: #857b71;
+  --accent: #a64b06;
+  --accent-soft: rgba(166, 75, 6, 0.1);
   --on-accent: #ffffff;
-  --lime: #456f0b;
-  --red: #c0392b;
-  --red-soft: rgba(192, 57, 43, 0.08);
+  --lime: #a64b06;
+  --red: #b42318;
+  --red-soft: rgba(180, 35, 24, 0.08);
   --on-red: #ffffff;
-  --orange: #9a5008;
-  --blue: #2d6aaf;
+  /* Attention (a dose that is due, a weight that comes down): a dark mustard, apart from the caramel. */
+  --orange: #8a5d00;
+  --blue: #2f62a8;
 
-  /* Floating layers (tab bar, sheets) are the only translucent ones, with a soft shadow. */
-  --glass-fill: #ffffff;
-  --glass-fill-strong: rgba(255, 255, 255, 0.94);
+  /* Floating layers (tab bar, sheets) are the only translucent ones, with a soft warm shadow. */
+  --glass-fill: #fffdf9;
+  --glass-fill-strong: rgba(255, 253, 249, 0.94);
   --glass-blur: 24px;
   --glass-sat: 160%;
-  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.14);
-  --float-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-  --push-shadow: 0 0 48px rgba(0, 0, 0, 0.16);
-  --thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --scrim: rgba(0, 0, 0, 0.32);
+  --glass-shadow-lg: 0 24px 60px rgba(60, 40, 20, 0.14);
+  --float-shadow: 0 8px 28px rgba(60, 40, 20, 0.12);
+  --push-shadow: 0 0 48px rgba(60, 40, 20, 0.16);
+  --thumb-shadow: 0 1px 4px rgba(60, 40, 20, 0.12);
+  --scrim: rgba(40, 28, 16, 0.32);
 
   /* The 4/8 grid: every size, gap and radius is a multiple of 4px (8px wherever it can be).
      Corners come from five steps and follow the element's role, never its mood:
@@ -1247,3 +1248,28 @@ a.alert-strip { text-decoration: none; }
 .week-dots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; margin-top: 1rem; }
 .week-dots span { height: 0.5rem; border-radius: 1rem; background: var(--surface-2); }
 .week-dots span.on { background: var(--lime); }
+
+
+/* ---------- iOS: capsules, circles, plain grouped cards ----------
+   After the system's own settings screens: buttons and the segmented control are capsules,
+   icon buttons are circles in white with a soft shadow, lists and cards are plain warm-white
+   blocks with no border on the cream page, rows are a touch taller, section titles quieter. */
+
+.btn, .btn.small { border-radius: 999px; }
+.icon-btn { border-radius: 50%; }
+.icon-btn.glass, .navbar .icon-btn { background: var(--surface); box-shadow: var(--thumb-shadow); }
+.icon-btn.bare { box-shadow: none; background: transparent; }
+.glass-lite { box-shadow: none; }
+.card .btn.glass:not(.prominent):not(.danger):not(.hero-start), .sheet .btn.glass:not(.prominent):not(.danger) { background: var(--surface-2); }
+.chip { border-radius: 999px; }
+.chip.glass-lite { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); }
+.card .chip.glass-lite, .sheet .chip.glass-lite { background: var(--surface-2); box-shadow: none; }
+.seg { border-radius: 999px; background: var(--surface-2); box-shadow: none; }
+.seg .seg-thumb, .seg button { border-radius: 999px; }
+.tabbar { border-radius: 999px; padding: 0.375rem; }
+.tabbar .drop, .tabbar .tab { border-radius: 999px; }
+.input { border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); }
+.card .input, .sheet .input, .auth .input { background: var(--surface-2); box-shadow: none; }
+.row { min-height: 3.75rem; }
+.section-title { font-size: 0.8125rem; letter-spacing: 0.02em; }
+.stat, .week-tab, .wday, .scale-dot, .water-btn { box-shadow: none; }
