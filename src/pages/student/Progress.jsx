@@ -16,13 +16,16 @@ import WeightChart from '../../components/WeightChart.jsx'
 import Screen from '../../components/Screen.jsx'
 import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import { scope } from '../../lib/scope.js'
+import { motivation, mainLifts, proteinAdherence } from '../../lib/progress.js'
+import { missingMigration } from '../../lib/nutrition.js'
 import { on } from '../../lib/features.js'
 import { useMe } from '../../App.jsx'
 import WorkoutComments from '../../components/WorkoutComments.jsx'
 
-// «آمار»: how training is going. An overview, the numbers of a chosen period, which days were
-// trained, which muscles got the work, body weight and each exercise over time, and the
-// workouts themselves. Everything here is worked out from the log (lib/stats.js).
+// «پیشرفت»: one sentence from the athlete's own week, the one-rep max of the main lifts over
+// time, how often protein was hit, and the recent workouts (lib/progress.js). The detailed
+// statistics — period insights, activity map, muscle balance, weight, any lift — are kept below,
+// behind the detailedStats flag (lib/features.js).
 
 const fa = n => Number(n).toLocaleString('fa-IR')
 const END_LABEL = Object.fromEntries(END_REASONS)
@@ -38,52 +41,104 @@ export default function Progress() {
       try {
         await loadExercises()
         // '*' so the page also works before migration 0007 (no duration or end reason yet).
-        const [workouts, weights] = await Promise.all([
+        const [workouts, weights, food] = await Promise.all([
           must(supabase.from('workouts').select('*').eq('student_id', scope.student).order('date', { ascending: false }).order('created_at', { ascending: false }).limit(500)),
-          must(supabase.from('body_weights').select('*').eq('student_id', scope.student).order('date').limit(400))])
+          must(supabase.from('body_weights').select('*').eq('student_id', scope.student).order('date').limit(400)),
+          loadProtein(today)])
         const sets = workouts.length ? await must(supabase.from('workout_sets').select('*').in('workout_id', workouts.map(w => w.id))) : []
-        setData({ workouts, weights, sets })
-      } catch (e) { toast(errorText(e), 'error'); setData({ workouts: [], weights: [], sets: [] }) }
+        setData({ workouts, weights, sets, food })
+      } catch (e) { toast(errorText(e), 'error'); setData({ workouts: [], weights: [], sets: [], food: null }) }
     })()
   }, [])
   if (!data) return <Page><Loading /></Page>
-  const { workouts, weights, sets } = data
-  const dates = [...new Set(workouts.map(w => w.date))]
-  const change = weightChange(weights, today)
+  const { workouts, weights, sets, food } = data
+  const line = motivation(workouts, sets, today, exerciseName)
+  const lifts = mainLifts(workouts, sets, 3)
+  const protein = food ? proteinAdherence(food.logs, food.target, today, 7) : null
 
   return <Page>
     <header className="big-title"><div className="caption">تمرین‌ها و رکوردها</div><h1>پیشرفت</h1></header>
 
-    <div className="section">
-      <div className="section-title">نمای کلی</div>
-      <div className="stats" style={{ marginBottom: 0 }}>
-        <div className="stat glass-lite"><div className="l"><Icon name="fitness_center" />تمرین‌ها</div><div className="v">{fa(workouts.length)}</div></div>
-        <div className="stat glass-lite"><div className="l"><Icon name="calendar_month" />این ماه</div><div className="v">{fa(thisMonth(workouts, today))}</div></div>
-        <div className="stat glass-lite"><div className="l"><Icon name="local_fire_department" />پیوستگی</div><div className="v">{fa(streakWeeks(dates, today))} <span className="of">هفته</span></div></div>
-        <div className="stat glass-lite"><div className="l"><Icon name="monitor_weight" />وزن در ۳۰ روز</div>
-          {/* In words, not a sign: a minus jumps to the wrong side of a number in Persian text. */}
-          <div className="v">{change == null ? '—' : change === 0 ? <>بدون <span className="of">تغییر</span></> : <>{faDigits(Math.abs(change))} <span className="of">کیلو {change < 0 ? 'کمتر' : 'بیشتر'}</span></>}</div></div>
+    {/* One sentence from the athlete's own week. */}
+    <section className={'card glass-lite motivation ' + line.kind}>
+      <div className="tile-icon lime"><Icon name={line.kind === 'record' ? 'emoji_events' : line.kind === 'volume' ? 'trending_up' : line.kind === 'streak' ? 'local_fire_department' : 'fitness_center'} filled /></div>
+      <p className="headline">{line.text}</p>
+    </section>
+
+    {lifts.length > 0 && <div className="section">
+      <div className="section-title">یک‌تکرار تخمینی حرکت‌های اصلی</div>
+      <div className="stack">{lifts.map(l => <div key={l.exercise_id} className="card glass-lite lift" style={{ marginBottom: 0 }}>
+        <div className="hstack between" style={{ alignItems: 'flex-start' }}>
+          <div className="grow"><ExName id={l.exercise_id} /></div>
+          <div className="tnum lift-best">{faDigits(l.best.e1rm)}<span className="caption"> کیلو</span></div>
+        </div>
+        {l.points.length > 1 ? <LineChart points={l.points.map(p => ({ y: p.e1rm }))} unit="کیلو" label={`یک‌تکرار تخمینی ${exerciseName(l.exercise_id)} در ${l.points.length} جلسه`} />
+          : <div className="footnote mt">نمودار از جلسه‌ی دوم شروع می‌شود.</div>}
+        <div className="footnote">{l.change ? `${faDigits(Math.abs(l.change))} کیلو ${l.change > 0 ? 'بیشتر' : 'کمتر'} از جلسه‌ی اول · ` : ''}بهترین ست: <bdi className="nowrap">{faDigits(l.best.w)} کیلو × {faDigits(l.best.r)}</bdi> · <bdi className="nowrap">{fmtJ(l.best.date, false)}</bdi></div>
+      </div>)}</div>
+      <div className="section-footer">از ست‌های با ۱۲ تکرار یا کمتر، با فرمول Epley.</div>
+    </div>}
+
+    {protein && <div className="section">
+      <div className="section-title">رعایت تغذیه</div>
+      <div className="card glass-lite" style={{ marginBottom: 0 }}>
+        <div className="hstack between">
+          <div><div className="headline">هدف پروتئین</div><div className="footnote">{fa(protein.hit)} روز از {fa(protein.of)} روز اخیر به هدف رسیدی.</div></div>
+          <div className="tnum title-lg">{fa(Math.round(protein.share * 100))}٪</div>
+        </div>
+        {/* Day by day, oldest to today (right to left, the way the page reads). */}
+        <div className="week-dots" aria-hidden="true">{protein.days.map(d => <span key={d.date} className={d.hit ? 'on' : ''} title={fmtJ(d.date, false)} />)}</div>
       </div>
-    </div>
+    </div>}
 
-    {on('body') && <div className="section"><div className="group glass-lite">
-      <Link to="/body" className="row pressable with-leading">
-        <div className="tile-icon lime"><Icon name="favorite" /></div>
-        <div className="content"><div className="title-text">پیشرفت و بازیابی</div><div className="sub">آمادگی، اندازه‌های بدن و عکس‌ها؛ فقط خودت می‌بینی</div></div>
-        <Disclosure />
-      </Link>
-    </div></div>}
-
-    {!workouts.length ? <Empty icon="monitoring" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، پیشرفتت اینجا می‌آید.</Empty> : on('detailedStats') && <>
-      <Insights workouts={workouts} sets={sets} today={today} />
-      <Activity workouts={workouts} sets={sets} today={today} />
-      <Balance workouts={workouts} sets={sets} today={today} />
-    </>}
-
-    <BodyWeight weights={weights} today={today} />
-    {sets.length > 0 && <ExerciseProgress workouts={workouts} sets={sets} />}
+    {!workouts.length && <Empty icon="monitoring" title="هنوز تمرینی ثبت نکرده‌ای">بعد از اولین تمرین، پیشرفتت اینجا می‌آید.</Empty>}
     {workouts.length > 0 && <Recent workouts={workouts} sets={sets} />}
+
+    {/* The detailed statistics: kept, and hidden (lib/features.js). */}
+    {on('detailedStats') && <>
+      <Overview workouts={workouts} weights={weights} today={today} />
+      {on('body') && <div className="section"><div className="group glass-lite">
+        <Link to="/body" className="row pressable with-leading">
+          <div className="tile-icon lime"><Icon name="favorite" /></div>
+          <div className="content"><div className="title-text">پیشرفت و بازیابی</div><div className="sub">آمادگی، اندازه‌های بدن و عکس‌ها؛ فقط خودت می‌بینی</div></div>
+          <Disclosure />
+        </Link>
+      </div></div>}
+      {workouts.length > 0 && <>
+        <Insights workouts={workouts} sets={sets} today={today} />
+        <Activity workouts={workouts} sets={sets} today={today} />
+        <Balance workouts={workouts} sets={sets} today={today} />
+      </>}
+      <BodyWeight weights={weights} today={today} />
+      {sets.length > 0 && <ExerciseProgress workouts={workouts} sets={sets} />}
+    </>}
   </Page>
+}
+
+// The protein target and the last week of meals; null when there is no target, or before 0011.
+async function loadProtein(today) {
+  const [t, logs] = await Promise.all([
+    supabase.from('nutrition_targets').select('protein').eq('student_id', scope.student).maybeSingle(),
+    supabase.from('meal_logs').select('date, protein').eq('student_id', scope.student).gte('date', addDays(today, -6))])
+  const err = t.error || logs.error
+  if (err) { if (missingMigration(err)) return null; throw err }
+  return t.data ? { target: t.data.protein, logs: logs.data } : null
+}
+
+function Overview({ workouts, weights, today }) {
+  const dates = [...new Set(workouts.map(w => w.date))]
+  const change = weightChange(weights, today)
+  return <div className="section">
+    <div className="section-title">نمای کلی</div>
+    <div className="stats" style={{ marginBottom: 0 }}>
+      <div className="stat glass-lite"><div className="l"><Icon name="fitness_center" />تمرین‌ها</div><div className="v">{fa(workouts.length)}</div></div>
+      <div className="stat glass-lite"><div className="l"><Icon name="calendar_month" />این ماه</div><div className="v">{fa(thisMonth(workouts, today))}</div></div>
+      <div className="stat glass-lite"><div className="l"><Icon name="local_fire_department" />پیوستگی</div><div className="v">{fa(streakWeeks(dates, today))} <span className="of">هفته</span></div></div>
+      <div className="stat glass-lite"><div className="l"><Icon name="monitor_weight" />وزن در ۳۰ روز</div>
+        {/* In words, not a sign: a minus jumps to the wrong side of a number in Persian text. */}
+        <div className="v">{change == null ? '—' : change === 0 ? <>بدون <span className="of">تغییر</span></> : <>{faDigits(Math.abs(change))} <span className="of">کیلو {change < 0 ? 'کمتر' : 'بیشتر'}</span></>}</div></div>
+    </div>
+  </div>
 }
 
 function Insights({ workouts, sets, today }) {

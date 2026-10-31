@@ -1238,3 +1238,12 @@ a.alert-strip { text-decoration: none; }
 .dose.done .title-text { color: var(--label-2); }
 .inline-fields.three { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 .inline-fields.three .field { margin-bottom: 1rem; }
+
+/* ---------- «پیشرفت» ---------- */
+
+.motivation { display: flex; align-items: center; gap: 1rem; }
+.motivation .headline { margin: 0; line-height: 1.7; }
+.lift-best { font-size: 1.5rem; font-weight: 700; }
+.week-dots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; margin-top: 1rem; }
+.week-dots span { height: 0.5rem; border-radius: 1rem; background: var(--surface-2); }
+.week-dots span.on { background: var(--lime); }
