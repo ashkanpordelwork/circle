@@ -22,6 +22,9 @@ import { StartSheet, MoreSheet } from './pages/student/sheets.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
 import { AdminHome, AdminPeople, AdminUser, AdminActivity, AdminApplications } from './pages/admin/Admin.jsx'
+import PublicHome from './pages/public/Home.jsx'
+import { Exercises, ExercisePage } from './pages/public/Exercises.jsx'
+import Calculator from './pages/public/Calculator.jsx'
 import { setScope } from './lib/scope.js'
 import { on } from './lib/features.js'
 
@@ -71,7 +74,7 @@ export default function App() {
 
   if (!configured) return <NotConfigured />
   if (me === undefined) return <Loading />
-  if (me === null) return <Login />
+  if (me === null) return <Guest />
   if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
   if (me.role === 'stopped') return <Stopped />
   const setIntake = answers => setMe(m => ({ ...m, intake: { answers, completed_at: new Date().toISOString() } }))
@@ -102,7 +105,8 @@ export default function App() {
     : me.role === 'admin'
       ? [['/admin', 'admin_panel_settings', 'مدیریت', '/s/'], ['/account', 'person', 'حساب']]
       // The athlete's: three tabs. «حساب» opens from the icon at the top of «امروز».
-      : [['/', 'home', 'امروز', '/account'], ['/routines', 'list_alt', 'برنامه'], ['/stats', 'monitoring', 'پیشرفت', ['/progress', '/body']]]
+      : [['/', 'home', 'امروز', ['/account', '/calculator']], ['/routines', 'list_alt', 'برنامه'], ['/stats', 'monitoring', 'پیشرفت', ['/progress', '/body']],
+        ['/exercises', 'fitness_center', 'حرکات']]
   return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
     {me.role === 'coach' ? <Routes>
       {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
@@ -135,12 +139,34 @@ export default function App() {
       {on('intake') && <Route path="/intake" element={<IntakeView />} />}
       {on('intake') && <Route path="/intake/edit" element={<EditIntake />} />}
       <Route path="/account" element={<Account />} />
+      {publicRoutes}
       {me.admin && <>{adminRoutes}</>}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
     {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake/edit' && <TabBar tabs={tabs} />}
   </Me.Provider>
+}
+
+// Open to anyone, signed in or not (SPEC §3.2, §3.8).
+const publicRoutes = <>
+  <Route path="/exercises" element={<Exercises />} />
+  <Route path="/exercises/:id" element={<ExercisePage />} />
+  <Route path="/calculator" element={<Calculator />} />
+</>
+
+// Someone not signed in: the front door, the exercises and the calculator; signing in is a page.
+function Guest() {
+  const loc = useLocation()
+  if (loc.pathname === '/login') return <Login />
+  return <>
+    <Routes>
+      <Route path="/" element={<PublicHome />} />
+      {publicRoutes}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+    <TabBar tabs={[['/', 'home', 'خانه'], ['/exercises', 'fitness_center', 'حرکات'], ['/calculator', 'calculate', 'محاسبه‌گر']]} />
+  </>
 }
 
 // The student reads their answers from «حساب», laid out like the coach sees them…

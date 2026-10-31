@@ -8,7 +8,7 @@ import fs from 'node:fs'
 
 export const ICONS = [
   'add', 'add_a_photo', 'admin_panel_settings', 'arrow_downward', 'arrow_outward', 'arrow_upward',
-  'assignment', 'badge', 'bedtime', 'block', 'bolt', 'calendar_month', 'check', 'check_circle',
+  'assignment', 'badge', 'bedtime', 'block', 'bolt', 'calculate', 'calendar_month', 'check', 'check_circle',
   'chevron_left', 'chevron_right', 'close', 'content_copy', 'dashboard', 'delete', 'download',
   'edit_note', 'emoji_events', 'error', 'exercise', 'expand_less', 'expand_more', 'fact_check',
   'favorite', 'fitness_center', 'flag', 'group', 'healing', 'help', 'history', 'home',

@@ -34,6 +34,8 @@ describe('plan helpers', () => {
     expect(needsWeight({ weight: '' }, 'barbell')).toBe(true)
     expect(needsWeight({ weight: '' }, 'body only')).toBe(false)
     expect(needsWeight({ weight: 10 }, 'body only')).toBe(true)   // weighted pull-ups
+    expect(needsWeight({ weight: '' }, 'body weight')).toBe(false)   // the library's word for it
+    expect(needsWeight({ weight: '' }, 'dumbbell')).toBe(true)
     expect(canTick({ weight: '', reps: 8 }, true)).toBe(false)
     expect(canTick({ weight: '۶۰', reps: 8 }, true)).toBe(true)
     expect(canTick({ weight: 0, reps: 8 }, true)).toBe(true)

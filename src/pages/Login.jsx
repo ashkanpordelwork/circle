@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { isPhone, phoneEmail, normCode, fmtPhone } from '../lib/phone.js'
 import { useToast, errorText, Segmented } from '../components/ui.jsx'
@@ -9,7 +10,9 @@ import Logo from '../components/Logo.jsx'
 // a password; someone who was given an invite code opens the small «کد دعوت دارم» link for it.
 export default function Login() {
   const toast = useToast()
-  const [mode, setMode] = useState('login')
+  const nav = useNavigate()
+  // «شروع رایگان» on the front door opens this page on «ثبت‌نام».
+  const [mode, setMode] = useState(() => (new URLSearchParams(window.location.search).has('signup') ? 'signup' : 'login'))
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -44,6 +47,7 @@ export default function Login() {
   }
 
   return <main className="auth">
+    <button className="icon-btn glass interactive auth-back" onClick={() => nav('/')} aria-label="بازگشت به خانه"><Icon name="chevron_right" /></button>
     <div className="mark app"><Logo size="2.75rem" /></div>
     <h1 className="title-lg latin brand">Circle</h1>
     <p className="lead">برنامه‌ات را بیاور، هر روز اجرایش کن، پیشرفتت را ببین.</p>

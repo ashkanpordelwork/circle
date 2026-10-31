@@ -49,7 +49,8 @@ const file = p => String(p || '').replace(/^.*\//, '')
 const title = s => s.charAt(0).toUpperCase() + s.slice(1)
 
 // Everyday moves with no twin in the new library: still offered, under the new equipment words.
-const KEEP = new Set(['Plank', 'Barbell_Hip_Thrust', 'Side_Bridge'])
+const KEEP = new Set(['Plank', 'Barbell_Hip_Thrust', 'Side_Bridge', 'Bodyweight_Squat', 'Superman',
+  'Step-up_with_Knee_Raise', 'Incline_Push-Up_Wide'])
 const KEEP_EQ = { 'body only': 'body weight', barbell: 'barbell' }
 
 // Old Persian steps, lent to each new twin that has none.

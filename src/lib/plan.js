@@ -91,7 +91,9 @@ export function blankLog(routine, lastSets = []) {
 
 // A set can be ticked only once its weight is entered. Bodyweight work (no weight planned for a
 // bodyweight exercise) needs reps instead.
-export const needsWeight = (item, equipment) => !(equipment === 'body only' && (item.weight === '' || item.weight == null))
+// Bodyweight moves: 'body weight' in the exercise library, 'body only' in its older entries.
+const BODYWEIGHT = new Set(['body weight', 'body only'])
+export const needsWeight = (item, equipment) => !(BODYWEIGHT.has(equipment) && (item.weight === '' || item.weight == null))
 export const canTick = (set, weightNeeded) =>
   weightNeeded ? toNumber(set.weight) != null : toNumber(set.reps) != null
 

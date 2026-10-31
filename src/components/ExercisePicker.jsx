@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { loadExercises, searchExercises, MUSCLES, EQUIPMENT, EQUIPMENT_FILTERS } from '../lib/exercises.js'
 import Screen, { useScreen } from './Screen.jsx'
 import Icon from './Icon.jsx'
 import { Loading, haptic } from './ui.jsx'
 import { Thumb, ExName } from './ExerciseInfo.jsx'
 
-function Body({ onPick, added }) {
+// The library with search and filters. With onPick each row adds the exercise (the picker);
+// with linkTo each row opens the exercise's own page (the public «حرکات»).
+export function ExerciseList({ onPick, linkTo, added = [] }) {
   const [all, setAll] = useState(null)
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('')
@@ -32,15 +35,20 @@ function Body({ onPick, added }) {
     </div>
     {!all ? <Loading /> : <>
       <div className="caption" style={{ padding: '0 0.25rem 0.5rem' }}>{found.length.toLocaleString('fa-IR')} حرکت</div>
-      <div className="group glass-lite">{found.slice(0, limit).map(x => <button key={x.id} className="row pressable" style={{ '--sep-inset': '5.25rem' }}
-        onClick={() => { onPick(x.id); haptic(8) }}>
-        <Thumb id={x.id} />
-        <div className="content">
-          <ExName id={x.id} />
-          <div className="sub ellipsis">{x.m.map(m => MUSCLES[m] || m).join('، ')} · {EQUIPMENT[x.e] || x.e}</div>
-        </div>
-        <Icon name={has.has(x.id) ? 'check_circle' : 'add'} filled={has.has(x.id)} style={{ color: 'var(--accent)' }} />
-      </button>)}</div>
+      <div className="group glass-lite">{found.slice(0, limit).map(x => {
+        const inner = <>
+          <Thumb id={x.id} />
+          <div className="content">
+            <ExName id={x.id} />
+            <div className="sub ellipsis">{x.m.map(m => MUSCLES[m] || m).join('، ')} · {EQUIPMENT[x.e] || x.e}</div>
+          </div>
+          {linkTo ? <Icon name="chevron_left" style={{ color: 'var(--label-3)' }} />
+            : <Icon name={has.has(x.id) ? 'check_circle' : 'add'} filled={has.has(x.id)} style={{ color: 'var(--accent)' }} />}
+        </>
+        return linkTo
+          ? <Link key={x.id} to={linkTo(x.id)} className="row pressable" style={{ '--sep-inset': '5.25rem' }}>{inner}</Link>
+          : <button key={x.id} className="row pressable" style={{ '--sep-inset': '5.25rem' }} onClick={() => { onPick(x.id); haptic(8) }}>{inner}</button>
+      })}</div>
       {found.length > limit && <button className="btn glass interactive block mt" onClick={() => setLimit(l => l + 40)}>نمایش بیشتر</button>}
     </>}
   </>
@@ -50,7 +58,7 @@ function Body({ onPick, added }) {
 // added in a row; each tap is confirmed in place, and «تمام» goes back to the plan.
 export default function ExercisePicker({ onPick, onClose, added = [], routineName }) {
   return <Screen title="افزودن حرکت" subtitle={routineName ? `به «${routineName}»` : null} onClose={onClose}
-    actions={<DoneButton />}><Body onPick={onPick} added={added} /></Screen>
+    actions={<DoneButton />}><ExerciseList onPick={onPick} added={added} /></Screen>
 }
 function DoneButton() {
   const { close } = useScreen()
