@@ -14,10 +14,10 @@ export const ICONS = [
   'favorite', 'fitness_center', 'flag', 'group', 'healing', 'help', 'history', 'home',
   'hourglass_top', 'how_to_reg', 'info', 'key', 'list_alt', 'local_fire_department', 'lock',
   'lock_reset', 'login', 'logout', 'manage_accounts', 'medical_information', 'monitor_weight',
-  'monitoring', 'more_horiz', 'person', 'person_add', 'person_remove', 'play_arrow', 'refresh',
-  'remove', 'restaurant', 'search', 'send', 'settings', 'share', 'smartphone', 'sports',
-  'sticky_note_2', 'swap_horiz', 'swipe_right', 'timer', 'today', 'trending_down', 'trending_up',
-  'undo', 'visibility', 'visibility_off', 'warning', 'water_drop'
+  'monitoring', 'more_horiz', 'notifications', 'notifications_active', 'person', 'person_add',
+  'person_remove', 'play_arrow', 'refresh', 'remove', 'restaurant', 'search', 'send', 'settings',
+  'share', 'smartphone', 'sports', 'sticky_note_2', 'swap_horiz', 'swipe_right', 'timer', 'today',
+  'trending_down', 'trending_up', 'undo', 'visibility', 'visibility_off', 'warning', 'water_drop'
 ]
 const sorted = [...ICONS].sort()
 if (sorted.join() !== ICONS.join()) throw new Error('ICONS must be sorted: ' + sorted.join(', '))

@@ -1,154 +1,110 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase, must } from '../../lib/supabase.js'
-import { todayISO, toNumber, fmtNum, faDigits } from '../../lib/plan.js'
+import { todayISO, toNumber, faDigits, fmtTarget, DAY_NAMES } from '../../lib/plan.js'
 import { pickPrograms, studentWeek, sessionLabel, weekLabel } from '../../lib/program.js'
-import { addDays, fmtJ, fmtRange, isoToJ } from '../../lib/jalali.js'
-import { weekDays, streakWeeks, weeklyCounts, volumeOf, nextOwn, weekStartOf } from '../../lib/home.js'
-import { DAY_NAMES, routinesForDay } from '../../lib/plan.js'
+import { addDays, fmtJ } from '../../lib/jalali.js'
+import { routinesForDay } from '../../lib/plan.js'
+import { ownSession, macroProgress, mealLog, dosesOf, reminders } from '../../lib/today.js'
+import { missingMigration, NUTRITION_SETUP } from '../../lib/nutrition.js'
 import { Page, Loading, useToast, errorText, haptic } from '../../components/ui.jsx'
+import Sheet, { useSheet } from '../../components/Sheet.jsx'
 import Icon from '../../components/Icon.jsx'
-import { WeightField } from '../../components/Wheel.jsx'
+import { Thumb, ExName } from '../../components/ExerciseInfo.jsx'
 import { useMe } from '../../App.jsx'
 import { loadStudentPlan } from './data.js'
-import { startLabel, minutes, SessionScreen } from './plan-parts.jsx'
+import { startLabel, minutes } from './plan-parts.jsx'
 import { scope } from '../../lib/scope.js'
-import { on } from '../../lib/features.js'
 
-// «امروز»: what to do next, how the week is going, and the two habits worth a tap a day —
-// body weight and water. The coach's whole plan lives under «روتین»; this is the front page.
+// «امروز»: the day's three things, top to bottom — the workout, the food (what is left of each
+// macro, the meals to tick), the supplements (the dose that is due stands out). The numbers are
+// worked out in lib/today.js; ticks go straight to the database, so they survive a refresh.
 
 const fa = n => Number(n).toLocaleString('fa-IR')
-const WEEK_LETTERS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
-const WATER = [[250, 'لیوان', '۲۵۰ میلی'], [500, 'شیکر', '۰٫۵ لیتر'], [1000, 'بطری', '۱ لیتر']]
 
-// The session to do next: the coach's (program or today's weekday plan) first, else the
-// athlete's own routine trained longest ago.
-function upNext(data, today) {
+// The session for today: the coach's plan first, when there is one, else the athlete's own.
+function todaysSession(data, today, weekday) {
   if (data.programs.length) {
     const { current } = pickPrograms(data.programs, today)
     if (current) {
       const w = studentWeek(current, data.sessions, data.doneIds, today)
-      if (w.next) return { r: w.next, kicker: `${weekLabel(w.week)} · برنامه‌ی مربی`, title: sessionLabel(w.next.session) }
+      if (w.next) return { r: w.next, kicker: weekLabel(w.week), title: sessionLabel(w.next.session), done: false }
     }
   } else if (data.weekdays.length) {
-    const r = routinesForDay(data.weekdays, new Date().getDay()).find(x => !data.doneToday.has(x.id))
-    if (r) return { r, kicker: 'برنامه‌ی امروز مربی', title: r.name }
+    const r = routinesForDay(data.weekdays, weekday)[0]
+    if (r) return { r, kicker: 'تمرین امروز', title: r.name, done: data.doneToday.has(r.id) }
   }
-  const own = nextOwn(data.mine, data.lastDone)
-  return own ? { r: own, kicker: 'روتین بعدی تو', title: own.name } : null
+  const own = ownSession(data.mine, weekday, data.lastDone, today)
+  if (!own) return null
+  const kicker = own.kind === 'rest' ? `امروز استراحت · جلسه‌ی بعدی ${DAY_NAMES[own.day]}` : own.kind === 'next' ? 'جلسه‌ی بعدی' : 'تمرین امروز'
+  return { r: own.r, kicker, title: own.r.name, done: own.done, rest: own.kind === 'rest' }
+}
+
+async function loadNutrition(today) {
+  const q = (t, f) => f(supabase.from(t).select('*').eq('student_id', scope.student))
+  const [targets, meals, mealLogs, sups, supLogs] = await Promise.all([
+    supabase.from('nutrition_targets').select('*').eq('student_id', scope.student).maybeSingle(),
+    q('meals', x => x.order('position')),
+    q('meal_logs', x => x.eq('date', today).order('created_at')),
+    q('supplements', x => x.order('position')),
+    q('supplement_logs', x => x.eq('date', today))])
+  const err = [targets, meals, mealLogs, sups, supLogs].map(r => r.error).find(Boolean)
+  if (err) { if (missingMigration(err)) return { missing: true }; throw err }
+  const items = meals.data.length ? await must(supabase.from('meal_items').select('*').in('meal_id', meals.data.map(m => m.id)).order('position')) : []
+  return { targets: targets.data, meals: meals.data.map(m => ({ ...m, items: items.filter(i => i.meal_id === m.id) })),
+    mealLogs: mealLogs.data, supplements: sups.data, supLogs: supLogs.data }
 }
 
 export default function Today() {
   const me = useMe()
-  const nav = useNavigate()
   const toast = useToast()
   const [data, setData] = useState(null)
-  const [open, setOpen] = useState(null)
+  const [food, setFood] = useState(null)
+  const [now, setNow] = useState(new Date())
   const today = todayISO()
   useEffect(() => {
     (async () => {
       try {
-        const since = addDays(weekStartOf(today), -7 * 9)
-        const [plan, ws, weights, water] = await Promise.all([loadStudentPlan(),
-          must(supabase.from('workouts').select('id, routine_id, date').eq('student_id', scope.student).gte('date', since).order('date')),
-          must(supabase.from('body_weights').select('date, weight').eq('student_id', scope.student).order('date', { ascending: false }).limit(2)),
-          // Before migration 0008 there is no water table: the card simply starts at zero.
-          supabase.from('water_logs').select('ml').eq('student_id', scope.student).eq('date', today).maybeSingle().then(r => r.data?.ml ?? 0)])
-        const thisWeek = ws.filter(w => w.date >= weekStartOf(today))
-        const sets = thisWeek.length ? await must(supabase.from('workout_sets').select('weight, reps').in('workout_id', thisWeek.map(w => w.id))) : []
+        const [plan, ws] = await Promise.all([loadStudentPlan(),
+          must(supabase.from('workouts').select('routine_id, date').eq('student_id', scope.student).gte('date', addDays(today, -90)).order('date'))])
         const lastDone = {}
         for (const w of ws) if (w.routine_id) lastDone[w.routine_id] = w.date
-        setData({ ...plan, ws, sets, weights, water, lastDone,
+        setData({ ...plan, lastDone, workedOut: ws.some(w => w.date === today),
           doneIds: new Set(ws.map(w => w.routine_id)), doneToday: new Set(ws.filter(w => w.date === today).map(w => w.routine_id)) })
       } catch (e) { toast(errorText(e), 'error'); setData(false) }
     })()
+    loadNutrition(today).then(setFood).catch(e => { toast(errorText(e), 'error'); setFood({ missing: false, failed: true }) })
+    // Doses come due as the day goes on.
+    const t = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(t)
   }, [])
-  if (data === null) return <Page><Loading /></Page>
-  if (!data) return <Page><Header today={today} /></Page>
+  if (data === null || food === null) return <Page><Header today={today} /><Loading /></Page>
 
-  const dates = [...new Set(data.ws.map(w => w.date))]
-  const week = weekDays(today, dates)
-  const weekCount = data.ws.filter(w => w.date >= weekStartOf(today)).length
-  const next = upNext(data, today)
-  const counts = weeklyCounts(dates, today, 8)
-  const top = Math.max(3, ...counts.map(c => c.count))
+  const weekday = new Date().getDay()
+  const session = data && todaysSession(data, today, weekday)
+  const hasFood = !food.missing && !food.failed && (food.targets || food.meals.length)
+  const hasSups = !food.missing && !food.failed && food.supplements.length > 0
+  const empty = !session && !hasFood && !hasSups
 
   return <Page>
     <Header today={today} />
-
     {me.student.note?.trim() && <div className="card glass-lite">
       <div className="card-head"><div className="tile-icon orange"><Icon name="sticky_note_2" filled /></div><div className="headline">از طرف مربی</div></div>
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
 
-    {on('intake') && me.student.coach_id && !me.intake?.completed_at && !me.intake?.skipped && <Link to="/intake/edit" className="alert-strip invite pressable">
-      <Icon name="assignment" /><div className="grow"><div className="title-text">پرسشنامه برای مربی</div><div className="sub">هدف، آسیب‌ها و تغذیه؛ مربی با آن برنامه‌ات را می‌نویسد</div></div><Icon name="chevron_left" />
-    </Link>}
-
-    <div className="section">
-      <div className="section-title">بعدی</div>
-      {next ? <div className="up-next card hero">
-        <button className="up-next-main pressable" onClick={() => setOpen(next.r)}>
-          <div className="caption kicker">{next.kicker}</div>
-          <h2 className="title">{next.title}</h2>
-          <div className="footnote">{fa(next.r.items.length)} حرکت · حدود {fa(minutes(next.r))} دقیقه</div>
-        </button>
-        <button className="play pressable" onClick={() => nav('/log/' + next.r.id)} aria-label={startLabel(next.r, false)}><Icon name="play_arrow" filled /></button>
-      </div> : <div className="card glass-lite">
-        <div className="headline">اولین روتینت را بساز</div>
-        <p className="subhead secondary">یکی از روتین‌های آماده را بردار، یا همین حالا بدون برنامه شروع کن و حرکت‌ها را حین تمرین اضافه کن.</p>
-        <div className="hstack">
-          <button className="btn glass interactive prominent grow" onClick={() => nav('/routines')}><Icon name="list_alt" />روتین‌ها</button>
-          <button className="btn glass interactive grow" onClick={() => document.dispatchEvent(new Event('start-workout'))}><Icon name="bolt" />تمرین فوری</button>
-        </div>
-      </div>}
-    </div>
-
-    <div className="section">
-      <div className="section-title">این هفته</div>
-      <div className="card glass-lite" style={{ marginBottom: '0.75rem' }}>
-        <div className="hstack between" style={{ marginBottom: '1rem' }}>
-          <div><div className="headline">{fmtRange(week[0].date, week[6].date)}</div>
-            <div className="footnote">{weekCount ? `${fa(weekCount)} جلسه انجام شد` : 'هنوز جلسه‌ای در این هفته نیست'}</div></div>
-        </div>
-        <div className="week-strip">{week.map((d, i) => <div key={d.date} className={'wday' + (d.today ? ' today' : '') + (d.trained ? ' trained' : '') + (d.future ? ' future' : '')}>
-          <span className="l">{WEEK_LETTERS[i]}</span><span className="n">{fa(isoToJ(d.date)[2])}</span>
-          <span className="m">{d.trained && <Icon name="check" />}</span>
-        </div>)}</div>
-      </div>
-      <div className="stats" style={{ marginBottom: '0.75rem' }}>
-        <div className="stat glass-lite"><div className="l"><Icon name="local_fire_department" />پیوستگی</div><div className="v">{fa(streakWeeks(dates, today))} <span className="of">هفته</span></div></div>
-        <div className="stat glass-lite"><div className="l"><Icon name="fitness_center" />حجم این هفته</div><div className="v">{fa(volumeOf(data.sets))} <span className="of">کیلو</span></div></div>
-      </div>
-      <div className="card glass-lite" style={{ marginBottom: 0 }}>
-        <div className="headline">جلسه در هفته</div>
-        <div className="footnote">هشت هفته‌ی اخیر</div>
-        <div className="bars" role="img" aria-label={`جلسه‌ها در هشت هفته‌ی اخیر: ${counts.map(c => c.count).join('، ')}`}>
-          {counts.map((c, i) => <div key={c.start} className={'bar' + (i === counts.length - 1 ? ' now' : '')}>
-            <span className="v">{c.count ? fa(c.count) : ''}</span>
-            <span className="b" style={{ height: `${(c.count / top) * 100}%` }} />
-            <span className="d">{fa(isoToJ(c.start)[2])}</span>
-          </div>)}
-        </div>
-      </div>
-    </div>
-
-    <div className="section">
-      <div className="section-title">بدن و عادت‌ها</div>
-      <WeightCard weights={data.weights} onSaved={w => setData(d => ({ ...d, weights: [{ date: today, weight: w }, ...d.weights.filter(x => x.date !== today)] }))} />
-      {on('water') && <WaterCard ml={data.water} onChange={ml => setData(d => ({ ...d, water: ml }))} />}
-    </div>
-
-    <div className="section">
-      <div className="section-title">کتابخانه</div>
-      <div className="stats">
-        <Link to="/routines" className="stat glass-lite pressable"><div className="l"><Icon name="list_alt" />روتین‌های من</div><div className="v">{fa(data.mine.length)}</div></Link>
-        <Link to="/stats" className="stat glass-lite pressable"><div className="l"><Icon name="history" />تمرین در ۹ هفته</div><div className="v">{fa(data.ws.length)}</div></Link>
-      </div>
-    </div>
-
-    {open && <SessionScreen r={open} done={false} onClose={() => setOpen(null)} />}
+    {empty ? <section className="card glass-lite empty-plan">
+      <div className="tile-icon big lime"><Icon name="download" /></div>
+      <div className="headline">هنوز برنامه‌ای نداری</div>
+      <p className="subhead secondary">برنامه‌ی تمرین، غذا و مکملی که هوش مصنوعی‌ات نوشته را با یک کد بیاور.</p>
+      <Link to="/routines/import" className="btn glass interactive prominent block">برنامه‌ات را وارد کن</Link>
+    </section> : <>
+      {session && <WorkoutCard s={session} />}
+      {food.missing && <div className="section"><div className="section-title">تغذیه امروز</div>
+        <div className="card glass-lite" style={{ marginBottom: 0 }}><p className="subhead secondary" style={{ margin: 0 }}>{NUTRITION_SETUP}</p></div></div>}
+      {hasFood && <Food food={food} setFood={setFood} today={today} />}
+      {hasSups && <Supplements food={food} setFood={setFood} today={today} now={now} workedOut={data?.workedOut} />}
+    </>}
   </Page>
 }
 
@@ -161,54 +117,206 @@ function Header({ today }) {
   </header>
 }
 
-function WeightCard({ weights, onSaved }) {
-  const toast = useToast()
-  const [w, setW] = useState('')
-  const last = weights[0]
-  const save = async () => {
-    const v = toNumber(w)
-    if (!(v >= 20 && v <= 400)) return toast('یک وزن معتبر وارد کن.', 'warning')
-    try {
-      await must(supabase.from('body_weights').upsert({ student_id: scope.student, date: todayISO(), weight: v }, { onConflict: 'student_id,date' }))
-      setW(''); onSaved(v); toast('وزن امروز ثبت شد', 'success')
-    } catch (e) { toast(errorText(e), 'error') }
-  }
-  const delta = weights.length > 1 ? Number(weights[0].weight) - Number(weights[1].weight) : null
-  return <div className="card glass-lite" style={{ marginBottom: '0.75rem' }}>
-    <div className="hstack between">
-      <div><div className="headline">وزن بدن</div>
-        <div className="footnote">{last ? fmtJ(last.date, false) : 'هنوز ثبت نشده'}</div></div>
-      {last && <div className="tnum title-lg">{fmtNum(last.weight)} <span className="subhead secondary">کیلو</span>
-        {delta ? <span className={'pill' + (delta < 0 ? ' ok' : '')} style={{ marginInlineStart: '0.5rem' }}><Icon name={delta > 0 ? 'trending_up' : 'trending_down'} />{fmtNum(Math.abs(delta))}</span> : null}</div>}
-    </div>
-    <div className="hstack mt">
-      <WeightField value={w} onChange={setW} title="وزن امروز" fine min={30} max={250} hint={last?.weight} hintLabel="آخرین وزن"
-        placeholder="وزن امروز (کیلو)" ariaLabel="وزن امروز به کیلو" className="grow" />
-      <button className="btn glass interactive prominent" disabled={w === ''} onClick={save}><Icon name="add" />ثبت</button>
-    </div>
+/* ---------- the workout ---------- */
+
+function WorkoutCard({ s }) {
+  const nav = useNavigate()
+  const r = s.r
+  return <div className="section">
+    <div className="section-title">تمرین امروز</div>
+    <section className={'card hero today-workout' + (s.rest ? ' rest' : '')} aria-label={s.title}>
+      <div className="hstack between">
+        <div><div className="caption kicker">{s.kicker}</div><h2 className="title">{s.title}</h2></div>
+        {s.done && <span className="pill on-hero"><Icon name="check" />انجام شد</span>}
+      </div>
+      <div className="footnote" style={{ margin: '0.25rem 0 1rem' }}>{fa(r.items.length)} حرکت · حدود {fa(minutes(r))} دقیقه</div>
+      <div className="group hero-list">{r.items.map((it, i) => <div key={i} className="row" style={{ '--sep-inset': '5.25rem' }}>
+        <Thumb id={it.exercise_id} />
+        <div className="content"><ExName id={it.exercise_id} /><div className="sub">{fmtTarget(it)}</div></div>
+      </div>)}</div>
+      <div className="hero-actions">
+        <button className="btn glass interactive hero-start" onClick={() => nav('/log/' + r.id)}>{startLabel(r, s.done)}</button>
+      </div>
+    </section>
   </div>
 }
 
-// Water: three taps for three sizes; the last one taken back with ↺.
-function WaterCard({ ml, onChange }) {
+/* ---------- food ---------- */
+
+const BARS = [['protein', 'پروتئین', 'گرم'], ['calories', 'کالری', ''], ['carbs', 'کربوهیدرات', 'گرم']]
+
+function Food({ food, setFood, today }) {
   const toast = useToast()
-  const [last, setLast] = useState([])
-  const put = async (next, undo) => {
-    const prev = ml
-    onChange(next)
-    const { error } = await supabase.from('water_logs').upsert({ student_id: scope.student, date: todayISO(), ml: next }, { onConflict: 'student_id,date' })
-    if (error) { onChange(prev); return toast(/water_logs/.test(error.message) ? 'ثبت آب هنوز فعال نشده.' : errorText(error), 'error') }
-    if (!undo) haptic(8)
+  const [open, setOpen] = useState(null)
+  const [adding, setAdding] = useState(false)
+  const p = macroProgress(food.targets, food.mealLogs)
+  const logOf = id => food.mealLogs.find(l => l.meal_id === id)
+  // A tick shows at once; if the database says no, it is taken back.
+  const tick = async meal => {
+    const had = logOf(meal.id)
+    if (had) {
+      setFood(f => ({ ...f, mealLogs: f.mealLogs.filter(l => l !== had) }))
+      const { error } = await supabase.from('meal_logs').delete().eq('id', had.id)
+      if (error) { setFood(f => ({ ...f, mealLogs: [...f.mealLogs, had] })); toast(errorText(error), 'error') }
+      return
+    }
+    const row = mealLog(meal, scope.student, today)
+    const temp = { ...row, id: 'tmp-' + meal.id }
+    setFood(f => ({ ...f, mealLogs: [...f.mealLogs, temp] })); haptic(8)
+    const { data, error } = await supabase.from('meal_logs').insert(row).select().single()
+    setFood(f => ({ ...f, mealLogs: f.mealLogs.filter(l => l !== temp).concat(error ? [] : [data]) }))
+    if (error) toast(errorText(error), 'error')
   }
-  return <div className="card glass-lite" style={{ marginBottom: 0 }}>
-    <div className="hstack between">
-      <div className="hstack"><div className="tile-icon blue"><Icon name="water_drop" /></div><div className="headline">آب</div></div>
-      <button className="icon-btn bare" disabled={!last.length} onClick={() => { const a = last[last.length - 1]; setLast(l => l.slice(0, -1)); put(Math.max(0, ml - a), true) }} aria-label="برداشتن آخرین ثبت"><Icon name="undo" /></button>
+  const removeQuick = async l => {
+    setFood(f => ({ ...f, mealLogs: f.mealLogs.filter(x => x !== l) }))
+    const { error } = await supabase.from('meal_logs').delete().eq('id', l.id)
+    if (error) { setFood(f => ({ ...f, mealLogs: [...f.mealLogs, l] })); toast(errorText(error), 'error') }
+  }
+  const quick = food.mealLogs.filter(l => !l.meal_id)
+  return <div className="section">
+    <div className="section-head">
+      <div className="section-title">تغذیه امروز</div>
+      <button className="btn glass interactive small" onClick={() => setAdding(true)}><Icon name="add" />افزودن سریع</button>
     </div>
-    <div className="water-total tnum">{faDigits(Math.round(ml / 100) / 10)} <span className="subhead secondary">لیتر امروز</span></div>
-    <div className="water-buttons">{WATER.map(([amount, name, label]) =>
-      <button key={amount} className="water-btn pressable" onClick={() => { setLast(l => [...l, amount]); put(Math.min(20000, ml + amount)) }}>
-        <span className="a">+ {label}</span><span className="caption">{name}</span>
-      </button>)}</div>
+    {food.targets && <div className="card glass-lite macros">
+      {BARS.map(([k, label, unit]) => <div key={k} className={'macro' + (p[k].over ? ' over' : '')}>
+        <div className="macro-top">
+          <span className="title-text">{label}</span>
+          <span className="tnum"><b>{fa(p[k].eaten)}</b> از {fa(p[k].target)}{unit && ` ${unit}`}</span>
+        </div>
+        <div className="macro-track" role="progressbar" aria-label={label} aria-valuenow={p[k].eaten} aria-valuemax={p[k].target}><span style={{ width: `${p[k].share * 100}%` }} /></div>
+        <div className="caption tnum">{p[k].over ? `${fa(p[k].eaten - p[k].target)}${unit && ` ${unit}`} بیشتر از هدف` : `مانده ${fa(p[k].left)}${unit && ` ${unit}`}`}</div>
+      </div>)}
+      <div className="caption tnum fat-line">چربی: {fa(p.fat.eaten)} از {fa(p.fat.target)} گرم · مانده {fa(p.fat.left)}</div>
+    </div>}
+    {(food.meals.length > 0 || quick.length > 0) && <div className="group glass-lite">
+      {food.meals.map(m => { const done = !!logOf(m.id), isOpen = open === m.id
+        return <div key={m.id} className={'meal' + (done ? ' done' : '')}>
+          <div className="row">
+            <button className={'tick pressable' + (done ? ' on' : '')} onClick={() => tick(m)} aria-pressed={done} aria-label={`${m.name} خورده شد`}>{done && <Icon name="check" />}</button>
+            <button className="content meal-open" onClick={() => setOpen(isOpen ? null : m.id)} aria-expanded={isOpen}>
+              <div className="title-text">{m.name}{m.time && <span className="caption tnum"> · {faDigits(m.time)}</span>}</div>
+              <div className="sub tnum">{fa(Math.round(m.protein))} گرم پروتئین · {fa(Math.round(m.calories))} کالری</div>
+            </button>
+            <Icon name={isOpen ? 'expand_less' : 'expand_more'} style={{ color: 'var(--label-3)' }} />
+          </div>
+          {isOpen && <ul className="meal-items">{m.items.map(it => <li key={it.id}>
+            <span>{it.name}{it.amount && <span className="caption"> · {it.amount}</span>}</span>
+            <span className="caption tnum">{fa(Math.round(it.protein))} پ · {fa(Math.round(it.calories))} ک</span>
+          </li>)}{!m.items.length && <li className="caption">قلمی ثبت نشده</li>}</ul>}
+        </div> })}
+      {quick.map(l => <div key={l.id} className="row meal done">
+        <div className="tick on" aria-hidden="true"><Icon name="bolt" /></div>
+        <div className="content"><div className="title-text">{l.name || 'افزودن سریع'}</div>
+          <div className="sub tnum">{fa(Math.round(l.protein))} گرم پروتئین · {fa(Math.round(l.calories))} کالری · {fa(Math.round(l.carbs))} گرم کربو</div></div>
+        <button className="icon-btn bare" onClick={() => removeQuick(l)} aria-label="حذف"><Icon name="close" /></button>
+      </div>)}
+    </div>}
+    {adding && <QuickAdd today={today} onClose={() => setAdding(false)} onAdded={row => setFood(f => ({ ...f, mealLogs: [...f.mealLogs, row] }))} />}
   </div>
+}
+
+// Something eaten outside the plan: a name if you like, and its numbers.
+function QuickAdd({ today, onClose, onAdded }) {
+  return <Sheet title="افزودن سریع" onClose={onClose}><QuickBody today={today} onAdded={onAdded} /></Sheet>
+}
+function QuickBody({ today, onAdded }) {
+  const { close } = useSheet()
+  const toast = useToast()
+  const [v, setV] = useState({ name: '', protein: '', calories: '', carbs: '' })
+  const [busy, setBusy] = useState(false)
+  const set = (k, x) => setV(o => ({ ...o, [k]: x }))
+  const nums = { protein: toNumber(v.protein), calories: toNumber(v.calories), carbs: toNumber(v.carbs) }
+  const ok = Object.values(nums).some(n => n > 0) && Object.values(nums).every(n => n == null || n >= 0)
+  const save = async e => {
+    e.preventDefault()
+    if (!ok) return toast('دست‌کم یکی از عددها را بنویس.', 'warning')
+    setBusy(true)
+    const row = { student_id: scope.student, date: today, name: v.name.trim(), protein: nums.protein ?? 0, calories: nums.calories ?? 0, carbs: nums.carbs ?? 0, fat: 0 }
+    const { data, error } = await supabase.from('meal_logs').insert(row).select().single()
+    setBusy(false)
+    if (error) return toast(errorText(error), 'error')
+    onAdded(data); haptic(8); close()
+  }
+  return <form onSubmit={save}>
+    <div className="field"><label htmlFor="qn">نام (اختیاری)</label><input id="qn" className="input" value={v.name} onChange={e => set('name', e.target.value)} maxLength={80} placeholder="مثلاً یک موز" /></div>
+    <div className="inline-fields three">
+      {[['protein', 'پروتئین (گرم)'], ['calories', 'کالری'], ['carbs', 'کربو (گرم)']].map(([k, l]) =>
+        <div key={k} className="field"><label htmlFor={'q' + k}>{l}</label>
+          <input id={'q' + k} className="input num" inputMode="decimal" value={v[k]} onChange={e => set(k, e.target.value)} placeholder="۰" /></div>)}
+    </div>
+    <button className="btn glass interactive prominent block" disabled={busy || !ok}><Icon name="add" />افزودن</button>
+  </form>
+}
+
+/* ---------- supplements ---------- */
+
+function Supplements({ food, setFood, today, now, workedOut }) {
+  const toast = useToast()
+  const mins = now.getHours() * 60 + now.getMinutes()
+  const doses = useMemo(() => dosesOf(food.supplements, food.supLogs, mins, workedOut), [food, mins, workedOut])
+  const tick = async d => {
+    const had = food.supLogs.find(l => `${l.supplement_id}|${l.time}` === d.key)
+    if (had) {
+      setFood(f => ({ ...f, supLogs: f.supLogs.filter(l => l !== had) }))
+      const { error } = await supabase.from('supplement_logs').delete().eq('id', had.id)
+      if (error) { setFood(f => ({ ...f, supLogs: [...f.supLogs, had] })); toast(errorText(error), 'error') }
+      return
+    }
+    const row = { student_id: scope.student, date: today, supplement_id: d.supplement.id, name: d.supplement.name, time: d.time }
+    const temp = { ...row, id: 'tmp-' + d.key }
+    setFood(f => ({ ...f, supLogs: [...f.supLogs, temp] })); haptic(8)
+    const { data, error } = await supabase.from('supplement_logs').insert(row).select().single()
+    setFood(f => ({ ...f, supLogs: f.supLogs.filter(l => l !== temp).concat(error ? [] : [data]) }))
+    if (error) toast(errorText(error), 'error')
+  }
+  return <div className="section">
+    <div className="section-head">
+      <div className="section-title">مکمل‌ها</div>
+      <Reminders doses={doses} />
+    </div>
+    <div className="group glass-lite">{doses.map(d => <button key={d.key} className={'row pressable dose' + (d.taken ? ' done' : d.due ? ' due' : '')}
+      onClick={() => tick(d)} aria-pressed={d.taken}>
+      <span className={'tick' + (d.taken ? ' on' : '')}>{d.taken && <Icon name="check" />}</span>
+      <div className="content"><div className="title-text"><bdi>{d.supplement.name}</bdi>{d.supplement.dose && <span className="caption"> · <bdi>{d.supplement.dose}</bdi></span>}</div>
+        <div className="sub tnum">{d.time ? faDigits(d.time) : 'روزانه'}{d.due && <span className="due-tag"> · وقتش است</span>}</div></div>
+    </button>)}</div>
+  </div>
+}
+
+// Reminders for the doses still to come today, while the app is open: only where the browser
+// can show notifications and the athlete has allowed it. No server push in this version; where
+// notifications are not supported (some iPhones), the due dose simply stands out on the page.
+const REMIND = 'remind:supplements'
+const canNotify = () => typeof window !== 'undefined' && 'Notification' in window
+function Reminders({ doses }) {
+  const toast = useToast()
+  const [on, setOn] = useState(() => { try { return canNotify() && Notification.permission === 'granted' && localStorage.getItem(REMIND) === '1' } catch { return false } })
+  const timers = useRef([])
+  useEffect(() => {
+    timers.current.forEach(clearTimeout); timers.current = []
+    if (!on) return
+    for (const r of reminders(doses)) {
+      const wait = r.at - Date.now()
+      if (wait > 0 && wait < 864e5) timers.current.push(setTimeout(() => notify(r), wait))
+    }
+    return () => timers.current.forEach(clearTimeout)
+  }, [on, doses])
+  if (!canNotify()) return null
+  const toggle = async () => {
+    if (on) { setOn(false); try { localStorage.removeItem(REMIND) } catch { /* nothing kept */ } return }
+    const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
+    if (perm !== 'granted') return toast('اجازه‌ی اعلان داده نشد؛ نوبت‌ها فقط داخل اپ برجسته می‌شوند.', 'warning')
+    setOn(true); try { localStorage.setItem(REMIND, '1') } catch { /* private mode: for this visit only */ }
+    toast('تا وقتی اپ باز است، سر وقت یادت می‌اندازد', 'success')
+  }
+  return <button className={'btn small pressable ' + (on ? 'glass interactive' : 'plain')} onClick={toggle} aria-pressed={on}>
+    <Icon name={on ? 'notifications_active' : 'notifications'} />{on ? 'یادآور روشن' : 'یادآور'}</button>
+}
+async function notify(r) {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration?.()
+    if (reg?.showNotification) return reg.showNotification(r.title, { body: r.body, tag: r.key, lang: 'fa', dir: 'rtl' })
+    new Notification(r.title, { body: r.body, tag: r.key, lang: 'fa', dir: 'rtl' })
+  } catch { /* the page still shows the dose as due */ }
 }
