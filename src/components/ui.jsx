@@ -51,7 +51,7 @@ function EdgeBack({ onBack }) {
     st.current?.anim?.stop()
     st.current = { el, id: e.pointerId, x0: e.clientX, x: 0, w: el.getBoundingClientRect().width || innerWidth, samples: [{ t: e.timeStamp, y: 0 }] }
   }
-  const put = (s, x) => { s.x = x; s.el.style.transform = x ? `translate3d(${-x}px, 0, 0)` : ''; s.el.style.boxShadow = x ? '0 0 48px rgba(0, 0, 0, 0.6)' : '' }
+  const put = (s, x) => { s.x = x; s.el.style.transform = x ? `translate3d(${-x}px, 0, 0)` : ''; s.el.style.boxShadow = x ? 'var(--push-shadow)' : '' }
   const move = e => {
     const s = st.current
     if (!s || s.id !== e.pointerId || s.anim) return

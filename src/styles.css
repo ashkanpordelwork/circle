@@ -22,37 +22,42 @@
 /* ---------- tokens ---------- */
 
 :root {
-  color-scheme: dark;
-  /* Graphite surfaces a step apart, warm greys for text, and one lime, toned down, kept for
-     what can be acted on (the main button, a choice, progress). Depth comes from a surface step
-     and a hairline, never from a glow or a gradient. */
-  --bg: #0d0d0c;
-  --surface: #1a1a18;
-  --surface-2: #252523;
-  --lite-fill: #1a1a18;
-  --hairline: rgba(255, 255, 255, 0.06);
-  --separator: rgba(255, 255, 255, 0.08);
-  --fill: rgba(255, 255, 255, 0.06);
-  --fill-strong: rgba(255, 255, 255, 0.11);
-  --label: #f2f2ee;
-  --label-2: #a3a39c;
-  --label-3: #6a6a64;
-  --accent: #c8dd84;
-  --accent-soft: rgba(200, 221, 132, 0.12);
-  --on-accent: #171b0c;
-  --lime: #c8dd84;
-  --red: #f0675e;
-  --red-soft: rgba(240, 103, 94, 0.12);
-  --orange: #e9a04c;
-  --blue: #7fa8d9;
+  color-scheme: light;
+  /* Light only. A warm off-white page, white surfaces a step above it, near-black text, and one
+     olive green kept for what can be acted on (the main button, a choice, progress). The green
+     is dark enough for AA both ways: white text on it 5.9:1, it as text on white 5.9:1 and on
+     the page and the grey surface above 5:1. Depth comes from a surface step and a hairline. */
+  --bg: #f4f4f0;
+  --surface: #ffffff;
+  --surface-2: #ecece7;
+  --lite-fill: #ffffff;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --separator: rgba(0, 0, 0, 0.1);
+  --fill: rgba(0, 0, 0, 0.05);
+  --fill-strong: rgba(0, 0, 0, 0.09);
+  --label: #1c1c1a;
+  --label-2: #5f5f58;
+  --label-3: #86867e;
+  --accent: #456f0b;
+  --accent-soft: rgba(69, 111, 11, 0.1);
+  --on-accent: #ffffff;
+  --lime: #456f0b;
+  --red: #c0392b;
+  --red-soft: rgba(192, 57, 43, 0.08);
+  --on-red: #ffffff;
+  --orange: #9a5008;
+  --blue: #2d6aaf;
 
-  /* Floating layers (tab bar, sheets) are the only translucent ones. */
-  --glass-fill: #252523;
-  --glass-fill-strong: rgba(30, 30, 28, 0.92);
+  /* Floating layers (tab bar, sheets) are the only translucent ones, with a soft shadow. */
+  --glass-fill: #ffffff;
+  --glass-fill-strong: rgba(255, 255, 255, 0.94);
   --glass-blur: 24px;
   --glass-sat: 160%;
-  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
-  --scrim: rgba(0, 0, 0, 0.55);
+  --glass-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --float-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  --push-shadow: 0 0 48px rgba(0, 0, 0, 0.16);
+  --thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --scrim: rgba(0, 0, 0, 0.32);
 
   /* The 4/8 grid: every size, gap and radius is a multiple of 4px (8px wherever it can be).
      Corners come from five steps and follow the element's role, never its mood:
@@ -268,7 +273,7 @@ button.row, a.row { cursor: pointer; text-decoration: none; color: inherit; }
 .row .title-text { font-size: 1rem; line-height: 1.5rem; font-weight: 550; }
 .row .sub { font-size: 0.875rem; color: var(--label-2); line-height: 1.5rem; }
 .en-name { font-size: 0.75rem; line-height: 1.25rem; color: var(--label-2); text-align: right; letter-spacing: 0; }
-.card.hero .en-name { color: rgba(255, 255, 255, 0.5); }
+.card.hero .en-name { color: var(--label-2); }
 
 /* Numbered instruction steps: a tinted number disc, then the Persian text. */
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
@@ -342,7 +347,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   border-radius: var(--radius);
   padding: 0.25rem;
   margin-bottom: 1.5rem;
-  background: var(--surface);
+  background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--hairline);
 }
 .seg .seg-thumb {
@@ -351,7 +356,8 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   bottom: 0.25rem;
   left: 0;
   border-radius: var(--radius-sm);
-  background: #3a3a37;
+  background: var(--surface);
+  box-shadow: var(--thumb-shadow);
   will-change: transform;
 }
 .seg button {
@@ -427,7 +433,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 .pill .icon { font-size: 0.875rem; }
 .pill.ok { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
 .pill.bad { background: var(--red-soft); color: var(--red); }
-.pill.on-hero { background: rgba(182, 242, 76, 0.14); color: var(--lime); box-shadow: inset 0 0 0 1px rgba(182, 242, 76, 0.4); }
+.pill.on-hero { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
 
 /* ---------- exercise photos ---------- */
 
@@ -463,10 +469,10 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   padding: 0.25rem;
   border-radius: var(--radius);
   /* The one translucent bar: content scrolls under it. */
-  background: rgba(26, 26, 24, 0.78);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  box-shadow: inset 0 0 0 1px var(--hairline), 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 1px var(--hairline), var(--float-shadow);
 }
 .tabbar .drop {
   position: absolute;
@@ -474,7 +480,7 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
   bottom: 0.25rem;
   left: 0;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--fill-strong);
   will-change: transform;
   z-index: 0;
 }
@@ -525,8 +531,8 @@ textarea.input { min-height: 6rem; resize: vertical; line-height: 1.75; }
 /* A pushed page slides in from the side, the iOS way — from the left, in right-to-left — and a
    page with a back button can be swiped away from the right edge (EdgeBack in ui.jsx). */
 .page.enter { animation: push-in 420ms cubic-bezier(0.32, 0.72, 0, 1) backwards; }
-@keyframes push-in { from { transform: translateX(-100%); box-shadow: 0 0 48px rgba(0, 0, 0, 0.6); } }
-@keyframes push-out { to { transform: translateX(-100%); box-shadow: 0 0 48px rgba(0, 0, 0, 0.6); } }
+@keyframes push-in { from { transform: translateX(-100%); box-shadow: var(--push-shadow); } }
+@keyframes push-out { to { transform: translateX(-100%); box-shadow: var(--push-shadow); } }
 .edge-back { position: fixed; top: 0; bottom: 0; inset-inline-start: 0; width: 0.75rem; z-index: 26; touch-action: none; }
 @media (prefers-reduced-motion: reduce) { .screen, .screen.leaving, .page.enter { animation-name: fade; } }
 @keyframes fade { from { opacity: 0; } }
@@ -592,7 +598,7 @@ html.has-screen body { overflow: hidden; }
 .swipe-row + .swipe-row > .swipe-content > .item-row > .row::before { content: ''; position: absolute; top: 0; inset-inline-start: 5.25rem; inset-inline-end: 1rem; border-top: 0.5px solid var(--separator); }
 .swipe-content { position: relative; background: var(--lite-fill); touch-action: pan-y; will-change: transform; }
 .swipe-action { position: absolute; inset-block: 0; inset-inline-end: 0; width: 100%; border: 0; display: flex; align-items: center; justify-content: flex-end;
-  gap: 0.25rem; padding-inline-end: 1rem; background: var(--red); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  gap: 0.25rem; padding-inline-end: 1rem; background: var(--red); color: var(--on-red); font: inherit; font-weight: 600; cursor: pointer; }
 .swipe-action .icon { font-size: 1.25rem; }
 .swipe-hint { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; padding: 0.5rem 0.5rem 0.5rem 1rem; border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline);
   font-size: 0.875rem; color: var(--label-2); }
@@ -654,7 +660,7 @@ html.has-sheet .float-bar, html.has-sheet .tabbar { visibility: hidden; }
   --glass-tint: var(--glass-fill-strong);
   font-size: 1rem;
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--hairline), 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 1px var(--hairline), var(--float-shadow);
   animation: toast-in 360ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .toast-action { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; padding: 0.25rem 0.5rem; margin-inline-start: 0.5rem; cursor: pointer; }
@@ -990,7 +996,7 @@ input.stepper-value { outline: none; box-shadow: inset 0 0 0 1.5px var(--lime); 
 /* Rest between sets: floats over the bottom of the page. */
 .rest-timer { position: fixed; inset-inline: 1rem; bottom: calc(var(--sab) + 1rem); max-width: 42rem; margin: 0 auto; z-index: 40;
   border-radius: var(--radius-lg); overflow: hidden; background: color-mix(in srgb, var(--surface-2) 88%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); box-shadow: inset 0 0 0 1px var(--hairline), 0 8px 32px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); box-shadow: inset 0 0 0 1px var(--hairline), var(--float-shadow);
   animation: rest-in 320ms cubic-bezier(0.32, 0.72, 0, 1); }
 @keyframes rest-in { from { transform: translateY(120%); } }
 .rest-bar { position: absolute; inset: 0; background: color-mix(in srgb, var(--lime) 14%, transparent); transform-origin: right; transition: transform 250ms linear; }
