@@ -93,12 +93,17 @@ export default function Today() {
       <div className="subhead" style={{ whiteSpace: 'pre-wrap' }}>{me.student.note}</div>
     </div>}
 
-    {empty ? <section className="card glass-lite empty-plan">
-      <div className="tile-icon big lime"><Icon name="download" /></div>
-      <div className="headline">هنوز برنامه‌ای نداری</div>
-      <p className="subhead secondary">برنامه‌ی تمرین، غذا و مکملی که هوش مصنوعی‌ات نوشته را با یک کد بیاور.</p>
-      <Link to="/routines/import" className="btn glass interactive prominent block">برنامه‌ات را وارد کن</Link>
-    </section> : <>
+    {empty ? (me.profile?.completed_at || me.profile?.missing ? <section className="card glass-lite empty-plan">
+      <div className="tile-icon big lime"><Icon name="check_circle" /></div>
+      <div className="headline">جواب‌هایت ثبت شد</div>
+      <p className="subhead secondary">برنامه‌ی رایگان یک‌ماهه‌ات به‌زودی همین‌جا ساخته می‌شود. تا آن موقع می‌توانی از «برنامه» یک روتین آماده برداری.</p>
+      <Link to="/routines" className="btn glass interactive prominent block">روتین‌های آماده</Link>
+    </section> : <section className="card glass-lite empty-plan">
+      <div className="tile-icon big lime"><Icon name="assignment" /></div>
+      <div className="headline">برنامه‌ی رایگانت منتظر توست</div>
+      <p className="subhead secondary">چند سؤال کوتاه جواب بده تا برنامه‌ای متناسب با بدن، هدف و وقتت ساخته شود.</p>
+      <Link to="/profile/edit" className="btn glass interactive prominent block">جواب دادن به سؤال‌ها</Link>
+    </section>) : <>
       {session && <WorkoutCard s={session} />}
       {food.missing && <div className="section"><div className="section-title">تغذیه امروز</div>
         <div className="card glass-lite" style={{ marginBottom: 0 }}><p className="subhead secondary" style={{ margin: 0 }}>{NUTRITION_SETUP}</p></div></div>}

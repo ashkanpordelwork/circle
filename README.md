@@ -29,7 +29,8 @@
 9. و `supabase/migrations/0008_athletes.sql` (ورزشکار بدون مربی، روتین شخصی).
 10. و `supabase/migrations/0009_body.sql` (اندازه‌های بدن، چک‌این آمادگی).
 11. و `supabase/migrations/0010_coaching.sql` (درخواست مربی‌گری، پلن مربی، گفتگو زیر تمرین).
-12. و `supabase/migrations/0011_nutrition.sql` (تغذیه و مکمل: هدف روزانه، وعده‌ها، مکمل‌ها و تیک‌های هر روز).
+12. `supabase/migrations/0011_nutrition.sql` (تغذیه و مکمل: هدف روزانه، وعده‌ها، مکمل‌ها و تیک‌های هر روز).
+13. و `supabase/migrations/0012_profiles.sql` (ثبت‌نام بدون مربی و کد دعوت، و پرسشنامه‌ی ۱۷ سؤالی).
     تا این فایل اجرا نشود، اپ کار می‌کند ولی بخش تغذیه و مکمل پنهان است و پیام راهنما نشان می‌دهد.
 13. از دکمه **Connect** بالای صفحه، `Project URL` و کلید `anon` (یا `publishable`) را بردارید.
 

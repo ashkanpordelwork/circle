@@ -1296,3 +1296,15 @@ a.alert-strip { text-decoration: none; }
 .calc-big.small .tnum { font-size: 2rem; color: var(--label); }
 .calc-result .footnote { margin: 1.5rem 0 0.5rem; color: var(--label-2); }
 .calc-result .subhead { margin: 0; }
+
+/* ---------- the questionnaire (SPEC §3.4) ---------- */
+.q-progress { height: 0.375rem; border-radius: 1rem; background: var(--fill-strong); overflow: hidden; }
+.q-progress span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 300ms ease; }
+.q-why { display: flex; gap: 0.5rem; align-items: flex-start; color: var(--label-2); }
+.q-why .icon { font-size: 1.125rem; flex: none; margin-top: 0.125rem; color: var(--accent); }
+.q-number { font-size: 1.5rem; text-align: center; }
+.q-hint { margin: 0 0.25rem 0.75rem; color: var(--label-2); }
+.q-wrong { color: var(--red); margin: 0.75rem 0.25rem 0; }
+.float-bar .btn.plain { margin-top: 0.25rem; }
+.name-btn { background: none; border: 0; padding: 0; font: inherit; text-align: right; cursor: pointer; }
+.calc-from { margin: -0.5rem 0.25rem 1rem; color: var(--label-2); }

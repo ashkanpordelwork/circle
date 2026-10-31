@@ -6,7 +6,7 @@ import { Loading, Page } from './components/ui.jsx'
 import IntakeSummary from './components/IntakeSummary.jsx'
 import Icon from './components/Icon.jsx'
 import GlassDrop from './components/GlassDrop.jsx'
-import Login, { NotRegistered, NotConfigured, Stopped } from './pages/Login.jsx'
+import Login, { Starting, NotConfigured, Stopped } from './pages/Login.jsx'
 import Students from './pages/coach/Students.jsx'
 import StudentPage from './pages/coach/StudentPage.jsx'
 import Today from './pages/student/Today.jsx'
@@ -17,10 +17,10 @@ import RoutineEdit from './pages/student/RoutineEdit.jsx'
 import CoachLink from './pages/student/CoachLink.jsx'
 import Body from './pages/student/Body.jsx'
 import Apply from './pages/student/Apply.jsx'
-import ImportPlan from './pages/student/ImportPlan.jsx'
 import { StartSheet, MoreSheet } from './pages/student/sheets.jsx'
 import Account from './pages/Account.jsx'
 import Intake from './pages/student/Intake.jsx'
+import Questionnaire from './pages/Questionnaire.jsx'
 import { AdminHome, AdminPeople, AdminUser, AdminActivity, AdminApplications } from './pages/admin/Admin.jsx'
 import PublicHome from './pages/public/Home.jsx'
 import { Exercises, ExercisePage } from './pages/public/Exercises.jsx'
@@ -46,8 +46,11 @@ async function resolveRole(session) {
   if (coach && coach.active !== false) return { session, role: 'coach', coach, admin: isAdmin }
   if (student) {
     // Before migration 0004 there is no intakes table: the questionnaire is skipped, not a wall.
-    const { data: intake, error } = await supabase.from('intakes').select('answers, completed_at').eq('student_id', student.id).maybeSingle()
-    return { session, role: 'student', student, intake: error ? { skipped: true } : intake, admin: isAdmin }
+    const [{ data: intake, error }, { data: profile, error: pe }] = await Promise.all([
+      supabase.from('intakes').select('answers, completed_at').eq('student_id', student.id).maybeSingle(),
+      // The questionnaire (0012_profiles.sql). Before that migration there is none to ask.
+      supabase.from('profiles').select('*').eq('user_id', uid).maybeSingle()])
+    return { session, role: 'student', student, intake: error ? { skipped: true } : intake, profile: pe ? { missing: true } : profile || {}, admin: isAdmin }
   }
   if (isAdmin) return { session, role: 'admin', admin: true, coach: coach || null }
   if (coach) return { session, role: 'stopped', coach }
@@ -75,9 +78,15 @@ export default function App() {
   if (!configured) return <NotConfigured />
   if (me === undefined) return <Loading />
   if (me === null) return <Guest />
-  if (me.role === 'none') return <NotRegistered email={me.session.user.email} />
+  if (me.role === 'none') return <Starting email={me.session.user.email} onStarted={reload} />
   if (me.role === 'stopped') return <Stopped />
   const setIntake = answers => setMe(m => ({ ...m, intake: { answers, completed_at: new Date().toISOString() } }))
+  const setProfile = profile => setMe(m => ({ ...m, profile }))
+  // Right after signing up: the questionnaire, until it is answered or put off (SPEC §3.4).
+  if (me.role === 'student' && !me.profile?.missing && !me.profile?.completed_at && !me.profile?.skipped_at) {
+    return <Questionnaire userId={me.session.user.id} studentId={me.student.id} initial={me.profile?.answers?.sex ? me.profile.answers : null}
+      onDone={setProfile} onSkip />
+  }
   // A student a coach registered answers the questionnaire once before seeing the plan. An athlete who
   // started alone is not stopped by it: «امروز» offers it once they have a coach (it is for a coach).
   if (on('intake') && me.role === 'student' && me.student.coach_id && !me.student.self_started && !me.intake?.completed_at && !me.intake?.skipped) {
@@ -107,7 +116,7 @@ export default function App() {
       // The athlete's: three tabs. «حساب» opens from the icon at the top of «امروز».
       : [['/', 'home', 'امروز', ['/account', '/calculator']], ['/routines', 'list_alt', 'برنامه'], ['/stats', 'monitoring', 'پیشرفت', ['/progress', '/body']],
         ['/exercises', 'fitness_center', 'حرکات']]
-  return <Me.Provider value={{ ...me, reload, setIntake, setCoach }}>
+  return <Me.Provider value={{ ...me, reload, setIntake, setCoach, setProfile }}>
     {me.role === 'coach' ? <Routes>
       {/* «داشبورد» and «شاگردان» were two tabs once; the students list is the home now. */}
       <Route path="/" element={<Students />} />
@@ -126,7 +135,6 @@ export default function App() {
       <Route path="/week" element={<Navigate to="/" replace />} />
       <Route path="/log/:routineId" element={<LogWorkout />} />
       <Route path="/routines" element={<Routines />} />
-      <Route path="/routines/import" element={<ImportPlan />} />
       <Route path="/routines/:id" element={<RoutineEdit />} />
       <Route path="/stats" element={<Progress />} />
       {/* Hidden features (lib/features.js) have no route: their addresses fall through to «امروز». */}
@@ -139,13 +147,23 @@ export default function App() {
       {on('intake') && <Route path="/intake" element={<IntakeView />} />}
       {on('intake') && <Route path="/intake/edit" element={<EditIntake />} />}
       <Route path="/account" element={<Account />} />
+      <Route path="/profile/edit" element={<EditProfile />} />
       {publicRoutes}
       {me.admin && <>{adminRoutes}</>}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>}
     {/* A workout in progress owns the screen: no tabs to wander off into. */}
-    {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake/edit' && <TabBar tabs={tabs} />}
+    {!loc.pathname.startsWith('/log/') && loc.pathname !== '/intake/edit' && loc.pathname !== '/profile/edit' && <TabBar tabs={tabs} />}
   </Me.Provider>
+}
+
+// The questionnaire again, from «حساب»: the same screens, with the answers in.
+function EditProfile() {
+  const me = useMe()
+  const nav = useNavigate()
+  if (me.role !== 'student' || me.profile?.missing) return <Navigate to="/account" replace />
+  return <Questionnaire userId={me.session.user.id} studentId={me.student.id} initial={me.profile?.answers || {}}
+    onCancel={() => nav('/account')} onDone={p => { me.setProfile(p); nav('/account', { replace: true }) }} />
 }
 
 // Open to anyone, signed in or not (SPEC §3.2, §3.8).

@@ -1,18 +1,27 @@
 import { useState } from 'react'
 import { GOALS, ACTIVITY, checkInput, dailyNeeds } from '../../lib/calculator.js'
-import { toNumber } from '../../lib/plan.js'
+import { toNumber, faDigits } from '../../lib/plan.js'
+import { calculatorInput } from '../../lib/questionnaire.js'
+import { useMe } from '../../App.jsx'
 import { Page, Segmented } from '../../components/ui.jsx'
 import { useTitle } from './Exercises.jsx'
 
 // «محاسبه‌گر نیاز روزانه»: open to anyone (SPEC §3.8). The working-out is in lib/calculator.js.
+// Signed in with the questionnaire answered, it starts from those answers.
 
 const fa = n => Number(n).toLocaleString('fa-IR')
 const opts = o => Object.entries(o).map(([value, label]) => ({ value, label }))
 
 export default function Calculator() {
   useTitle('محاسبه‌گر نیاز روزانه')
-  const [f, setF] = useState({ sex: 'male', birthYear: '', height: '', weight: '', goal: 'health', activity: 'mid', days: '3' })
-  const [shown, setShown] = useState(false)
+  const me = useMe()
+  const answers = me?.profile?.completed_at ? me.profile.answers : null
+  const [f, setF] = useState(() => {
+    if (!answers) return { sex: 'male', birthYear: '', height: '', weight: '', goal: 'health', activity: 'mid', days: '3' }
+    const c = calculatorInput(answers)
+    return { ...c, birthYear: faDigits(c.birthYear), height: faDigits(c.height), weight: faDigits(c.weight), days: String(c.days) }
+  })
+  const [shown, setShown] = useState(!!answers)
   const set = k => v => { setF(s => ({ ...s, [k]: v })); setShown(false) }
   const input = { ...f, birthYear: toNumber(f.birthYear), height: toNumber(f.height), weight: toNumber(f.weight), days: Number(f.days) }
   const errors = checkInput(input)
@@ -28,6 +37,7 @@ export default function Calculator() {
 
   return <Page>
     <header className="big-title"><div className="caption">کالری و پروتئین روزانه</div><h1>محاسبه‌گر</h1></header>
+    {answers && <p className="footnote calc-from">از جواب‌های پرسشنامه‌ات پر شده؛ اگر چیزی عوض شده، همین‌جا تغییرش بده.</p>}
     <section className="card glass-lite calc">
       <div className="field"><label>جنسیت</label>
         <Segmented label="جنسیت" value={f.sex} onChange={set('sex')} options={[{ value: 'male', label: 'مرد' }, { value: 'female', label: 'زن' }]} /></div>
