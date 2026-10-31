@@ -2,8 +2,10 @@ import './og/test-library.js'
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { extractCode, validatePlan, matchExercise, indexLibrary, previewPlan, unresolved, routineItems, PLAN_PROMPT } from './importPlan.js'
+import { setExercises } from './exercises.js'
 
-const LIB = JSON.parse(readFileSync(new URL('../../public/exercises.json', import.meta.url)))
+// What the page gets from loadExercises(): only the exercises on offer.
+const LIB = setExercises(JSON.parse(readFileSync(new URL('../../public/exercises.json', import.meta.url))))
 const INDEX = indexLibrary(LIB)
 
 // The example from the brief: five days of training, five meals, three supplements.
@@ -97,17 +99,19 @@ describe('checking the plan', () => {
 describe('matching exercise names to the library', () => {
   const m = name => matchExercise(name, INDEX)
   it('is sure of the library\'s own names, in English or Persian, ignoring case and spacing', () => {
-    expect(m('Barbell Squat')).toMatchObject({ status: 'sure', exercise_id: 'Barbell_Squat' })
-    expect(m('barbell   squat')).toMatchObject({ status: 'sure', exercise_id: 'Barbell_Squat' })
-    expect(m('اسکوات هالتر')).toMatchObject({ status: 'sure', exercise_id: 'Barbell_Squat' })
-    expect(m('Leg Press')).toMatchObject({ status: 'sure', exercise_id: 'Leg_Press' })
+    expect(m('Barbell Squat')).toMatchObject({ status: 'sure', exercise_id: '0043' })
+    expect(m('barbell   squat')).toMatchObject({ status: 'sure', exercise_id: '0043' })
+    expect(m('اسکوات هالتر')).toMatchObject({ status: 'sure', exercise_id: '0043' })
+    expect(m('Leg Press')).toMatchObject({ status: 'sure', exercise_id: '0739' })
+    expect(m('dumbbell hammer curl')).toMatchObject({ status: 'sure', exercise_id: '0313' })
   })
   it('is sure of the common names an AI writes, mapped to the plain lift', () => {
-    expect(m('Barbell Bench Press').exercise_id).toBe('Barbell_Bench_Press_-_Medium_Grip')
-    expect(m('Lat Pulldown').exercise_id).toBe('Wide-Grip_Lat_Pulldown')
-    expect(m('OHP').exercise_id).toBe('Standing_Military_Press')
-    expect(m('Pull-Ups').exercise_id).toBe('Pullups')
-    expect(m('Chest Fly').exercise_id).toBe('Dumbbell_Flyes')
+    expect(m('Barbell Bench Press').exercise_id).toBe('0025')
+    expect(m('Lat Pulldown').exercise_id).toBe('0150')
+    expect(m('OHP').exercise_id).toBe('1457')
+    expect(m('Pull-Ups').exercise_id).toBe('0652')
+    expect(m('Chest Fly').exercise_id).toBe('0308')
+    expect(m('Plank').exercise_id).toBe('Plank')                  // no twin in the new library: the old entry stays on offer
   })
   it('offers a close name for a yes, with other candidates', () => {
     const r = m('Barbel Hip Thrusts')                           // a typo and a plural
@@ -137,11 +141,11 @@ describe('the preview', () => {
   it('is ready once every exercise is settled, and turns a workout into routine items', () => {
     const { preview } = previewPlan(JSON.stringify({ workouts: [{ name: 'الف', exercises: [{ name: 'Squat', sets: 4, reps: '5' }, { name: 'Zercher Carry Pogo', sets: 3, reps: '8-10', rest_sec: 60 }] }] }), LIB)
     expect(unresolved(preview)).toBe(1)
-    preview.workouts[0].exercises[1].match = { status: 'sure', exercise_id: 'Dumbbell_Lunges', candidates: [] }
+    preview.workouts[0].exercises[1].match = { status: 'sure', exercise_id: '0336', candidates: [] }
     expect(unresolved(preview)).toBe(0)
     expect(routineItems(preview.workouts[0])).toEqual([
-      { exercise_id: 'Barbell_Squat', sets: 4, reps: '5', weight: '', rest_sec: '', tempo: '', note: '', progression: 'linear' },
-      { exercise_id: 'Dumbbell_Lunges', sets: 3, reps: '8-10', weight: '', rest_sec: 60, tempo: '', note: '', progression: 'double' }])
+      { exercise_id: '0043', sets: 4, reps: '5', weight: '', rest_sec: '', tempo: '', note: '', progression: 'linear' },
+      { exercise_id: '0336', sets: 3, reps: '8-10', weight: '', rest_sec: 60, tempo: '', note: '', progression: 'double' }])
   })
   it('passes errors through', () => {
     expect(previewPlan('سلام', LIB).errors[0]).toMatch(/کدی پیدا نشد/)

@@ -1,2 +1,36 @@
-Exercise data and images: yuhonas/free-exercise-db — https://github.com/yuhonas/free-exercise-db
-Released into the public domain under The Unlicense (https://unlicense.org).
+Exercise library
+================
+
+1. The current library — hasaneyldrm/exercises-dataset (the one openGym uses)
+   https://github.com/hasaneyldrm/exercises-dataset
+
+   Names, attributes and instruction text: MIT License, Copyright (c) 2026 Hasan Emir Yıldırım.
+   The content originates from ExerciseDB v1 (https://exercisedb.dev/) by AscendAPI.
+   The Persian names and Persian steps are this app's own translation.
+
+   Images and animations: NOT covered by the MIT license above. The dataset attributes them to
+   © Gym visual (https://gymvisual.com/); ExerciseDB / AscendAPI also claims them. This app does
+   not copy or redistribute them: they are loaded from the dataset at a pinned commit through
+   jsDelivr when shown. They remain the property of their owner.
+
+   MIT License
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+   and associated documentation and data files (the "Software"), to deal in the Software without
+   restriction, including without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all copies or
+   substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+   BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+2. The older library — yuhonas/free-exercise-db (kept for plans that still hold its exercises)
+   https://github.com/yuhonas/free-exercise-db
+   Exercise data and images released into the public domain under The Unlicense
+   (https://unlicense.org).

@@ -1,11 +1,18 @@
-// The exercise library: yuhonas/free-exercise-db (public domain), trimmed by
-// scripts/build-exercises.mjs into public/exercises.json and loaded once on first use.
-// Images come from jsDelivr at a pinned commit, so they never change under a plan.
+// The exercise library: openGym's (hasaneyldrm/exercises-dataset) with Persian names, built by
+// scripts/build-exercises.mjs into public/exercises.json and loaded once on first use. The older
+// free-exercise-db entries stay in the file for plans that still hold them: one with a twin in the
+// new library answers as that twin; one without is shown as it was but never offered again.
+// Images and animations come from jsDelivr at pinned commits, so they never change under a plan.
+// They belong to their owners (see public/EXERCISES_LICENSE.txt), not to this app.
 
-const COMMIT = 'f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5'
-const IMG_BASE = `https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@${COMMIT}/exercises/`
+const OG_BASE = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/'
+const OLD_BASE = 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/exercises/'
 
-export const imageUrl = path => IMG_BASE + path
+// A still picture: the new library's thumbnail, or an old entry's start photo.
+export const thumbUrl = x => (typeof x?.img === 'string' ? OG_BASE + 'images/' + x.img : x?.img?.[0] ? OLD_BASE + x.img[0] : null)
+// The moving picture: the new library's animation; old entries have photos only.
+export const gifUrl = x => (x?.gif ? OG_BASE + 'videos/' + x.gif : null)
+export const photoUrls = x => (Array.isArray(x?.img) ? x.img.map(p => OLD_BASE + p) : [])
 
 export const MUSCLES = {
   abdominals: 'شکم', abductors: 'دورکننده ران', adductors: 'نزدیک‌کننده ران', biceps: 'جلو بازو',
@@ -14,10 +21,20 @@ export const MUSCLES = {
   quadriceps: 'چهارسر ران', shoulders: 'سرشانه', traps: 'ذوزنقه', triceps: 'پشت بازو'
 }
 export const EQUIPMENT = {
-  barbell: 'هالتر', dumbbell: 'دمبل', other: 'سایر', 'body only': 'وزن بدن', cable: 'سیم‌کش',
-  machine: 'دستگاه', kettlebells: 'کتل‌بل', bands: 'کش', 'medicine ball': 'مدیسین‌بال',
+  'body weight': 'وزن بدن', dumbbell: 'دمبل', barbell: 'هالتر', cable: 'سیم‌کش', 'leverage machine': 'دستگاه',
+  'smith machine': 'اسمیت', kettlebell: 'کتل‌بل', band: 'کش', 'resistance band': 'کش مقاومتی', 'ez barbell': 'هالتر EZ',
+  'olympic barbell': 'هالتر المپیک', 'trap bar': 'ترپ‌بار', 'stability ball': 'توپ تعادلی', 'bosu ball': 'بوسو',
+  'medicine ball': 'مدیسین‌بال', 'sled machine': 'دستگاه پرس پا', weighted: 'وزنه اضافه', assisted: 'کمکی',
+  rope: 'طناب', roller: 'فوم‌رولر', 'wheel roller': 'چرخ شکم', hammer: 'پتک', tire: 'لاستیک',
+  'stationary bike': 'دوچرخه ثابت', 'elliptical machine': 'الپتیکال', 'stepmill machine': 'دستگاه پله',
+  'skierg machine': 'دستگاه اسکی', 'upper body ergometer': 'ارگومتر دست',
+  // The older library's words, for plans that still hold its exercises.
+  other: 'سایر', 'body only': 'وزن بدن', machine: 'دستگاه', kettlebells: 'کتل‌بل', bands: 'کش',
   'exercise ball': 'توپ تعادلی', 'foam roll': 'فوم‌رولر', 'e-z curl bar': 'هالتر EZ'
 }
+// The equipment the picker offers as filters, most used first.
+export const EQUIPMENT_FILTERS = ['body weight', 'dumbbell', 'barbell', 'cable', 'leverage machine', 'smith machine',
+  'kettlebell', 'band', 'ez barbell', 'stability ball', 'medicine ball', 'sled machine', 'weighted']
 export const CATEGORIES = {
   strength: 'قدرتی', stretching: 'کششی', plyometrics: 'پلایومتریک', powerlifting: 'پاورلیفتینگ',
   'olympic weightlifting': 'وزنه‌برداری', strongman: 'استرانگمن', cardio: 'هوازی'
@@ -26,18 +43,22 @@ export const LEVELS = { beginner: 'مبتدی', intermediate: 'متوسط', expe
 
 let cache = null
 let byId = null
-// Each entry: n English name, f Persian name, st Persian steps (see scripts/build-exercises.mjs).
-export function setExercises(list) {
-  cache = list
-  byId = new Map(list.map(x => [x.id, x]))
-  return list
+// The file holds every entry (see scripts/build-exercises.mjs); the list handed out holds only the
+// ones to offer. Every id still resolves: an old one with a twin answers as the twin.
+export function setExercises(all) {
+  byId = new Map(all.map(x => [x.id, x]))
+  cache = all.filter(x => !x.to && !x.old)
+  return cache
 }
 export async function loadExercises() {
   if (cache) return cache
   const r = await fetch(import.meta.env.BASE_URL + 'exercises.json')
   return setExercises(await r.json())
 }
-export const exerciseById = id => byId?.get(id) || null
+export function exerciseById(id) {
+  const x = byId?.get(id)
+  return (x?.to ? byId.get(x.to) : x) || null
+}
 // The English name; for an id the library may not know (a renamed upstream entry) the id itself,
 // readable and never blank.
 export const exerciseNameEn = id => exerciseById(id)?.n || String(id).replace(/_/g, ' ')

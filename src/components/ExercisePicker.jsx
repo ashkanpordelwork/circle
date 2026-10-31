@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { loadExercises, searchExercises, MUSCLES, EQUIPMENT } from '../lib/exercises.js'
+import { loadExercises, searchExercises, MUSCLES, EQUIPMENT, EQUIPMENT_FILTERS } from '../lib/exercises.js'
 import Screen, { useScreen } from './Screen.jsx'
 import Icon from './Icon.jsx'
 import { Loading, haptic } from './ui.jsx'
@@ -28,7 +28,7 @@ function Body({ onPick, added }) {
     </div>
     <div className="chips" data-no-drag style={{ marginBottom: '0.5rem' }}>
       <button className={'chip glass-lite pressable' + (!equipment ? ' on' : '')} onClick={() => setEquipment('')}>همه تجهیزات</button>
-      {Object.entries(EQUIPMENT).map(([k, v]) => <button key={k} className={'chip glass-lite pressable' + (equipment === k ? ' on' : '')} onClick={() => setEquipment(equipment === k ? '' : k)}>{v}</button>)}
+      {EQUIPMENT_FILTERS.map(k => <button key={k} className={'chip glass-lite pressable' + (equipment === k ? ' on' : '')} onClick={() => setEquipment(equipment === k ? '' : k)}>{EQUIPMENT[k]}</button>)}
     </div>
     {!all ? <Loading /> : <>
       <div className="caption" style={{ padding: '0 0.25rem 0.5rem' }}>{found.length.toLocaleString('fa-IR')} حرکت</div>

@@ -82,7 +82,7 @@ export default function Today() {
 
   const weekday = new Date().getDay()
   const session = data && todaysSession(data, today, weekday)
-  const hasFood = !food.missing && !food.failed && (food.targets || food.meals.length)
+  const hasFood = !food.missing && !food.failed && (!!food.targets || food.meals.length > 0)
   const hasSups = !food.missing && !food.failed && food.supplements.length > 0
   const empty = !session && !hasFood && !hasSups
 
